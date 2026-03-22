@@ -22,12 +22,6 @@ export default async function handler(req, res) {
           equals: clientId,
         },
       },
-      sorts: [
-        {
-          property: 'Data de Gravacao',
-          direction: 'ascending',
-        },
-      ],
     });
 
     const contents = response.results.map((page) => {
@@ -43,7 +37,13 @@ export default async function handler(req, res) {
       };
     });
 
-    return res.status(200).json({ contents });
+    const sorted = contents.sort((a, b) => {
+      if (!a.dataGravacao) return 1;
+      if (!b.dataGravacao) return -1;
+      return new Date(a.dataGravacao) - new Date(b.dataGravacao);
+    });
+
+    return res.status(200).json({ contents: sorted });
   } catch (error) {
     console.error('Notion API error:', error);
     return res.status(500).json({ error: 'Failed to fetch contents', details: error.message });
