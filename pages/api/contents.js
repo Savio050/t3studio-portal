@@ -2,6 +2,19 @@ import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
+function getPropertyValue(prop) {
+  if (!prop) return null;
+  switch (prop.type) {
+    case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
+    case 'title': return prop.title?.[0]?.plain_text || '';
+    case 'number': return String(prop.number ?? '');
+    case 'select': return prop.select?.name || '';
+    case 'date': return prop.date?.start || null;
+    case 'url': return prop.url || null;
+    default: return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -16,24 +29,28 @@ export default async function handler(req, res) {
   try {
     const response = await notion.databases.query({
       database_id: process.env.NOTION_DATABASE_ID,
-      filter: {
-        property: 'ID do Cliente',
-        rich_text: {
-          equals: clientId,
-        },
-      },
     });
 
-    const contents = response.results.map((page) => {
+    const allPages = response.results;
+
+    const filtered = allPages.filter((page) => {
+      const props = page.properties;
+      const idProp = props['ID do Cliente'];
+      if (!idProp) return false;
+      const val = getPropertyValue(idProp);
+      return val && val.toLowerCase() === clientId.toLowerCase();
+    });
+
+    const contents = filtered.map((page) => {
       const props = page.properties;
       return {
         id: page.id,
-        nome: props['Nome do Conteudo']?.title?.[0]?.plain_text || 'Sem titulo',
-        dataGravacao: props['Data de Gravacao']?.date?.start || null,
-        roteiro: props['Guiao / Roteiro']?.rich_text?.[0]?.plain_text || '',
-        estado: props['Estado']?.select?.name || 'Pendente',
-        linkFicheiro: props['Link do Ficheiro']?.url || null,
-        feedbackCliente: props['Feedback do Cliente']?.rich_text?.[0]?.plain_text || '',
+        nome: getPropertyValue(props['Nome do Conteudo']) || 'Sem titulo',
+        dataGravacao: getPropertyValue(props['Data de Gravacao']),
+        roteiro: getPropertyValue(props['Guiao / Roteiro']) || '',
+        estado: getPropertyValue(props['Estado']) || 'Pendente',
+        linkFicheiro: getPropertyValue(props['Link do Ficheiro']),
+        feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };
     });
 
