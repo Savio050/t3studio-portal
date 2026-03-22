@@ -45,9 +45,9 @@ export default async function handler(req, res) {
       const props = page.properties;
       return {
         id: page.id,
-        nome: getPropertyValue(props['Nome do Conteudo']) || 'Sem titulo',
-        dataGravacao: getPropertyValue(props['Data de Gravacao']),
-        roteiro: getPropertyValue(props['Guiao / Roteiro']) || '',
+        nome: getPropertyValue(props['Nome']) || 'Sem titulo',
+        dataGravacao: getPropertyValue(props['Data de Gravação']),
+        roteiro: getPropertyValue(props['Guião / Roteiro']) || '',
         estado: getPropertyValue(props['Estado']) || 'Pendente',
         linkFicheiro: getPropertyValue(props['Link do Ficheiro']),
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
