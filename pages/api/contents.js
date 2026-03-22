@@ -9,6 +9,7 @@ function getPropertyValue(prop) {
     case 'title': return prop.title?.[0]?.plain_text || '';
     case 'number': return String(prop.number ?? '');
     case 'select': return prop.select?.name || '';
+    case 'status': return prop.status?.name || '';
     case 'date': return prop.date?.start || null;
     case 'url': return prop.url || null;
     default: return null;
