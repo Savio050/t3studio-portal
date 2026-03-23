@@ -1,6 +1,6 @@
-import { Client } from '@notionhq/client'
+import { Client } from '@notionhq/client';
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN })
+const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
 function getPropertyValue(prop) {
   if (!prop) return null;
@@ -8,6 +8,7 @@ function getPropertyValue(prop) {
     case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
     case 'title': return prop.title?.[0]?.plain_text || '';
     case 'number': return String(prop.number ?? '');
+    case 'select': return prop.select?.name || '';
     case 'status': return prop.status?.name || '';
     case 'date': return prop.date?.start || null;
     case 'url': return prop.url || null;
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
   const clientId = req.query.clientId || req.query.id;
 
   if (!clientId) {
-    return res.status(400).json({ error: 'clientId or id is required' });
+    return res.status(400).json({ error: 'ID do cliente é obrigatório' });
   }
 
   try {
@@ -45,12 +46,12 @@ export default async function handler(req, res) {
       const props = page.properties;
       return {
         id: page.id,
-        nome: getPropertyValue(props['Nome']) || 'Sem titulo',
+        nome: getPropertyValue(props['Nome']) || 'Sem título',
         dataGravacao: getPropertyValue(props['Data de Gravação']),
         roteiro: getPropertyValue(props['Roteiro']) || '',
         estado: getPropertyValue(props['Estado']) || 'Pendente',
-        linkFicheiro: getPropertyValue(props['Link do Ficheiro']),
-        linkCapa: getPropertyValue(props['Link da Capa']),
+        linkFicheiro: getPropertyValue(props['Link do Ficheiro']) || null,
+        linkCapa: getPropertyValue(props['Link da Capa']) || null,
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };
     });
