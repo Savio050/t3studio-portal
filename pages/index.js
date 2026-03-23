@@ -38,7 +38,7 @@ function AccordionScript({ roteiro }) {
 }
 
 function ContentCard({ item, onApprove, onReject }) {
-  const status = item.status || 'Pendente';
+  const status = item.estado || 'Pendente';
   const colorClass = STATUS_COLORS[status] || STATUS_COLORS['Pendente'];
 
   return (
@@ -50,11 +50,11 @@ function ContentCard({ item, onApprove, onReject }) {
       </div>
       <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
         <Calendar className="w-3 h-3" />
-        <span>{item.date}</span>
+        <span>{item.dataGravacao}</span>
       </div>
       <div className="flex items-center gap-2 text-slate-400 text-xs">
         <FileText className="w-3 h-3" />
-        <span>{item.name}</span>
+        <span>{item.nome}</span>
       </div>
       <AccordionScript roteiro={item.roteiro} />
       {status === 'Pendente' && (
