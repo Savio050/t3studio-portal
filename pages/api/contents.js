@@ -8,7 +8,7 @@ function getPropertyValue(prop) {
     case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
     case 'title': return prop.title?.[0]?.plain_text || '';
     case 'number': return String(prop.number ?? '');
-    case 'select': return prop.select?.name || '';
+    case 'status': return prop.status?.name || '';
     case 'date': return prop.date?.start || null;
     case 'url': return prop.url || null;
     default: return null;
@@ -50,6 +50,7 @@ export default async function handler(req, res) {
         roteiro: getPropertyValue(props['Roteiro']) || '',
         estado: getPropertyValue(props['Estado']) || 'Pendente',
         linkFicheiro: getPropertyValue(props['Link do Ficheiro']),
+        linkCapa: getPropertyValue(props['Link da Capa']),
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };
     });
