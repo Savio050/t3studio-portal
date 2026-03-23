@@ -49,6 +49,8 @@ export default async function handler(req, res) {
         nome: getPropertyValue(props['Nome']) || 'Sem título',
         dataGravacao: getPropertyValue(props['Data de Gravação']),
         roteiro: getPropertyValue(props['Roteiro']) || '',
+        estadoRoteiro: getPropertyValue(props['EstadoRoteiro']) || 'Pendente',
+        feedbackRoteiro: getPropertyValue(props['Feedback do Roteiro']) || '',
         estado: getPropertyValue(props['Estado']) || 'Pendente',
         linkFicheiro: getPropertyValue(props['Link do Ficheiro']) || null,
         linkCapa: getPropertyValue(props['Link da Capa']) || null,
@@ -65,6 +67,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ contents: sorted });
   } catch (error) {
     console.error('Notion API error:', error);
-    return res.status(500).json({ error: 'Failed to fetch contents', details: error.message });
+    return res.status(500).json({ error: 'Failed to fetch contents' });
   }
 }
