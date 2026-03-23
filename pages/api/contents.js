@@ -20,10 +20,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { clientId } = req.query;
+  const clientId = req.query.clientId || req.query.id;
 
   if (!clientId) {
-    return res.status(400).json({ error: 'clientId is required' });
+    return res.status(400).json({ error: 'clientId or id is required' });
   }
 
   try {
