@@ -1,6 +1,6 @@
-import { Client } from '@notionhq/client';
+import { Client } from '@notionhq/client'
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const notion = new Client({ auth: process.env.NOTION_TOKEN })
 
 function getPropertyValue(prop) {
   if (!prop) return null;
