@@ -28,6 +28,22 @@ const formatDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
+// Função para identificar links no texto e deixá-los clicáveis
+const renderTextWithLinks = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 transition-colors">
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 function AccordionScript({ roteiro }) {
   const [open, setOpen] = useState(false);
   if (!roteiro) return null;
@@ -39,7 +55,9 @@ function AccordionScript({ roteiro }) {
       {open && (
         <div className="mt-3 p-3 rounded-lg bg-black/40 border border-white/[0.05]">
           {roteiro.split('\n').map((line, i) => (
-            <p key={i} className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{line}</p>
+            <p key={i} className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              {renderTextWithLinks(line)}
+            </p>
           ))}
         </div>
       )}
