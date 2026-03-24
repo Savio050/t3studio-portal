@@ -53,12 +53,8 @@ function AccordionScript({ roteiro }) {
         <Film className="w-4 h-4" /> <span>Ver Roteiro</span>
       </button>
       {open && (
-        <div className="mt-3 p-3 rounded-lg bg-black/40 border border-white/[0.05]">
-          {roteiro.split('\n').map((line, i) => (
-            <p key={i} className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-              {renderTextWithLinks(line)}
-            </p>
-          ))}
+        <div className="mt-3 p-4 rounded-lg bg-black/40 border border-white/[0.05] text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+          {renderTextWithLinks(roteiro)}
         </div>
       )}
     </div>
