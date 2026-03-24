@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { Calendar, FileText, Check, X, Download, Clock, Film, Send, FolderKanban, Tag } from 'lucide-react';
-
+import { Calendar, FileText, Check, X, Download, Clock, Film, Send, FolderKanban, Tag, Image as ImageIcon } from 'lucide-react';
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 const STATUS_COLORS = {
