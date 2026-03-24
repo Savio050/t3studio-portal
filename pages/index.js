@@ -74,7 +74,7 @@ function ContentCard({ item, onApprove, onReject }) {
         <div className={`px-2 py-0.5 rounded border text-xs font-medium ${colorClass}`}>{status}</div>
       </div>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider w-14">Data:</span>
+        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider w-14">Data de Gravação:</span>
         <div className="flex items-center gap-1.5 text-slate-300 text-sm">
           <Calendar className="w-4 h-4 text-slate-400" /> <span>{formatDate(item.dataGravacao)}</span>
         </div>
