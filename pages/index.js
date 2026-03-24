@@ -67,25 +67,35 @@ function ContentCard({ item, onApprove, onReject }) {
   const [showInput, setShowInput] = useState(false);
   const [feedback, setFeedback] = useState('');
 
-  return (
+return (
     <div className="mt-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Status:</span>
+      
+      {/* Linha 1: Status */}
+      <div className="flex items-center mb-3">
+        <div className="w-36 shrink-0">
+          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Status:</span>
+        </div>
         <div className={`px-2 py-0.5 rounded border text-xs font-medium ${colorClass}`}>{status}</div>
       </div>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider w-14">Data de Gravação:</span>
-        <div className="flex items-center gap-1.5 text-slate-300 text-sm">
-          <Calendar className="w-4 h-4 text-slate-400" /> <span>{formatDate(item.dataGravacao)}</span>
+
+      {/* Linha 2: Data de Gravação */}
+      <div className="flex items-center mb-3">
+        <div className="flex items-center gap-1.5 w-36 shrink-0 text-slate-500">
+          <Calendar className="w-4 h-4" />
+          <span className="text-xs font-semibold uppercase tracking-wider">Data de Gravação:</span>
         </div>
+        <span className="text-slate-300 text-sm font-medium">{formatDate(item.dataGravacao)}</span>
       </div>
-      <div className="flex items-start gap-2 mb-3">
-        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider w-14 mt-0.5">Projeto:</span>
-        <div className="flex items-center gap-1.5 text-white text-base font-medium">
-          <FileText className="w-4 h-4 text-slate-400" /> <span>{item.nome}</span>
+
+      {/* Linha 3: Projeto */}
+      <div className="flex items-start mb-4">
+        <div className="flex items-center gap-1.5 w-36 shrink-0 text-slate-500 mt-0.5">
+          <FileText className="w-4 h-4" />
+          <span className="text-xs font-semibold uppercase tracking-wider">Projeto:</span>
         </div>
+        <span className="text-white text-base font-medium leading-tight">{item.nome}</span>
       </div>
-      
+
       <AccordionScript roteiro={item.roteiro} />
       
       {(status === 'Pendente' || status === 'Aguardando Aprovação') && (
