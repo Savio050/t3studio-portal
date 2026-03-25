@@ -49,6 +49,7 @@ export default async function handler(req, res) {
         nome: getPropertyValue(props['Nome']) || 'Sem título',
         dataGravacao: getPropertyValue(props['Data de Gravação']),
         categoria: getPropertyValue(props['Categoria']) || '',
+        mesRelativo: getPropertyValue(props['Relativo ao mês de']) || '',
         roteiro: getPropertyValue(props['Roteiro']) || '',
         estadoRoteiro: getPropertyValue(props['EstadoRoteiro']) || 'Pendente',
         feedbackRoteiro: getPropertyValue(props['Feedback do Roteiro']) || '',
