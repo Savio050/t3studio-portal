@@ -14,6 +14,8 @@ const STATUS_COLORS = {
   'Aguardando Aprovação': 'text-blue-400 bg-blue-400/10 border-blue-400/30',
   'Em Produção': 'text-purple-400 bg-purple-400/10 border-purple-400/30',
   'Concluído': 'text-slate-400 bg-slate-400/10 border-slate-400/30',
+  'Não Iniciada': 'text-slate-500 bg-slate-500/10 border-slate-500/30',
+  'Nao Iniciada': 'text-slate-500 bg-slate-500/10 border-slate-500/30'
 };
 
 const getEmbedUrl = (url) => {
@@ -369,8 +371,19 @@ export default function Home() {
     setContents(prev => prev.map(c => c.id === itemId ? { ...c, [target === 'roteiro' ? 'estadoRoteiro' : 'estado']: 'Ajuste Solicitado' } : c));
   };
 
-  let activeScripts = contents.filter(item => !(item.estadoRoteiro || '').toLowerCase().includes('conclu'));
-  let activeVideos = contents.filter(item => (item.linkFicheiro || item.linkCapa) && !(item.estado || '').toLowerCase().includes('conclu'));
+  // =========================================================================
+  // LÓGICA DE FILTRAGEM ATUALIZADA (Remove Concluído e Não Iniciada)
+  // =========================================================================
+  let activeScripts = contents.filter(item => {
+    const status = (item.estadoRoteiro || '').toLowerCase();
+    return !status.includes('conclu') && !status.includes('iniciada');
+  });
+
+  let activeVideos = contents.filter(item => {
+    const status = (item.estado || '').toLowerCase();
+    return (item.linkFicheiro || item.linkCapa) && !status.includes('conclu') && !status.includes('iniciada');
+  });
+
   if (roteiroFilter === 'Pendentes') {
     activeScripts = activeScripts.filter(item => ['Pendente', 'Aguardando Aprovação', 'Ajuste Solicitado'].includes(item.estadoRoteiro));
   } else if (roteiroFilter === 'Aprovados') {
@@ -437,6 +450,7 @@ export default function Home() {
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         
+        {/* ABA DE ROTEIROS */}
         {activeTab === 'planning' && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 mb-2 pb-2 overflow-x-auto no-scrollbar">
@@ -458,6 +472,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ABA DE VÍDEOS */}
         {activeTab === 'downloads' && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 mb-2 pb-2 overflow-x-auto no-scrollbar">
@@ -479,6 +494,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ABA DE PLANEJAMENTO */}
         {activeTab === 'calendar' && (
           <div className="space-y-4">
             {Object.keys(groupedContents).length === 0 ? (
