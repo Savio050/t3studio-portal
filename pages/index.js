@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { Calendar, FileText, Check, X, Download, Clock, Film, Send, FolderKanban, Tag, Image as ImageIcon } from 'lucide-react';
+import { Calendar, FileText, Check, X, Download, Clock, Film, Send, FolderKanban, Tag, Image as ImageIcon, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 const STATUS_COLORS = {
@@ -67,7 +68,6 @@ function ContentCard({ item, onApprove, onReject }) {
 
   return (
     <div className="mt-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md">
-      
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-32 shrink-0">
@@ -145,7 +145,6 @@ function DownloadCard({ item, onApprove, onReject }) {
 
   return (
     <div className="mt-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md">
-      
       <div className="flex gap-3 mb-4">
         <div className="flex-[2] flex flex-col gap-2">
           {embedUrl ? (
@@ -157,7 +156,7 @@ function DownloadCard({ item, onApprove, onReject }) {
               <span className="text-xs text-slate-500">Vídeo indisponível</span>
             </div>
           )}
-          {item.linkFicheiro && status === 'Concluído' && (
+          {item.linkFicheiro && (
             <a href={item.linkFicheiro} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 w-full py-2 bg-neutral-100 text-neutral-900 rounded-lg text-xs font-semibold hover:bg-neutral-200 transition-all">
               <Download className="w-3.5 h-3.5" /> Baixar Vídeo
             </a>
@@ -169,11 +168,9 @@ function DownloadCard({ item, onApprove, onReject }) {
             <div className="w-full aspect-[9/16] rounded-lg overflow-hidden bg-black border border-white/[0.05] relative pointer-events-none">
               <iframe src={getEmbedUrl(item.linkCapa)} className="w-full h-full absolute inset-0 border-0 pointer-events-none" style={{ transform: 'scale(1.05)' }}></iframe>
             </div>
-            {status === 'Concluído' && (
-               <a href={item.linkCapa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 w-full py-2 bg-white/[0.05] text-white border border-white/[0.1] rounded-lg text-xs font-semibold hover:bg-white/[0.1] transition-all">
-                 <Download className="w-3.5 h-3.5" /> Capa
-               </a>
-            )}
+            <a href={item.linkCapa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 w-full py-2 bg-white/[0.05] text-white border border-white/[0.1] rounded-lg text-xs font-semibold hover:bg-white/[0.1] transition-all">
+              <Download className="w-3.5 h-3.5" /> Capa
+            </a>
           </div>
         )}
       </div>
@@ -237,30 +234,60 @@ function DownloadCard({ item, onApprove, onReject }) {
   );
 }
 
-// Novo componente super limpo para o Planejamento Mensal
-function PlanningListItem({ item }) {
-  const statusProd = item.estado || 'Pendente';
-  const colorClass = STATUS_COLORS[statusProd] || STATUS_COLORS['Pendente'];
-
+// Componente para criar as Sanfonas dos meses no Planejamento
+function MonthGroup({ month, items }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
   return (
-    <div className="flex flex-col gap-3 p-4 bg-white/[0.02] border-b border-white/[0.05] last:border-0 hover:bg-white/[0.04] transition-colors">
-      <div className="flex justify-between items-start">
-        <div>
-          <h4 className="text-sm font-semibold text-white">{item.nome}</h4>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-xs text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3"/> {formatDate(item.dataGravacao)}</span>
-            {item.categoria && <span className="text-[10px] uppercase font-semibold text-slate-500 border border-slate-700 px-1.5 py-0.5 rounded">{item.categoria}</span>}
-          </div>
-        </div>
-        <div className={`px-2 py-0.5 rounded border text-[10px] font-medium ${colorClass}`}>{statusProd}</div>
-      </div>
+    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.01] mb-4">
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="w-full bg-white/[0.03] hover:bg-white/[0.06] transition-colors px-4 py-3 border-b border-white/[0.08] flex justify-between items-center"
+      >
+        <h3 className="text-sm font-semibold text-white tracking-wide">{month}</h3>
+        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+      </button>
       
-      <div className="flex gap-3 text-xs font-medium">
-        {item.roteiro ? <span className="text-emerald-400/80 flex items-center gap-1"><Check className="w-3 h-3"/> Roteiro OK</span> : <span className="text-slate-500">Sem Roteiro</span>}
-        {item.linkFicheiro ? <a href={item.linkFicheiro} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1"><Film className="w-3 h-3"/> Ver Vídeo</a> : <span className="text-slate-500">Sem Vídeo</span>}
-        {item.linkCapa && <a href={item.linkCapa} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Ver Capa</a>}
-      </div>
+      {isOpen && (
+        <div className="flex flex-col">
+          {items.map(item => (
+            <div key={item.id} className="flex flex-col gap-3 p-4 bg-white/[0.01] border-b border-white/[0.05] last:border-0">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">{item.nome}</h4>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className="text-xs text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3"/> {formatDate(item.dataGravacao)}</span>
+                    {item.categoria && <span className="text-[10px] uppercase font-semibold text-slate-500 border border-slate-700 px-1.5 py-0.5 rounded">{item.categoria}</span>}
+                  </div>
+                </div>
+                <div className={`px-2 py-0.5 rounded border text-[10px] font-medium ${STATUS_COLORS[item.estado] || STATUS_COLORS['Pendente']}`}>{item.estado || 'Pendente'}</div>
+              </div>
+              <div className="flex gap-3 text-xs font-medium">
+                {item.roteiro ? <span className="text-emerald-400/80 flex items-center gap-1"><Check className="w-3 h-3"/> Roteiro OK</span> : <span className="text-slate-500">Sem Roteiro</span>}
+                {item.linkFicheiro ? <a href={item.linkFicheiro} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1"><Film className="w-3 h-3"/> Ver Vídeo</a> : <span className="text-slate-500">Sem Vídeo</span>}
+                {item.linkCapa && <a href={item.linkCapa} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Ver Capa</a>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+// Botões de Filtro
+function FilterPill({ active, onClick, children }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
+        active 
+        ? 'bg-white text-neutral-900 border-white' 
+        : 'bg-white/[0.03] text-slate-400 border-white/[0.08] hover:bg-white/[0.08] hover:text-white'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -270,6 +297,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('planning');
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Estados dos filtros
+  const [roteiroFilter, setRoteiroFilter] = useState('Todos'); // 'Todos', 'Pendentes', 'Aprovados'
+  const [videoFilter, setVideoFilter] = useState('Todos');
 
   useEffect(() => {
     if (!id) return;
@@ -301,23 +332,31 @@ export default function Home() {
     setContents(prev => prev.map(c => c.id === itemId ? { ...c, [target === 'roteiro' ? 'estadoRoteiro' : 'estado']: 'Ajuste Solicitado' } : c));
   };
 
-  // Filtragem: Apenas exibe o que NÃO está concluído nas abas principais
-  const activeScripts = contents.filter(item => item.estadoRoteiro !== 'Concluído');
-  const activeVideos = contents.filter(item => (item.linkFicheiro || item.linkCapa) && item.estado !== 'Concluído');
+  // Base: Nunca exibe "Concluído" nas abas principais
+  let activeScripts = contents.filter(item => item.estadoRoteiro !== 'Concluído');
+  let activeVideos = contents.filter(item => (item.linkFicheiro || item.linkCapa) && item.estado !== 'Concluído');
 
-  // Lógica de agrupamento por mês para a aba Planejamento
+  // Aplicar filtros nos Roteiros
+  if (roteiroFilter === 'Pendentes') {
+    activeScripts = activeScripts.filter(item => ['Pendente', 'Aguardando Aprovação', 'Ajuste Solicitado'].includes(item.estadoRoteiro));
+  } else if (roteiroFilter === 'Aprovados') {
+    activeScripts = activeScripts.filter(item => item.estadoRoteiro === 'Aprovado');
+  }
+
+  // Aplicar filtros nos Vídeos
+  if (videoFilter === 'Pendentes') {
+    activeVideos = activeVideos.filter(item => ['Pendente', 'Aguardando Aprovação', 'Ajuste Solicitado', 'Em Produção'].includes(item.estado));
+  } else if (videoFilter === 'Aprovados') {
+    activeVideos = activeVideos.filter(item => item.estado === 'Aprovado');
+  }
+
+  // Agrupamento puxando da coluna "Relativo ao mês de"
   const groupContentsByMonth = () => {
     const grouped = {};
     contents.forEach(item => {
-      if (!item.dataGravacao) return;
-      const [year, month] = item.dataGravacao.split('-');
-      if (!year || !month) return;
-      const dateObj = new Date(year, parseInt(month) - 1);
-      const monthName = dateObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-      const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-      
-      if (!grouped[capitalizedMonth]) grouped[capitalizedMonth] = [];
-      grouped[capitalizedMonth].push(item);
+      const monthLabel = item.mesRelativo || 'Sem mês definido';
+      if (!grouped[monthLabel]) grouped[monthLabel] = [];
+      grouped[monthLabel].push(item);
     });
     return grouped;
   };
@@ -353,11 +392,9 @@ export default function Home() {
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
             <button onClick={() => setActiveTab('planning')} className={`whitespace-nowrap flex-1 px-4 py-3 text-sm font-medium transition-all ${activeTab === 'planning' ? 'text-white border-b-2 border-white' : 'text-slate-400 hover:text-slate-200'}`}>
               Roteiros
-              {activeScripts.length > 0 && <span className="ml-2 bg-white/10 px-1.5 py-0.5 rounded-full text-[10px]">{activeScripts.length}</span>}
             </button>
             <button onClick={() => setActiveTab('downloads')} className={`whitespace-nowrap flex-1 px-4 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'downloads' ? 'text-white border-b-2 border-white' : 'text-slate-400 hover:text-slate-200'}`}>
               Vídeos
-              {activeVideos.length > 0 && <span className="bg-white/10 px-1.5 py-0.5 rounded-full text-[10px]">{activeVideos.length}</span>}
             </button>
             <button onClick={() => setActiveTab('calendar')} className={`whitespace-nowrap flex-1 px-4 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'calendar' ? 'text-white border-b-2 border-white' : 'text-slate-400 hover:text-slate-200'}`}>
               <FolderKanban className="w-4 h-4" /> Planejamento
@@ -371,13 +408,21 @@ export default function Home() {
         {/* ABA DE ROTEIROS */}
         {activeTab === 'planning' && (
           <div className="space-y-4">
+            {/* Barra de Filtros */}
+            <div className="flex items-center gap-2 mb-2 pb-2 overflow-x-auto no-scrollbar">
+              <Filter className="w-4 h-4 text-slate-500 shrink-0 mr-1" />
+              <FilterPill active={roteiroFilter === 'Todos'} onClick={() => setRoteiroFilter('Todos')}>Todos</FilterPill>
+              <FilterPill active={roteiroFilter === 'Pendentes'} onClick={() => setRoteiroFilter('Pendentes')}>Pendentes</FilterPill>
+              <FilterPill active={roteiroFilter === 'Aprovados'} onClick={() => setRoteiroFilter('Aprovados')}>Aprovados</FilterPill>
+            </div>
+
             {activeScripts.map(item => (
               <ContentCard key={item.id} item={item} onApprove={(target) => handleApprove(item.id, target)} onReject={(target, text) => handleReject(item.id, target, text)} />
             ))}
             {activeScripts.length === 0 && (
               <div className="text-center py-12 text-slate-400">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p>Todos os roteiros estão concluídos ou não há pendências.</p>
+                <p>Nenhum roteiro encontrado para este filtro.</p>
               </div>
             )}
           </div>
@@ -386,21 +431,29 @@ export default function Home() {
         {/* ABA DE VÍDEOS */}
         {activeTab === 'downloads' && (
           <div className="space-y-4">
+            {/* Barra de Filtros */}
+            <div className="flex items-center gap-2 mb-2 pb-2 overflow-x-auto no-scrollbar">
+              <Filter className="w-4 h-4 text-slate-500 shrink-0 mr-1" />
+              <FilterPill active={videoFilter === 'Todos'} onClick={() => setVideoFilter('Todos')}>Todos</FilterPill>
+              <FilterPill active={videoFilter === 'Pendentes'} onClick={() => setVideoFilter('Pendentes')}>Pendentes</FilterPill>
+              <FilterPill active={videoFilter === 'Aprovados'} onClick={() => setVideoFilter('Aprovados')}>Aprovados</FilterPill>
+            </div>
+
             {activeVideos.map(item => (
               <DownloadCard key={item.id} item={item} onApprove={(target) => handleApprove(item.id, target)} onReject={(target, text) => handleReject(item.id, target, text)} />
             ))}
             {activeVideos.length === 0 && (
               <div className="text-center py-12 text-slate-400">
                 <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p>Todos os vídeos foram concluídos ou não há pendências no momento.</p>
+                <p>Nenhum vídeo encontrado para este filtro.</p>
               </div>
             )}
           </div>
         )}
 
-        {/* NOVA ABA: PLANEJAMENTO MENSAL */}
+        {/* ABA DE PLANEJAMENTO */}
         {activeTab === 'calendar' && (
-          <div className="space-y-6">
+          <div className="space-y-2">
             {Object.keys(groupedContents).length === 0 ? (
               <div className="text-center py-12 text-slate-400">
                 <FolderKanban className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -408,16 +461,7 @@ export default function Home() {
               </div>
             ) : (
               Object.entries(groupedContents).map(([month, items]) => (
-                <div key={month} className="rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.01]">
-                  <div className="bg-white/[0.05] px-4 py-3 border-b border-white/[0.08]">
-                    <h3 className="text-sm font-semibold text-white tracking-wide">{month}</h3>
-                  </div>
-                  <div className="flex flex-col">
-                    {items.map(item => (
-                      <PlanningListItem key={item.id} item={item} />
-                    ))}
-                  </div>
-                </div>
+                <MonthGroup key={month} month={month} items={items} />
               ))
             )}
           </div>
