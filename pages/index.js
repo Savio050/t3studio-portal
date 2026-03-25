@@ -369,9 +369,8 @@ export default function Home() {
     setContents(prev => prev.map(c => c.id === itemId ? { ...c, [target === 'roteiro' ? 'estadoRoteiro' : 'estado']: 'Ajuste Solicitado' } : c));
   };
 
-let activeScripts = contents.filter(item => !(item.estadoRoteiro || '').toLowerCase().includes('conclu'));
+  let activeScripts = contents.filter(item => !(item.estadoRoteiro || '').toLowerCase().includes('conclu'));
   let activeVideos = contents.filter(item => (item.linkFicheiro || item.linkCapa) && !(item.estado || '').toLowerCase().includes('conclu'));
-
   if (roteiroFilter === 'Pendentes') {
     activeScripts = activeScripts.filter(item => ['Pendente', 'Aguardando Aprovação', 'Ajuste Solicitado'].includes(item.estadoRoteiro));
   } else if (roteiroFilter === 'Aprovados') {
