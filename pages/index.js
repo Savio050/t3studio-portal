@@ -78,7 +78,6 @@ function ContentCard({ item, onApprove, onReject }) {
   return (
     <div className="mt-4 p-5 rounded-2xl bg-[#0A1622] border border-[#15283A] shadow-lg relative overflow-hidden">
       
-      {/* Topo: Pílulas de Status e Categoria */}
       <div className="flex justify-between items-start mb-4">
         <div className={`px-3 py-1 rounded-full border text-[10px] font-bold tracking-wider uppercase ${colorClass}`}>
           {status}
@@ -90,7 +89,6 @@ function ContentCard({ item, onApprove, onReject }) {
         )}
       </div>
 
-      {/* Meio: Informações Principais */}
       <div className="mb-2">
         <h3 className="text-xl font-bold text-white leading-snug mb-2">{item.nome}</h3>
         <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
@@ -98,10 +96,8 @@ function ContentCard({ item, onApprove, onReject }) {
         </div>
       </div>
       
-      {/* Roteiro */}
       <AccordionScript roteiro={item.roteiro} />
       
-      {/* Ações */}
       {(status === 'Pendente' || status === 'Aguardando Aprovação') && (
         <div className="mt-5 pt-5 border-t border-[#15283A]">
           {!showInput ? (
@@ -148,7 +144,6 @@ function DownloadCard({ item, onApprove, onReject }) {
   return (
     <div className="mt-4 p-5 rounded-2xl bg-[#0A1622] border border-[#15283A] shadow-lg relative overflow-hidden">
       
-      {/* Topo: Pílulas */}
       <div className="flex justify-between items-start mb-4">
         <div className={`px-3 py-1 rounded-full border text-[10px] font-bold tracking-wider uppercase ${colorClass}`}>
           {status}
@@ -160,7 +155,6 @@ function DownloadCard({ item, onApprove, onReject }) {
         )}
       </div>
 
-      {/* Título */}
       <div className="mb-4">
         <h3 className="text-xl font-bold text-white leading-snug mb-2">{item.nome}</h3>
         <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
@@ -168,9 +162,10 @@ function DownloadCard({ item, onApprove, onReject }) {
         </div>
       </div>
 
-      {/* Mídia */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        <div className="flex-1 flex flex-col gap-3">
+      {/* Mídia em Layout Dinâmico (Lado a lado no PC, empilhado no Celular) */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* Bloco 1: Vídeo */}
+        <div className="flex-[2] flex flex-col gap-3">
           {embedUrl ? (
             <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-[#15283A]">
               <iframe src={embedUrl} className="w-full h-full border-0" allow="autoplay; fullscreen"></iframe>
@@ -187,19 +182,31 @@ function DownloadCard({ item, onApprove, onReject }) {
           )}
         </div>
 
+        {/* Bloco 2: Capa 1 */}
         {item.linkCapa && (
-          <div className="w-full sm:w-1/3 flex flex-col gap-3">
+          <div className="flex-1 flex flex-col gap-3">
             <div className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-black border border-[#15283A] relative pointer-events-none">
               <iframe src={getEmbedUrl(item.linkCapa)} className="w-full h-full absolute inset-0 border-0 pointer-events-none" style={{ transform: 'scale(1.05)' }}></iframe>
             </div>
             <a href={item.linkCapa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 bg-transparent text-white border border-[#15283A] rounded-xl text-sm font-semibold hover:bg-[#112333] transition-all">
-              <Download className="w-4 h-4" /> Baixar Capa
+              <Download className="w-4 h-4" /> Baixar Capa 1
+            </a>
+          </div>
+        )}
+
+        {/* Bloco 3: Capa 2 */}
+        {item.linkCapa2 && (
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-black border border-[#15283A] relative pointer-events-none">
+              <iframe src={getEmbedUrl(item.linkCapa2)} className="w-full h-full absolute inset-0 border-0 pointer-events-none" style={{ transform: 'scale(1.05)' }}></iframe>
+            </div>
+            <a href={item.linkCapa2} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 bg-transparent text-white border border-[#15283A] rounded-xl text-sm font-semibold hover:bg-[#112333] transition-all">
+              <Download className="w-4 h-4" /> Baixar Capa 2
             </a>
           </div>
         )}
       </div>
 
-      {/* Ações */}
       {(status === 'Aguardando Aprovação' || status === 'Pendente' || status === 'Ajuste Solicitado') && (
         <div className="mt-5 pt-5 border-t border-[#15283A]">
           <p className="text-sm text-slate-400 mb-4 font-medium">Por favor, revise o vídeo acima. Caso necessite de alterações, utilize o botão de ajuste.</p>
@@ -237,7 +244,6 @@ function DownloadCard({ item, onApprove, onReject }) {
   );
 }
 
-// Helper para inteligência da aba de Planejamento
 const getRoteiroStatusDisplay = (item) => {
   if (!item.roteiro) return <span className="text-slate-600 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5"/> Sem Roteiro</span>;
   if (['Aprovado', 'Concluído'].includes(item.estadoRoteiro)) {
@@ -285,7 +291,7 @@ function MonthGroup({ month, items }) {
                 </div>
               </div>
 
-              {/* Links de Mídia */}
+              {/* Links de Mídia do Planejamento */}
               <div className="flex flex-wrap items-center gap-4 mt-2 pt-3 border-t border-[#15283A]/50 text-xs font-semibold">
                 {getRoteiroStatusDisplay(item)}
                 
@@ -303,7 +309,16 @@ function MonthGroup({ month, items }) {
                   <>
                     <span className="w-[1px] h-3 bg-[#15283A]"></span>
                     <a href={item.linkCapa} target="_blank" rel="noreferrer" className="text-white hover:text-slate-300 flex items-center gap-1.5 transition-colors">
-                      <ImageIcon className="w-3.5 h-3.5"/> Baixar Capa
+                      <ImageIcon className="w-3.5 h-3.5"/> Capa 1
+                    </a>
+                  </>
+                )}
+
+                {item.linkCapa2 && (
+                  <>
+                    <span className="w-[1px] h-3 bg-[#15283A]"></span>
+                    <a href={item.linkCapa2} target="_blank" rel="noreferrer" className="text-white hover:text-slate-300 flex items-center gap-1.5 transition-colors">
+                      <ImageIcon className="w-3.5 h-3.5"/> Capa 2
                     </a>
                   </>
                 )}
@@ -371,9 +386,6 @@ export default function Home() {
     setContents(prev => prev.map(c => c.id === itemId ? { ...c, [target === 'roteiro' ? 'estadoRoteiro' : 'estado']: 'Ajuste Solicitado' } : c));
   };
 
-  // =========================================================================
-  // LÓGICA DE FILTRAGEM ATUALIZADA (Remove Concluído e Não Iniciada)
-  // =========================================================================
   let activeScripts = contents.filter(item => {
     const status = (item.estadoRoteiro || '').toLowerCase();
     return !status.includes('conclu') && !status.includes('iniciada');
@@ -381,7 +393,7 @@ export default function Home() {
 
   let activeVideos = contents.filter(item => {
     const status = (item.estado || '').toLowerCase();
-    return (item.linkFicheiro || item.linkCapa) && !status.includes('conclu') && !status.includes('iniciada');
+    return (item.linkFicheiro || item.linkCapa || item.linkCapa2) && !status.includes('conclu') && !status.includes('iniciada');
   });
 
   if (roteiroFilter === 'Pendentes') {
@@ -450,7 +462,6 @@ export default function Home() {
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         
-        {/* ABA DE ROTEIROS */}
         {activeTab === 'planning' && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 mb-2 pb-2 overflow-x-auto no-scrollbar">
@@ -472,7 +483,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ABA DE VÍDEOS */}
         {activeTab === 'downloads' && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 mb-2 pb-2 overflow-x-auto no-scrollbar">
@@ -494,7 +504,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ABA DE PLANEJAMENTO */}
         {activeTab === 'calendar' && (
           <div className="space-y-4">
             {Object.keys(groupedContents).length === 0 ? (
