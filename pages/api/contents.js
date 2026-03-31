@@ -56,6 +56,7 @@ export default async function handler(req, res) {
         estado: getPropertyValue(props['Estado']) || 'Pendente',
         linkFicheiro: getPropertyValue(props['Link do Ficheiro']) || null,
         linkCapa: getPropertyValue(props['Link da Capa']) || null,
+        linkCapa2: getPropertyValue(props['linkcapa2']) || null, // <--- Nova coluna mapeada aqui
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };
     });
