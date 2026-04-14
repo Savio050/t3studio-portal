@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Plus_Jakarta_Sans } from 'next/font/google';
@@ -14,11 +14,55 @@ const plusJakarta = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700', '800'],
 });
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const NAVY      = '#071928';
+const NAVY = '#071928';
 const NAVY_DARK = '#0d2440';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Meses em PT-BR para parse ────────────────────────────────────────────────
+const MONTH_KEYS = [
+  'janeiro','fevereiro','março','marco','abril','maio','junho',
+  'julho','agosto','setembro','outubro','novembro','dezembro',
+];
+const MONTH_CANONICAL = {
+  'janeiro':'Janeiro','fevereiro':'Fevereiro','março':'Março','marco':'Março',
+  'abril':'Abril','maio':'Maio','junho':'Junho','julho':'Julho',
+  'agosto':'Agosto','setembro':'Setembro','outubro':'Outubro',
+  'novembro':'Novembro','dezembro':'Dezembro',
+};
+const MONTH_ORDER = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
+];
+
+/**
+ * Extrai mês (capitalizado) e ano (string "20xx") de qualquer combinação:
+ * "abril 2026", "Abril/2026", "04/2026", "2026", "abril", null, etc.
+ * Fallback do ano vem de dataGravacao "2026-04-02".
+ */
+function parseMonthYear(mesRelativo, dataGravacao) {
+  const raw  = (mesRelativo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const str  = raw.replace(/[^a-z0-9\s]/g, ' ').trim();
+
+  // Ano: 4 dígitos começando com 19 ou 20
+  const yearMatch = str.match(/\b((?:19|20)\d{2})\b/);
+  const year = yearMatch ? yearMatch[1] : (dataGravacao ? dataGravacao.split('-')[0] : null);
+
+  // Mês: nome por extenso
+  let month = null;
+  for (const key of MONTH_KEYS) {
+    const norm = key.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if (str.includes(norm)) { month = MONTH_CANONICAL[key]; break; }
+  }
+
+  // Fallback mês numérico (ex: "04")
+  if (!month && dataGravacao) {
+    const mm = parseInt(dataGravacao.split('-')[1], 10);
+    if (mm >= 1 && mm <= 12) month = MONTH_ORDER[mm - 1];
+  }
+
+  return { month, year };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const getEmbedUrl = (url) => {
   if (!url) return null;
   if (url.includes('drive.google.com')) return url.replace(/\/view.*$/, '/preview');
@@ -31,8 +75,6 @@ const fmt = (dateStr) => {
   return d && m && y ? `${d}/${m}/${y}` : dateStr;
 };
 
-const getYear = (dateStr) => (dateStr ? dateStr.split('-')[0] : null);
-
 const renderLinks = (text) => {
   if (!text) return null;
   return text.split(/(https?:\/\/[^\s]+)/g).map((p, i) =>
@@ -43,19 +85,42 @@ const renderLinks = (text) => {
   );
 };
 
-// ─── Script status — quem tem a bola agora? ───────────────────────────────────
-const scriptStatus = (estadoRoteiro) => {
-  const s = (estadoRoteiro || '').trim();
-  if (!s || ['Não Iniciada', 'Nao Iniciada'].includes(s))
-    return { label: 'Em criação pela T3', color: 'text-slate-400', urgent: false, dot: 'bg-slate-300' };
-  if (s === 'Em Produção')
-    return { label: 'Em criação pela T3', color: 'text-slate-400', urgent: false, dot: 'bg-slate-300' };
-  if (['Aguardando Aprovação', 'Pendente'].includes(s))
-    return { label: 'Ação Necessária', color: 'text-orange-500', urgent: true,  dot: 'bg-orange-400' };
-  if (s === 'Ajuste Solicitado')
-    return { label: 'Ajuste em andamento', color: 'text-sky-500', urgent: false, dot: 'bg-sky-400' };
-  return { label: s, color: 'text-slate-400', urgent: false, dot: 'bg-slate-300' };
-};
+// ─── Responsabilidade do roteiro (quem precisa agir?) ─────────────────────────
+function getScriptStatus(estadoRoteiro) {
+  // normaliza para comparação segura
+  const raw = (estadoRoteiro || '').trim();
+  const s   = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  if (!s || s === 'pendente' && !raw) // nenhum valor
+    return { label: 'Em criação pela T3', color: 'text-slate-400', urgent: false };
+  if (['nao iniciada','nao iniciado'].includes(s))
+    return { label: 'Em criação pela T3', color: 'text-slate-400', urgent: false };
+  if (s === 'em producao' || s === 'em produção')
+    return { label: 'Em criação pela T3', color: 'text-slate-400', urgent: false };
+  if (['aguardando aprovacao','aguardado aprovacao','aguardando aprovação','aguardado aprovação','pendente'].includes(s))
+    return { label: 'Ação Necessária', color: 'text-orange-500', urgent: true };
+  if (s.includes('ajuste') || s.includes('alteracao') || s.includes('alteração'))
+    return { label: 'Ajuste em andamento', color: 'text-sky-500', urgent: false };
+  // fallback para qualquer valor desconhecido que não seja aprovado/concluído
+  return { label: raw, color: 'text-slate-400', urgent: false };
+}
+
+// Checa se um item de vídeo está aguardando aprovação (aceita variações ortográficas)
+function isAwaitingApproval(estado) {
+  const s = (estado || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return (
+    s.includes('aguardando') ||
+    s.includes('aguardado')  ||
+    s === 'pendente aprovacao' ||
+    (s.includes('aprovac') && s.includes('pendente'))
+  );
+}
+
+// Checa se item está "encerrado" (aprovado ou concluído)
+function isDone(val) {
+  const s = (val || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return s === 'aprovado' || s === 'concluido' || s === 'concluído';
+}
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function useToast() {
@@ -95,11 +160,11 @@ function Skeleton() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse mb-4">
       <div className="px-5 py-4 flex justify-between items-start">
-        <div className="space-y-2">
+        <div className="space-y-2 flex-1">
           <div className="h-5 w-48 bg-gray-200 rounded" />
           <div className="h-3 w-32 bg-gray-100 rounded" />
         </div>
-        <div className="h-4 w-28 bg-gray-100 rounded" />
+        <div className="h-4 w-28 bg-gray-100 rounded ml-4" />
       </div>
       <div className="px-4 pb-4 space-y-3">
         <div className="h-11 w-full bg-gray-100 rounded-xl" />
@@ -112,7 +177,7 @@ function Skeleton() {
   );
 }
 
-// ─── Card Header (shared) ─────────────────────────────────────────────────────
+// ─── Card header compartilhado ────────────────────────────────────────────────
 function CardHead({ nome, dataGravacao, categoria, statusLabel, statusColor }) {
   return (
     <div className="px-5 pt-5 pb-3 flex justify-between items-start gap-4">
@@ -134,7 +199,7 @@ function CardHead({ nome, dataGravacao, categoria, statusLabel, statusColor }) {
           )}
         </div>
       </div>
-      <span className={`shrink-0 text-[11px] font-black uppercase tracking-wider ${statusColor}`}>
+      <span className={`shrink-0 text-[11px] font-black uppercase tracking-wider leading-none mt-0.5 ${statusColor}`}>
         {statusLabel}
       </span>
     </div>
@@ -150,8 +215,8 @@ function Roteiro({ roteiro, label = 'Ver Roteiro' }) {
       <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50
-          border border-gray-200 rounded-xl text-sm text-gray-600
+        className="w-full flex items-center justify-between px-4 py-3
+          bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600
           hover:bg-gray-100 hover:border-gray-300 cursor-pointer
           transition-all duration-150
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
@@ -174,7 +239,7 @@ function Roteiro({ roteiro, label = 'Ver Roteiro' }) {
   );
 }
 
-// ─── Media grid (shared between Revisão e Downloads) ─────────────────────────
+// ─── Grid de mídia compartilhado ──────────────────────────────────────────────
 function MediaGrid({ item, showDownload = false }) {
   const embedUrl  = getEmbedUrl(item.linkFicheiro);
   const hasCovers = item.linkCapa || item.linkCapa2;
@@ -200,7 +265,8 @@ function MediaGrid({ item, showDownload = false }) {
             className="flex items-center justify-center py-3 rounded-xl cursor-pointer
               bg-green-500 hover:bg-green-600 text-white
               text-sm font-black uppercase tracking-widest
-              active:scale-[0.98] transition-all duration-150">
+              active:scale-[0.98] transition-all duration-150
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
             BAIXAR
           </a>
         )}
@@ -259,7 +325,7 @@ function MediaGrid({ item, showDownload = false }) {
   );
 }
 
-// ─── Botões de ação reutilizáveis ─────────────────────────────────────────────
+// ─── Botões de ação (aprovação + feedback) ────────────────────────────────────
 function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
   const [showForm, setShowForm] = useState(false);
   const [text,     setText]     = useState('');
@@ -274,15 +340,15 @@ function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
   if (showForm) return (
     <div className="flex flex-col gap-3">
       <textarea
-        autoFocus rows={4} value={text} onChange={e => setText(e.target.value)}
+        autoFocus rows={4} value={text}
+        onChange={e => setText(e.target.value)}
         placeholder="Descreva detalhadamente o que precisa ser alterado..."
         className="w-full border-2 border-gray-200 rounded-xl p-4 text-sm text-gray-700
           placeholder-gray-300 font-medium resize-none
           focus:outline-none focus:border-orange-300 transition-colors duration-150"
       />
       <div className="flex gap-3">
-        <button
-          onClick={doReject} disabled={!text.trim() || submitting}
+        <button onClick={doReject} disabled={!text.trim() || submitting}
           className="flex-1 flex items-center justify-center gap-2 min-h-[44px] py-3 rounded-xl
             cursor-pointer bg-[#0d2440] hover:bg-[#0f2d52] text-white
             text-sm font-black uppercase tracking-widest
@@ -291,8 +357,7 @@ function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           Enviar
         </button>
-        <button
-          onClick={() => { setShowForm(false); setText(''); }}
+        <button onClick={() => { setShowForm(false); setText(''); }}
           className="flex-1 flex items-center justify-center min-h-[44px] py-3 rounded-xl
             cursor-pointer border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
             text-sm font-black uppercase tracking-widest
@@ -306,11 +371,11 @@ function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
 
   return (
     <div className="flex gap-3">
-      <button
-        onClick={onApprove} disabled={submitting}
+      <button onClick={onApprove} disabled={submitting}
         className="flex-1 flex items-center justify-center gap-2 min-h-[44px] py-3 rounded-xl
           cursor-pointer bg-green-500 hover:bg-green-600 text-white
-          text-sm font-black uppercase tracking-widest shadow-[0_4px_20px_rgba(34,197,94,0.3)]
+          text-sm font-black uppercase tracking-widest
+          shadow-[0_4px_20px_rgba(34,197,94,0.3)]
           active:scale-[0.98] transition-all duration-150 disabled:opacity-60
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
         {submitting
@@ -318,8 +383,7 @@ function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
           : <Check    className="w-4 h-4" aria-hidden="true" />}
         {approveLabel}
       </button>
-      <button
-        onClick={() => setShowForm(true)} disabled={submitting}
+      <button onClick={() => setShowForm(true)} disabled={submitting}
         className="flex-1 flex items-center justify-center min-h-[44px] py-3 rounded-xl
           cursor-pointer border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-800
           text-sm font-black uppercase tracking-widest
@@ -331,159 +395,82 @@ function ActionButtons({ onApprove, onReject, approveLabel, submitting }) {
   );
 }
 
-// ─── ABA: APROVAÇÃO ───────────────────────────────────────────────────────────
-function ApprovalCard({ item, onApprove, onReject }) {
-  const st           = scriptStatus(item.estadoRoteiro);
-  const [busy, setBusy] = useState(false);
+// ─── Dropdown filtro (mês ou ano) ─────────────────────────────────────────────
+function FilterDropdown({ value, options, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const approve = async () => {
-    setBusy(true);
-    await onApprove('roteiro');
-    setBusy(false);
-  };
-  const reject = async (txt) => {
-    setBusy(true);
-    await onReject('roteiro', txt);
-    setBusy(false);
-  };
+  // Fecha ao clicar fora
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  return (
-    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
-      {/* Barra de urgência no topo */}
-      {st.urgent && (
-        <div className="h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
-      )}
-
-      <CardHead
-        nome={item.nome}
-        dataGravacao={item.dataGravacao}
-        categoria={item.categoria}
-        statusLabel={st.label}
-        statusColor={st.color}
-      />
-
-      <div className="px-5 pb-5">
-        {/* Roteiro — conteúdo principal desta aba */}
-        {item.roteiro
-          ? <Roteiro roteiro={item.roteiro} />
-          : (
-            <div className="mb-4 flex items-center gap-2.5 px-4 py-3.5
-              bg-slate-50 border border-slate-100 rounded-xl">
-              <Clock className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-              <p className="text-xs text-slate-400 font-semibold">
-                Roteiro sendo preparado pela equipe T3 Studio
-              </p>
-            </div>
-          )
-        }
-
-        {/* CTA — apenas quando é urgente (ação necessária do cliente) */}
-        {st.urgent && (
-          <ActionButtons
-            onApprove={approve}
-            onReject={reject}
-            approveLabel="Aprovar Roteiro"
-            submitting={busy}
-          />
-        )}
-
-        {/* Status informativo quando T3 tem a responsabilidade */}
-        {!st.urgent && (
-          <div className={`flex items-center gap-2.5 px-4 py-3.5 rounded-xl border text-xs font-semibold
-            ${item.estadoRoteiro === 'Ajuste Solicitado'
-              ? 'bg-sky-50 border-sky-100 text-sky-600'
-              : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-            {item.estadoRoteiro === 'Ajuste Solicitado'
-              ? (
-                <>
-                  <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  Sua sugestão foi recebida — a equipe T3 está revisando.
-                </>
-              ) : (
-                <>
-                  <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  A equipe T3 está escrevendo seu roteiro. Você será avisado quando estiver pronto para aprovação.
-                </>
-              )
-            }
-          </div>
-        )}
-      </div>
-    </article>
-  );
-}
-
-// ─── ABA: REVISÃO ─────────────────────────────────────────────────────────────
-function ReviewCard({ item, onApprove, onReject }) {
-  const [busy, setBusy] = useState(false);
-
-  const approve = async () => { setBusy(true); await onApprove('video'); setBusy(false); };
-  const reject  = async (txt) => { setBusy(true); await onReject('video', txt); setBusy(false); };
+  const active = value != null;
 
   return (
-    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
-      <div className="h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
-
-      <CardHead
-        nome={item.nome}
-        dataGravacao={item.dataGravacao}
-        categoria={item.categoria}
-        statusLabel="Ação Necessária"
-        statusColor="text-orange-500"
-      />
-
-      <MediaGrid item={item} showDownload={false} />
-
-      <div className="px-4 pb-5">
-        <ActionButtons
-          onApprove={approve}
-          onReject={reject}
-          approveLabel="Aprovar Vídeo"
-          submitting={busy}
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-full border
+          text-sm font-bold whitespace-nowrap cursor-pointer
+          transition-all duration-150 min-h-[40px]
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+          ${active
+            ? 'bg-[#0d2440] text-white border-[#0d2440] focus-visible:ring-[#0d2440]'
+            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-800 focus-visible:ring-gray-400'
+          }`}
+      >
+        <span>{value ?? placeholder}</span>
+        <ChevronDown
+          className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
         />
-      </div>
-    </article>
-  );
-}
+      </button>
 
-// ─── ABA: DOWNLOADS ───────────────────────────────────────────────────────────
-function DownloadCard({ item }) {
-  const isDone = item.estado === 'Concluído';
-  return (
-    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
-      <CardHead
-        nome={item.nome}
-        dataGravacao={item.dataGravacao}
-        categoria={item.categoria}
-        statusLabel={isDone ? 'Concluído' : 'Aprovado'}
-        statusColor="text-green-500"
-      />
-      <MediaGrid item={item} showDownload={true} />
-      {/* Roteiro do projeto — apenas se aprovado */}
-      {item.roteiro && ['Aprovado', 'Concluído'].includes(item.estadoRoteiro) && (
-        <div className="px-4 pb-5">
-          <Roteiro roteiro={item.roteiro} label="Ver Roteiro do Projeto" />
+      {open && (
+        <div
+          role="listbox"
+          className="absolute top-full mt-1.5 left-0 z-50 bg-white rounded-2xl
+            shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100
+            py-1.5 min-w-[150px] max-h-60 overflow-y-auto"
+        >
+          {/* Opção limpar — só aparece se há seleção */}
+          {active && (
+            <button
+              role="option"
+              aria-selected={false}
+              onClick={() => { onChange(null); setOpen(false); }}
+              className="w-full px-4 py-2.5 text-left text-xs text-gray-400 font-bold uppercase
+                tracking-widest hover:bg-gray-50 transition-colors duration-100 cursor-pointer
+                border-b border-gray-100 mb-1"
+            >
+              Limpar seleção
+            </button>
+          )}
+          {options.map(opt => (
+            <button
+              key={opt}
+              role="option"
+              aria-selected={value === opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={`w-full px-4 py-2.5 text-left text-sm transition-colors duration-100
+                cursor-pointer hover:bg-gray-50
+                ${value === opt
+                  ? 'font-black text-[#0d2440] bg-gray-50'
+                  : 'font-medium text-gray-700'}`}
+            >
+              {opt}
+            </button>
+          ))}
         </div>
       )}
-    </article>
-  );
-}
-
-// ─── Filter pill ──────────────────────────────────────────────────────────────
-function Pill({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest
-        min-h-[36px] cursor-pointer whitespace-nowrap border transition-all duration-150
-        focus-visible:outline-none focus-visible:ring-2
-        ${active
-          ? 'bg-[#0d2440] text-white border-[#0d2440] shadow-md focus-visible:ring-white/30'
-          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700 focus-visible:ring-gray-300'
-        }`}
-    >
-      {children}
-    </button>
+    </div>
   );
 }
 
@@ -497,9 +484,123 @@ function Empty({ icon: Icon, title, sub }) {
       </div>
       <div>
         <p className="text-base font-bold text-white/50">{title}</p>
-        <p className="text-sm text-white/25 mt-1">{sub}</p>
+        <p className="text-sm text-white/25 mt-1 max-w-xs mx-auto">{sub}</p>
       </div>
     </div>
+  );
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+
+function ApprovalCard({ item, onApprove, onReject }) {
+  const st           = getScriptStatus(item.estadoRoteiro);
+  const [busy, setBusy] = useState(false);
+
+  const approve = async () => { setBusy(true); await onApprove('roteiro'); setBusy(false); };
+  const reject  = async (txt) => { setBusy(true); await onReject('roteiro', txt); setBusy(false); };
+
+  return (
+    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
+      {st.urgent && (
+        <div className="h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
+      )}
+      <CardHead
+        nome={item.nome}
+        dataGravacao={item.dataGravacao}
+        categoria={item.categoria}
+        statusLabel={st.label}
+        statusColor={st.color}
+      />
+      <div className="px-5 pb-5">
+        {item.roteiro
+          ? <Roteiro roteiro={item.roteiro} />
+          : (
+            <div className="mb-4 flex items-center gap-2.5 px-4 py-3.5
+              bg-slate-50 border border-slate-100 rounded-xl">
+              <Clock className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+              <p className="text-xs text-slate-400 font-semibold">
+                Roteiro sendo preparado pela equipe T3 Studio
+              </p>
+            </div>
+          )
+        }
+
+        {st.urgent && (
+          <ActionButtons
+            onApprove={approve}
+            onReject={reject}
+            approveLabel="Aprovar Roteiro"
+            submitting={busy}
+          />
+        )}
+
+        {!st.urgent && (
+          <div className={`flex items-center gap-2.5 px-4 py-3.5 rounded-xl border text-xs font-semibold
+            ${item.estadoRoteiro === 'Ajuste Solicitado'
+              ? 'bg-sky-50 border-sky-100 text-sky-600'
+              : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+            {item.estadoRoteiro === 'Ajuste Solicitado'
+              ? <><AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Sua sugestão foi recebida — a equipe T3 está revisando.</>
+              : <><Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  A equipe T3 está escrevendo seu roteiro. Você será avisado quando estiver pronto.</>
+            }
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function ReviewCard({ item, onApprove, onReject }) {
+  const [busy, setBusy] = useState(false);
+  const approve = async () => { setBusy(true); await onApprove('video'); setBusy(false); };
+  const reject  = async (txt) => { setBusy(true); await onReject('video', txt); setBusy(false); };
+
+  return (
+    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
+      <div className="h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
+      <CardHead
+        nome={item.nome}
+        dataGravacao={item.dataGravacao}
+        categoria={item.categoria}
+        statusLabel="Ação Necessária"
+        statusColor="text-orange-500"
+      />
+      <MediaGrid item={item} showDownload={false} />
+      <div className="px-4 pb-5">
+        <ActionButtons
+          onApprove={approve}
+          onReject={reject}
+          approveLabel="Aprovar Vídeo"
+          submitting={busy}
+        />
+      </div>
+    </article>
+  );
+}
+
+function DownloadCard({ item }) {
+  const label = isDone(item.estado) && item.estado.toLowerCase().includes('conclu')
+    ? 'Concluído' : 'Aprovado';
+
+  return (
+    <article className="bg-white rounded-2xl overflow-hidden shadow-sm">
+      <CardHead
+        nome={item.nome}
+        dataGravacao={item.dataGravacao}
+        categoria={item.categoria}
+        statusLabel={label}
+        statusColor="text-green-500"
+      />
+      <MediaGrid item={item} showDownload={true} />
+      {/* Roteiro — sempre exibido se existir */}
+      {item.roteiro && (
+        <div className="px-4 pb-5">
+          <Roteiro roteiro={item.roteiro} label="Ver Roteiro do Projeto" />
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -512,8 +613,9 @@ export default function Home() {
   const [contents, setContents] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [noId,     setNoId]     = useState(false);
-  const [month,    setMonth]    = useState(null);   // filtro Downloads
-  const [year,     setYear]     = useState(null);   // filtro Downloads
+  // Filtros Downloads
+  const [selMonth, setSelMonth] = useState(null);
+  const [selYear,  setSelYear]  = useState(null);
   const { toasts, add } = useToast();
 
   useEffect(() => {
@@ -536,7 +638,7 @@ export default function Home() {
     if (res.ok) {
       const key = target === 'roteiro' ? 'estadoRoteiro' : 'estado';
       setContents(p => p.map(c => c.id === itemId ? { ...c, [key]: 'Aprovado' } : c));
-      add(target === 'roteiro' ? 'Roteiro aprovado com sucesso!' : 'Vídeo aprovado!', 'success');
+      add(target === 'roteiro' ? 'Roteiro aprovado!' : 'Vídeo aprovado!', 'success');
     } else add('Erro ao aprovar. Tente novamente.', 'error');
   };
 
@@ -554,37 +656,55 @@ export default function Home() {
     } else add('Erro ao enviar. Tente novamente.', 'error');
   };
 
-  // ── Tab data ──
+  // ── Dados das abas ──────────────────────────────────────────────────────────
 
-  // APROVAÇÃO: roteiros ainda não aprovados (ocultar aprovados/concluídos)
-  const approvalItems = contents.filter(item =>
-    !['Aprovado', 'Concluído'].includes(item.estadoRoteiro || '')
-  );
+  // APROVAÇÃO: oculta roteiros aprovados/concluídos
+  // Também oculta se o projeto inteiro já foi concluído (estado geral)
+  const approvalItems = contents.filter(item => {
+    if (isDone(item.estadoRoteiro)) return false;       // roteiro já aprovado/concluído
+    if (isDone(item.estado) &&                         // projeto concluído E
+        item.estado.toLowerCase().normalize('NFD')
+          .replace(/[\u0300-\u036f]/g,'').includes('conclu')) return false;
+    return true;
+  });
 
-  // REVISÃO: apenas vídeos aguardando aprovação do cliente
+  // REVISÃO: aceita variações de "aguardando/aguardado aprovação" + tem mídia
   const reviewItems = contents.filter(item =>
-    item.estado === 'Aguardando Aprovação' &&
+    isAwaitingApproval(item.estado) &&
     (item.linkFicheiro || item.linkCapa || item.linkCapa2)
   );
 
-  // DOWNLOADS: aprovados/concluídos COM mídia
+  // DOWNLOADS: aprovados/concluídos com mídia
   const allApproved = contents.filter(item =>
-    ['Aprovado', 'Concluído'].includes(item.estado) &&
+    isDone(item.estado) &&
     (item.linkFicheiro || item.linkCapa || item.linkCapa2)
   );
 
-  // Filtros mês/ano para Downloads
-  const months = [...new Set(allApproved.map(i => i.mesRelativo).filter(Boolean))];
-  const years  = [...new Set(allApproved.map(i => getYear(i.dataGravacao)).filter(Boolean))].sort((a,b) => b-a);
+  // Parse mês/ano de cada item para os filtros
+  const parsedItems = allApproved.map(item => ({
+    ...item,
+    _parsed: parseMonthYear(item.mesRelativo, item.dataGravacao),
+  }));
 
-  const downloadItems = allApproved.filter(i => {
-    const mOk = !month || i.mesRelativo === month;
-    const yOk = !year  || getYear(i.dataGravacao) === year;
+  // Lista de meses disponíveis (ordem calendário)
+  const availMonths = MONTH_ORDER.filter(m =>
+    parsedItems.some(i => i._parsed.month === m)
+  );
+
+  // Lista de anos disponíveis (mais recente primeiro)
+  const availYears = [...new Set(
+    parsedItems.map(i => i._parsed.year).filter(Boolean)
+  )].sort((a, b) => Number(b) - Number(a));
+
+  // Aplicar filtro
+  const downloadItems = parsedItems.filter(item => {
+    const mOk = !selMonth || item._parsed.month === selMonth;
+    const yOk = !selYear  || item._parsed.year  === selYear;
     return mOk && yOk;
   });
 
-  // Badges de urgência
-  const approvalBadge = approvalItems.filter(i => scriptStatus(i.estadoRoteiro).urgent).length;
+  // Badges urgência
+  const approvalBadge = approvalItems.filter(i => getScriptStatus(i.estadoRoteiro).urgent).length;
   const reviewBadge   = reviewItems.length;
 
   const TABS = [
@@ -593,9 +713,9 @@ export default function Home() {
     { key: 'downloads', label: 'Downloads', badge: 0             },
   ];
 
-  // ── Link inválido ──
+  // ── Sem ID ──
   if (noId) return (
-    <div className={`min-h-screen bg-[${NAVY}] flex flex-col items-center justify-center px-6 ${plusJakarta.className}`}
+    <div className={`min-h-screen flex flex-col items-center justify-center px-6 ${plusJakarta.className}`}
       style={{ background: NAVY }}>
       <Head>
         <title>T3 Studio | Portal do Cliente</title>
@@ -644,11 +764,10 @@ export default function Home() {
         <meta name="theme-color" content={NAVY} />
       </Head>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl border-b border-white/5"
         style={{ background: `${NAVY}f2` }}>
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          {/* Hamburger */}
           <button aria-label="Menu"
             className="w-10 h-10 flex flex-col gap-[5px] items-start justify-center
               opacity-60 hover:opacity-100 transition-opacity cursor-pointer
@@ -658,17 +777,13 @@ export default function Home() {
             <span className="w-3.5 h-[2px] bg-white rounded-full" />
           </button>
 
-          {/* Logo */}
           <div className="text-center select-none">
-            <p className="text-[17px] font-black text-white uppercase tracking-[0.22em]">
-              T3 STUDIO
-            </p>
+            <p className="text-[17px] font-black text-white uppercase tracking-[0.22em]">T3 STUDIO</p>
             <p className="text-[9px] font-bold text-white/35 uppercase tracking-[0.28em] mt-0.5">
               Portal do Cliente
             </p>
           </div>
 
-          {/* Dots */}
           <button aria-label="Mais opções"
             className="w-10 h-10 flex items-center justify-center
               opacity-60 hover:opacity-100 transition-opacity cursor-pointer
@@ -678,24 +793,19 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── Tabs ── */}
-      <nav
-        className="sticky top-[65px] z-40 backdrop-blur-xl border-b border-white/5"
+      {/* Tabs */}
+      <nav className="sticky top-[65px] z-40 backdrop-blur-xl border-b border-white/5"
         style={{ background: `${NAVY}f2` }}
-        role="tablist"
-        aria-label="Seções do portal"
-      >
+        role="tablist" aria-label="Seções do portal">
         <div className="max-w-3xl mx-auto flex">
           {TABS.map(({ key, label, badge }) => (
-            <button
-              key={key}
-              role="tab"
+            <button key={key} role="tab"
               aria-selected={tab === key}
               aria-controls={`panel-${key}`}
               id={`tab-${key}`}
               onClick={() => setTab(key)}
               className={`relative flex-1 py-4 min-h-[52px] text-xs font-black uppercase
-                tracking-[0.18em] border-b-2 cursor-pointer
+                tracking-[0.15em] border-b-2 cursor-pointer
                 flex items-center justify-center gap-2 transition-all duration-150
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30
                 ${tab === key
@@ -715,7 +825,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ── Conteúdo ── */}
+      {/* Conteúdo */}
       <main className="max-w-3xl mx-auto px-4 pt-5 pb-24">
 
         {/* APROVAÇÃO */}
@@ -725,11 +835,9 @@ export default function Home() {
             <div className="space-y-4">
               {approvalItems.length > 0
                 ? approvalItems.map(item => (
-                    <ApprovalCard
-                      key={item.id} item={item}
+                    <ApprovalCard key={item.id} item={item}
                       onApprove={t => approve(item.id, t)}
-                      onReject={(t, txt) => reject(item.id, t, txt)}
-                    />
+                      onReject={(t, txt) => reject(item.id, t, txt)} />
                   ))
                 : <Empty icon={FileText}
                     title="Nenhum roteiro pendente"
@@ -746,11 +854,9 @@ export default function Home() {
             <div className="space-y-4">
               {reviewItems.length > 0
                 ? reviewItems.map(item => (
-                    <ReviewCard
-                      key={item.id} item={item}
+                    <ReviewCard key={item.id} item={item}
                       onApprove={t => approve(item.id, t)}
-                      onReject={(t, txt) => reject(item.id, t, txt)}
-                    />
+                      onReject={(t, txt) => reject(item.id, t, txt)} />
                   ))
                 : <Empty icon={Film}
                     title="Nenhum vídeo aguardando revisão"
@@ -765,26 +871,25 @@ export default function Home() {
           hidden={tab !== 'downloads'}>
           {tab === 'downloads' && (
             <>
-              {/* Filtros mês / ano */}
-              {(months.length > 0 || years.length > 0) && (
-                <div className="flex flex-wrap gap-2 mb-5" role="group" aria-label="Filtrar por período">
-                  {months.map(m => (
-                    <Pill key={m} active={month === m} onClick={() => setMonth(month === m ? null : m)}>
-                      {m}
-                    </Pill>
-                  ))}
-                  {years.map(y => (
-                    <Pill key={y} active={year === y} onClick={() => setYear(year === y ? null : y)}>
-                      {y}
-                    </Pill>
-                  ))}
-                  {(month || year) && (
-                    <button
-                      onClick={() => { setMonth(null); setYear(null); }}
-                      className="px-3 py-2 rounded-full text-xs text-white/40 hover:text-white/70
-                        cursor-pointer transition-colors duration-150 underline underline-offset-2">
-                      limpar filtro
-                    </button>
+              {/* Filtros de período */}
+              {(availMonths.length > 0 || availYears.length > 0) && (
+                <div className="flex items-center gap-3 mb-5 flex-wrap"
+                  role="group" aria-label="Filtrar por período">
+                  {availMonths.length > 0 && (
+                    <FilterDropdown
+                      value={selMonth}
+                      options={availMonths}
+                      onChange={setSelMonth}
+                      placeholder="Selecione um mês"
+                    />
+                  )}
+                  {availYears.length > 0 && (
+                    <FilterDropdown
+                      value={selYear}
+                      options={availYears}
+                      onChange={setSelYear}
+                      placeholder="Selecione um ano"
+                    />
                   )}
                 </div>
               )}
@@ -793,9 +898,11 @@ export default function Home() {
                 {downloadItems.length > 0
                   ? downloadItems.map(item => <DownloadCard key={item.id} item={item} />)
                   : <Empty icon={Download}
-                      title={month || year ? 'Nenhum vídeo neste período' : 'Nenhum vídeo aprovado ainda'}
-                      sub={month || year
-                        ? 'Remova o filtro para ver todos os vídeos aprovados.'
+                      title={selMonth || selYear
+                        ? 'Nenhum vídeo neste período'
+                        : 'Nenhum vídeo aprovado ainda'}
+                      sub={selMonth || selYear
+                        ? 'Selecione outro período ou remova os filtros.'
                         : 'Vídeos aprovados aparecerão aqui para download.'} />
                 }
               </div>
