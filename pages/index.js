@@ -717,17 +717,28 @@ export default function Home() {
   const [activeTab,     setActiveTab]     = useState('planning');
   const [contents,      setContents]      = useState([]);
   const [loading,       setLoading]       = useState(true);
+  const [noId,          setNoId]          = useState(false);
   const [roteiroFilter, setRoteiroFilter] = useState('Todos');
   const [videoFilter,   setVideoFilter]   = useState('Todos');
   const { toasts, addToast } = useToast();
 
   useEffect(() => {
-    if (!id) return;
+    // Aguarda o router do Next.js terminar de hidratar a query string
+    if (!router.isReady) return;
+
+    // URL sem ?id= — exibe mensagem em vez de ficar no skeleton infinito
+    if (!id) {
+      setNoId(true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     fetch(`/api/contents?id=${id}`)
       .then(r => r.json())
       .then(data => { setContents(data.contents || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [id]);
+  }, [router.isReady, id]);
 
   const handleApprove = async (itemId, target) => {
     const res = await fetch('/api/approve', {
@@ -797,6 +808,33 @@ export default function Home() {
     { key: 'downloads', label: 'Vídeos',         icon: Film,        badge: pendingVideos  },
     { key: 'calendar',  label: 'Planejamento',   icon: FolderKanban, badge: 0 },
   ];
+
+  // ── Sem ID na URL ──
+  if (noId) {
+    return (
+      <div className={`min-h-screen bg-[#03090F] flex flex-col items-center justify-center px-6 ${plusJakarta.className}`}>
+        <Head>
+          <title>T3 Studio | Portal do Cliente</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+          <meta name="theme-color" content="#03090F" />
+        </Head>
+        <div className="text-center max-w-sm">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <span className="text-2xl font-black text-white tracking-tight">T3</span>
+            <span className="w-2 h-2 rounded-full bg-[#00D670]" aria-hidden="true" />
+            <span className="text-slate-400 font-light text-lg">Studio</span>
+          </div>
+          <div className="w-16 h-16 rounded-2xl bg-[#0A1622] border border-[#15283A] flex items-center justify-center mx-auto mb-6">
+            <FileText className="w-8 h-8 text-slate-700" aria-hidden="true" />
+          </div>
+          <h1 className="text-lg font-bold text-white mb-2">Link inválido</h1>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Este link não contém um ID de cliente. Por favor, acesse o portal através do link fornecido pela T3 Studio.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Loading state ──
   if (loading) {
