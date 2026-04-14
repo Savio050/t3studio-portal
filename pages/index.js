@@ -658,15 +658,10 @@ export default function Home() {
 
   // ── Dados das abas ──────────────────────────────────────────────────────────
 
-  // APROVAÇÃO: oculta roteiros aprovados/concluídos
-  // Também oculta se o projeto inteiro já foi concluído (estado geral)
-  const approvalItems = contents.filter(item => {
-    if (isDone(item.estadoRoteiro)) return false;       // roteiro já aprovado/concluído
-    if (isDone(item.estado) &&                         // projeto concluído E
-        item.estado.toLowerCase().normalize('NFD')
-          .replace(/[\u0300-\u036f]/g,'').includes('conclu')) return false;
-    return true;
-  });
+  // APROVAÇÃO: exibe APENAS roteiros com EstadoRoteiro = "Aguardando Aprovação"
+  const approvalItems = contents.filter(item =>
+    isAwaitingApproval(item.estadoRoteiro)
+  );
 
   // REVISÃO: aceita variações de "aguardando/aguardado aprovação" + tem mídia
   const reviewItems = contents.filter(item =>
