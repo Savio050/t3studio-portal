@@ -275,7 +275,7 @@ Data atual: ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'n
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash-preview-05-20',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
       systemInstruction: systemPrompt,
     });
@@ -317,7 +317,7 @@ Data atual: ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'n
 
     return res.status(200).json({ reply: result.response.text(), actions });
   } catch (err) {
-    console.error('Assistant error:', err);
-    return res.status(500).json({ error: 'Falha ao processar mensagem', details: err.message });
+    console.error('Assistant error:', err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Falha ao processar mensagem' });
   }
 }
