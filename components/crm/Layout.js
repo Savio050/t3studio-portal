@@ -5,18 +5,46 @@ import Head from 'next/head';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
   ExternalLink, Menu, X, ChevronRight, Bell,
-  Sparkles,
+  Sparkles, Bot,
 } from 'lucide-react';
 
 const NAV = [
-  { href: '/dashboard',            icon: LayoutDashboard, label: 'Dashboard'  },
-  { href: '/dashboard/tarefas',    icon: CheckSquare,     label: 'Tarefas'    },
-  { href: '/dashboard/conteudo',   icon: Film,            label: 'Conteúdo'   },
-  { href: '/dashboard/clientes',   icon: Users,           label: 'Clientes'   },
-  { href: '/dashboard/calendario', icon: Calendar,        label: 'Calendário' },
+  { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'  },
+  { href: '/dashboard/tarefas',     icon: CheckSquare,     label: 'Tarefas'    },
+  { href: '/dashboard/conteudo',    icon: Film,            label: 'Conteúdo'   },
+  { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
+  { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
+  { href: '/dashboard/assistente',  icon: Bot,             label: 'Assistente', highlight: true },
 ];
 
-function NavItem({ href, icon: Icon, label, active, onClick }) {
+function NavItem({ href, icon: Icon, label, active, onClick, highlight }) {
+  if (highlight) {
+    return (
+      <Link href={href} onClick={onClick}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold
+          transition-all duration-150 cursor-pointer select-none"
+        style={{
+          background: active
+            ? 'linear-gradient(135deg, rgba(124,58,237,0.3), rgba(8,145,178,0.2))'
+            : 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(8,145,178,0.08))',
+          border: active
+            ? '1px solid rgba(124,58,237,0.4)'
+            : '1px solid rgba(124,58,237,0.2)',
+          color: active ? 'white' : 'rgba(167,139,250,0.85)',
+          boxShadow: active ? '0 0 20px rgba(124,58,237,0.2)' : 'none',
+        }}>
+        <Icon className="w-4 h-4 shrink-0 text-violet-400"/>
+        <span>{label}</span>
+        {active
+          ? <ChevronRight className="w-3 h-3 ml-auto text-violet-400/60"/>
+          : <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{background:'rgba(124,58,237,0.25)',color:'#a78bfa',border:'1px solid rgba(124,58,237,0.3)'}}>
+              IA
+            </span>
+        }
+      </Link>
+    );
+  }
   return (
     <Link href={href} onClick={onClick}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
@@ -32,13 +60,13 @@ function NavItem({ href, icon: Icon, label, active, onClick }) {
   );
 }
 
-function MobileNavItem({ href, icon: Icon, label, active }) {
+function MobileNavItem({ href, icon: Icon, label, active, highlight }) {
   return (
     <Link href={href}
       className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] font-semibold
-        transition-all duration-150 cursor-pointer select-none min-w-[56px]
-        ${active ? 'text-violet-400' : 'text-white/40 hover:text-white/70'}`}>
-      <Icon className={`w-5 h-5 ${active ? 'text-violet-400' : ''}`} />
+        transition-all duration-150 cursor-pointer select-none min-w-[52px]
+        ${active ? 'text-violet-400' : highlight ? 'text-violet-400/70' : 'text-white/40 hover:text-white/70'}`}>
+      <Icon className={`w-5 h-5 ${active ? 'text-violet-400' : highlight ? 'text-violet-400/70' : ''}`} />
       {label}
     </Link>
   );
@@ -230,7 +258,7 @@ export default function CRMLayout({ children, title = 'T3 Studio CRM' }) {
             paddingBottom: '12px',
           }}>
           {NAV.map(item => (
-            <MobileNavItem key={item.href} {...item} active={isActive(item.href)} />
+            <MobileNavItem key={item.href} {...item} active={isActive(item.href)} highlight={item.highlight} />
           ))}
         </nav>
       </div>
