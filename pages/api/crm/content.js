@@ -88,19 +88,24 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── PATCH: update estado or estadoRoteiro ─────────────────────────────────────
+  // ── PATCH: update any editable field ─────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro, postagem, responsavel } = req.body || {};
+    const {
+      id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
+      postagem, responsavel, nome, roteiro,
+    } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
     try {
       const properties = {};
-      if (estado)          properties['Estado']              = { select: { name: estado } };
-      if (estadoRoteiro)   properties['EstadoRoteiro']       = { status: { name: estadoRoteiro } };
-      if (feedbackCliente) properties['Feedback do Cliente'] = { rich_text: [{ text: { content: feedbackCliente } }] };
-      if (feedbackRoteiro) properties['Feedback do Roteiro'] = { rich_text: [{ text: { content: feedbackRoteiro } }] };
-      if (postagem)        properties['Postagem']            = { date: { start: postagem } };
-      if (responsavel)     properties['responsável']         = { select: { name: responsavel } };
+      if (estado)                    properties['Estado']              = { select: { name: estado } };
+      if (estadoRoteiro)             properties['EstadoRoteiro']       = { status: { name: estadoRoteiro } };
+      if (feedbackCliente)           properties['Feedback do Cliente'] = { rich_text: [{ text: { content: feedbackCliente } }] };
+      if (feedbackRoteiro)           properties['Feedback do Roteiro'] = { rich_text: [{ text: { content: feedbackRoteiro } }] };
+      if (postagem)                  properties['Postagem']            = { date: { start: postagem } };
+      if (responsavel)               properties['responsável']         = { select: { name: responsavel } };
+      if (nome?.trim())              properties['Nome']                = { title: [{ text: { content: nome.trim() } }] };
+      if (roteiro !== undefined)     properties['Roteiro']             = { rich_text: [{ text: { content: roteiro } }] };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });
