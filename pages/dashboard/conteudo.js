@@ -4,6 +4,7 @@ import {
   Film, ChevronDown, X, Edit3, Loader2, Clock, User,
   AlertTriangle, LayoutGrid, User2, CalendarDays,
   ChevronLeft, ChevronRight, Save, PenLine, CheckCircle2,
+  Plus, Trash2,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -235,14 +236,251 @@ function ContentCard({ item, onUpdate, onEdit }) {
   );
 }
 
+const FORMATOS = ['Reels', 'Carrossel', 'Stories', 'Post', 'Vídeo', 'TikTok', 'YouTube'];
+
+// ── New Content Modal ─────────────────────────────────────────────────────────
+function NewContentModal({ onClose, onCreate }) {
+  const [nome,         setNome]         = useState('');
+  const [cliente,      setCliente]      = useState('');
+  const [formato,      setFormato]      = useState('');
+  const [responsavel,  setResponsavel]  = useState('');
+  const [postagem,     setPostagem]     = useState('');
+  const [dataGravacao, setDataGravacao] = useState('');
+  const [saving,       setSaving]       = useState(false);
+  const [error,        setError]        = useState('');
+
+  const canSave = nome.trim().length > 0;
+
+  const submit = async () => {
+    if (!canSave || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch('/api/crm/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, cliente, formato, responsavel, postagem: postagem||undefined, dataGravacao: dataGravacao||undefined }),
+      });
+      if (!res.ok) throw new Error('Erro ao criar');
+      const { content } = await res.json();
+      onCreate(content);
+      onClose();
+    } catch {
+      setError('Não foi possível criar o conteúdo. Tente novamente.');
+      setSaving(false);
+    }
+  };
+
+  const memberColors = {
+    'Matheus': { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
+    'Sávio':   { bg:'rgba(16,185,129,0.2)',  text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative w-full max-w-lg rounded-2xl flex flex-col overflow-hidden"
+        style={{
+          background:'rgba(9,16,30,0.98)',
+          backdropFilter:'blur(32px)',
+          border:'1px solid rgba(255,255,255,0.1)',
+          boxShadow:'0 40px 80px rgba(0,0,0,0.6)',
+          maxHeight:'90vh',
+        }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{borderColor:'rgba(255,255,255,0.07)'}}>
+          <div>
+            <p className="text-[10px] text-white/30 font-semibold uppercase tracking-widest mb-0.5">Novo conteúdo</p>
+            <p className="text-base font-bold text-white font-display">Adicionar à esteira</p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-xl
+              text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150 cursor-pointer">
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Nome */}
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+              Nome do conteúdo <span className="text-rose-400">*</span>
+            </label>
+            <input
+              autoFocus
+              type="text"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submit()}
+              placeholder="Ex: Vídeo de lançamento novembro"
+              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-white/20
+                outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/40"
+              style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)'}}
+            />
+          </div>
+
+          {/* Cliente */}
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+              Projeto / Cliente
+            </label>
+            <div className="flex gap-2">
+              {CLIENTS.map(c => {
+                const cc = CLIENT_COLORS[c] || {};
+                const active = cliente === c;
+                return (
+                  <button key={c} type="button"
+                    onClick={() => setCliente(active ? '' : c)}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all duration-150"
+                    style={{
+                      background: active ? cc.bg : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${active ? cc.border : 'rgba(255,255,255,0.08)'}`,
+                      color: active ? cc.text : 'rgba(255,255,255,0.35)',
+                    }}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Formato */}
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+              Formato
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {FORMATOS.map(f => {
+                const active = formato === f;
+                return (
+                  <button key={f} type="button"
+                    onClick={() => setFormato(active ? '' : f)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-150"
+                    style={{
+                      background: active ? 'rgba(14,165,233,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${active ? 'rgba(14,165,233,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      color: active ? '#38bdf8' : 'rgba(255,255,255,0.35)',
+                    }}>
+                    {f}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Responsável */}
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+              Responsável
+            </label>
+            <div className="flex gap-2">
+              {MEMBERS.map(m => {
+                const c = memberColors[m] || {};
+                const active = responsavel === m;
+                return (
+                  <button key={m} type="button"
+                    onClick={() => setResponsavel(active ? '' : m)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
+                    style={{
+                      background: active ? c.bg : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.08)'}`,
+                      color: active ? c.text : 'rgba(255,255,255,0.35)',
+                    }}>
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Datas */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+                Data de gravação
+              </label>
+              <input
+                type="date"
+                value={dataGravacao}
+                onChange={e => setDataGravacao(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/80
+                  outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/30"
+                style={{
+                  background:'rgba(255,255,255,0.05)',
+                  border:'1px solid rgba(255,255,255,0.08)',
+                  colorScheme:'dark',
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+                Data de postagem
+              </label>
+              <input
+                type="date"
+                value={postagem}
+                onChange={e => setPostagem(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/80
+                  outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/30"
+                style={{
+                  background:'rgba(255,255,255,0.05)',
+                  border:'1px solid rgba(255,255,255,0.08)',
+                  colorScheme:'dark',
+                }}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-xs text-rose-400 font-medium px-3 py-2 rounded-xl"
+              style={{background:'rgba(244,63,94,0.1)',border:'1px solid rgba(244,63,94,0.2)'}}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t flex gap-3"
+          style={{borderColor:'rgba(255,255,255,0.07)'}}>
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl text-sm font-bold cursor-pointer transition-all duration-150
+              text-white/40 hover:text-white/70 hover:bg-white/[0.05]"
+            style={{border:'1px solid rgba(255,255,255,0.08)'}}>
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={!canSave || saving}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+              text-sm font-bold text-white cursor-pointer transition-all duration-200
+              disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
+            style={{background:'linear-gradient(135deg, #7c3aed, #5b21b6)'}}>
+            {saving
+              ? <Loader2 className="w-4 h-4 animate-spin"/>
+              : <Plus className="w-4 h-4"/>
+            }
+            {saving ? 'Criando…' : 'Criar conteúdo'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Edit Panel (slide-in) ─────────────────────────────────────────────────────
-function EditPanel({ item, onSave, onClose }) {
+function EditPanel({ item, onSave, onDelete, onClose }) {
   const [nome,          setNome]          = useState(item.nome);
   const [responsavel,   setResponsavel]   = useState(item.responsavel || '');
   const [estadoRoteiro, setEstadoRoteiro] = useState(item.estadoRoteiro || '');
   const [roteiro,       setRoteiro]       = useState(item.roteiro || '');
   const [saving,        setSaving]        = useState(false);
   const [saved,         setSaved]         = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting,      setDeleting]      = useState(false);
 
   const dirty = nome !== item.nome ||
     responsavel   !== (item.responsavel   || '') ||
@@ -256,6 +494,13 @@ function EditPanel({ item, onSave, onClose }) {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setDeleting(true);
+    await onDelete(item.id);
+    onClose();
   };
 
   const rsCur = ROTEIRO_STATES.find(s => nrm(s.value) === nrm(estadoRoteiro)) || ROTEIRO_STATES[0];
@@ -411,7 +656,7 @@ function EditPanel({ item, onSave, onClose }) {
         </div>
 
         {/* Save footer */}
-        <div className="px-5 py-4 border-t" style={{borderColor:'rgba(255,255,255,0.07)'}}>
+        <div className="px-5 py-4 border-t space-y-2" style={{borderColor:'rgba(255,255,255,0.07)'}}>
           <button
             onClick={save}
             disabled={!dirty || saving || !nome.trim()}
@@ -429,8 +674,28 @@ function EditPanel({ item, onSave, onClose }) {
             {saving ? 'Salvando…' : saved ? 'Salvo!' : 'Salvar alterações'}
           </button>
           {!dirty && (
-            <p className="text-center text-[10px] text-white/20 mt-2">Nenhuma alteração pendente</p>
+            <p className="text-center text-[10px] text-white/20">Nenhuma alteração pendente</p>
           )}
+
+          {/* Delete */}
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
+              text-xs font-bold cursor-pointer transition-all duration-200
+              disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
+            style={{
+              background: confirmDelete ? 'rgba(244,63,94,0.2)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${confirmDelete ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.07)'}`,
+              color: confirmDelete ? '#fb7185' : 'rgba(255,255,255,0.25)',
+            }}>
+            {deleting
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
+              : <Trash2 className="w-3.5 h-3.5"/>
+            }
+            {deleting ? 'Removendo…' : confirmDelete ? 'Confirmar exclusão' : 'Remover conteúdo'}
+          </button>
         </div>
       </div>
     </div>
@@ -593,6 +858,7 @@ export default function Conteudo() {
   const [memberView,    setMemberView]    = useState('geral');   // 'geral' | 'minhas'
   const [filterCliente, setFilterCliente] = useState('');
   const [editItem,      setEditItem]      = useState(null);
+  const [showNew,       setShowNew]       = useState(false);
   const [calMonth,      setCalMonth]      = useState(today.getMonth());
   const [calYear,       setCalYear]       = useState(today.getFullYear());
 
@@ -602,6 +868,21 @@ export default function Conteudo() {
       .then(r => r.json())
       .then(d => { setContent(d.content || []); setLoading(false); })
       .catch(() => setLoading(false));
+  }, []);
+
+  // Create a new content item
+  const createItem = useCallback((newContent) => {
+    setContent(prev => [newContent, ...prev]);
+  }, []);
+
+  // Delete (archive) a content item
+  const deleteItem = useCallback(async (id) => {
+    await fetch('/api/crm/content', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setContent(prev => prev.filter(c => c.id !== id));
   }, []);
 
   // Update any field(s) on a content item
@@ -678,6 +959,16 @@ export default function Conteudo() {
 
             {/* Controls row */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* New content button */}
+              <button
+                onClick={() => setShowNew(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold
+                  text-white cursor-pointer transition-all duration-150
+                  hover:brightness-110 active:scale-[0.97]"
+                style={{background:'linear-gradient(135deg, #7c3aed, #0e7490)', border:'1px solid rgba(124,58,237,0.4)'}}>
+                <Plus className="w-3.5 h-3.5"/>
+                <span className="hidden sm:inline">Novo</span>
+              </button>
               {/* Member toggle */}
               <div className="flex items-center rounded-xl p-1"
                 style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
@@ -794,7 +1085,16 @@ export default function Conteudo() {
         <EditPanel
           item={editItem}
           onSave={async (id, fields) => { await updateItem(id, fields); }}
+          onDelete={deleteItem}
           onClose={() => setEditItem(null)}
+        />
+      )}
+
+      {/* ── New Content Modal ── */}
+      {showNew && (
+        <NewContentModal
+          onClose={() => setShowNew(false)}
+          onCreate={createItem}
         />
       )}
     </CRMLayout>

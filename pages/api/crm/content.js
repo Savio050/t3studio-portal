@@ -59,6 +59,46 @@ function mapContent(page) {
 }
 
 export default async function handler(req, res) {
+  // ── POST: create new content item ─────────────────────────────────────────────
+  if (req.method === 'POST') {
+    const { nome, cliente, formato, responsavel, postagem, dataGravacao, mesRelativo } = req.body || {};
+    if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
+
+    try {
+      const properties = {
+        'Nome': { title: [{ text: { content: nome.trim() } }] },
+      };
+      if (cliente)       properties['Cliente']              = { select: { name: cliente } };
+      if (formato)       properties['Formato']              = { select: { name: formato } };
+      if (responsavel)   properties['responsável']          = { select: { name: responsavel } };
+      if (postagem)      properties['Postagem']             = { date: { start: postagem } };
+      if (dataGravacao)  properties['Data de Gravação']     = { date: { start: dataGravacao } };
+      if (mesRelativo)   properties['Relativo ao mês de']  = { rich_text: [{ text: { content: mesRelativo } }] };
+
+      const page = await notion.pages.create({
+        parent: { database_id: CONTENT_DB },
+        properties,
+      });
+      return res.status(201).json({ content: mapContent(page) });
+    } catch (err) {
+      console.error('Content POST error:', err);
+      return res.status(500).json({ error: 'Failed to create content' });
+    }
+  }
+
+  // ── DELETE: archive content item ──────────────────────────────────────────────
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
+    try {
+      await notion.pages.update({ page_id: id, archived: true });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Content DELETE error:', err);
+      return res.status(500).json({ error: 'Failed to delete content' });
+    }
+  }
+
   // ── GET ──────────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const { cliente, mes } = req.query;
