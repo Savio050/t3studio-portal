@@ -54,8 +54,9 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
   try {
+    // SECTORS_DB is optional — fall back gracefully if it's unavailable
     const [sectors, allContent] = await Promise.all([
-      queryAll(SECTORS_DB),
+      queryAll(SECTORS_DB).catch(() => []),
       queryAll(CONTENT_DB),
     ]);
 
