@@ -6,7 +6,7 @@ import {
   Calendar, FileText, Check, Film, Send,
   ChevronDown, ChevronUp, CheckCircle2, AlertCircle,
   Loader2, MoreHorizontal, AlertTriangle, Clock, Download,
-  Image as ImageIcon,
+  Image as ImageIcon, ZoomIn, X,
 } from 'lucide-react';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -240,6 +240,57 @@ function Roteiro({ roteiro, label = 'Ver Roteiro' }) {
 }
 
 // ─── Grid de mídia compartilhado ──────────────────────────────────────────────
+function CapaThumb({ url, label, showDownload }) {
+  const [open, setOpen] = useState(false);
+  const embedUrl = getEmbedUrl(url);
+  return (
+    <div className="flex-1 flex flex-col gap-1.5">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
+        {label}
+      </p>
+      {/* Botão clicável que abre o lightbox */}
+      <button
+        onClick={() => setOpen(true)}
+        aria-label={`Ampliar ${label}`}
+        className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-gray-900 relative group
+          cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+      >
+        <iframe
+          src={embedUrl}
+          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+          title={label}
+          style={{ transform: 'scale(1.05)' }}
+        />
+        {/* Overlay com ícone zoom ao hover/focus */}
+        <div className="absolute inset-0 flex items-center justify-center
+          bg-black/0 group-hover:bg-black/25 transition-all duration-200">
+          <div className="w-10 h-10 rounded-full bg-white/90 shadow-lg
+            flex items-center justify-center
+            opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100
+            transition-all duration-200">
+            <ZoomIn className="w-5 h-5 text-gray-800" />
+          </div>
+        </div>
+      </button>
+
+      {showDownload && (
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
+            border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
+            text-xs font-black uppercase tracking-widest
+            active:scale-[0.98] transition-all duration-150">
+          BAIXAR
+        </a>
+      )}
+
+      {/* Lightbox */}
+      {open && (
+        <Lightbox url={embedUrl} title={label} onClose={() => setOpen(false)} />
+      )}
+    </div>
+  );
+}
+
 function MediaGrid({ item, showDownload = false }) {
   const embedUrl  = getEmbedUrl(item.linkFicheiro);
   const hasCovers = item.linkCapa || item.linkCapa2;
@@ -275,50 +326,8 @@ function MediaGrid({ item, showDownload = false }) {
       {/* Capas */}
       {hasCovers && (
         <div className="flex-1 flex gap-2">
-          {item.linkCapa && (
-            <div className="flex-1 flex flex-col gap-1.5">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
-                CAPA 1
-              </p>
-              <div className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-gray-900
-                relative pointer-events-none">
-                <iframe src={getEmbedUrl(item.linkCapa)}
-                  className="absolute inset-0 w-full h-full border-0"
-                  title="Capa 1" style={{ transform: 'scale(1.05)' }} />
-              </div>
-              {showDownload && (
-                <a href={item.linkCapa} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
-                    border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
-                    text-xs font-black uppercase tracking-widest
-                    active:scale-[0.98] transition-all duration-150">
-                  BAIXAR
-                </a>
-              )}
-            </div>
-          )}
-          {item.linkCapa2 && (
-            <div className="flex-1 flex flex-col gap-1.5">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
-                CAPA 2
-              </p>
-              <div className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-gray-900
-                relative pointer-events-none">
-                <iframe src={getEmbedUrl(item.linkCapa2)}
-                  className="absolute inset-0 w-full h-full border-0"
-                  title="Capa 2" style={{ transform: 'scale(1.05)' }} />
-              </div>
-              {showDownload && (
-                <a href={item.linkCapa2} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
-                    border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
-                    text-xs font-black uppercase tracking-widest
-                    active:scale-[0.98] transition-all duration-150">
-                  BAIXAR
-                </a>
-              )}
-            </div>
-          )}
+          {item.linkCapa  && <CapaThumb url={item.linkCapa}  label="CAPA 1" showDownload={showDownload} />}
+          {item.linkCapa2 && <CapaThumb url={item.linkCapa2} label="CAPA 2" showDownload={showDownload} />}
         </div>
       )}
     </div>
@@ -486,6 +495,61 @@ function Empty({ icon: Icon, title, sub }) {
         <p className="text-base font-bold text-white/50">{title}</p>
         <p className="text-sm text-white/25 mt-1 max-w-xs mx-auto">{sub}</p>
       </div>
+    </div>
+  );
+}
+
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+function Lightbox({ url, title, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    // Trava scroll do body
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.92)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Visualizar ${title}`}
+    >
+      {/* Container da imagem — clique interno não fecha */}
+      <div
+        className="relative w-full mx-auto"
+        style={{ maxWidth: '340px', aspectRatio: '9/16', maxHeight: '88vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <iframe
+          src={url}
+          className="w-full h-full border-0 rounded-2xl"
+          title={title}
+          allow="autoplay; fullscreen"
+        />
+        {/* Botão fechar */}
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-white
+            flex items-center justify-center shadow-xl cursor-pointer
+            hover:bg-gray-100 active:scale-95 transition-all duration-150
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          <X className="w-5 h-5 text-gray-800" />
+        </button>
+      </div>
+
+      {/* Hint tap-to-close no mobile */}
+      <p className="absolute bottom-5 text-xs text-white/30 font-medium select-none pointer-events-none">
+        Toque fora para fechar
+      </p>
     </div>
   );
 }
