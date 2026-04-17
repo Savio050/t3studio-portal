@@ -33,7 +33,7 @@ function mapContent(p) {
     estadoRoteiro: getProp(pr['EstadoRoteiro'])    || '',
     postagem:      getProp(pr['Postagem'])         || null,
     dataGravacao:  getProp(pr['Data de Gravação']) || null,
-    roteiro:       getProp(pr['Roteiro'])          || '',
+    conteudo:      getProp(pr['Roteiro'])           || '',
   };
 }
 
@@ -81,14 +81,14 @@ async function toolCreateContent({ nome, cliente, formato, responsavel, postagem
   }
 }
 
-async function toolUpdateContent({ id, nome, estado, estadoRoteiro, responsavel, roteiro, postagem, feedbackCliente, feedbackRoteiro }) {
+async function toolUpdateContent({ id, nome, estado, estadoRoteiro, responsavel, conteudo, postagem, feedbackCliente, feedbackRoteiro }) {
   try {
     const props = {};
     if (nome)                  props['Nome']                = { title: [{ text: { content: nome } }] };
     if (estado)                props['Estado']              = { select: { name: estado } };
     if (estadoRoteiro)         props['EstadoRoteiro']       = { status: { name: estadoRoteiro } };
     if (responsavel)           props['responsável']         = { select: { name: responsavel } };
-    if (roteiro !== undefined) props['Roteiro']             = { rich_text: [{ text: { content: roteiro } }] };
+    if (conteudo !== undefined) props['Roteiro']            = { rich_text: [{ text: { content: conteudo } }] };
     if (postagem)              props['Postagem']            = { date: { start: postagem } };
     if (feedbackCliente)       props['Feedback do Cliente'] = { rich_text: [{ text: { content: feedbackCliente } }] };
     if (feedbackRoteiro)       props['Feedback do Roteiro'] = { rich_text: [{ text: { content: feedbackRoteiro } }] };

@@ -45,7 +45,7 @@ function mapContent(page) {
     dataGravacao:     getProp(p['Data de Gravação'])    || null,
     postagem:         getProp(p['Postagem'])            || null,
     mesRelativo:      getProp(p['Relativo ao mês de']) || '',
-    roteiro:          getProp(p['Roteiro'])             || '',
+    conteudo:         getProp(p['Roteiro'])              || '',
     estadoRoteiro:    getProp(p['EstadoRoteiro'])       || '',
     estado:           getProp(p['Estado'])              || '',
     feedbackRoteiro:  getProp(p['Feedback do Roteiro']) || '',
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const {
       id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
-      postagem, responsavel, nome, roteiro,
+      postagem, responsavel, nome, conteudo,
     } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
       if (postagem)                  properties['Postagem']            = { date: { start: postagem } };
       if (responsavel)               properties['responsável']         = { select: { name: responsavel } };
       if (nome?.trim())              properties['Nome']                = { title: [{ text: { content: nome.trim() } }] };
-      if (roteiro !== undefined)     properties['Roteiro']             = { rich_text: [{ text: { content: roteiro } }] };
+      if (conteudo !== undefined)     properties['Roteiro']             = { rich_text: [{ text: { content: conteudo } }] };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });

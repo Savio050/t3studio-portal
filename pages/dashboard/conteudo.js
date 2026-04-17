@@ -1,78 +1,102 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CRMLayout from '../../components/crm/Layout';
 import {
-  Film, ChevronDown, X, Edit3, Loader2, Clock, User,
-  AlertTriangle, LayoutGrid, User2, CalendarDays,
-  ChevronLeft, ChevronRight, Save, PenLine, CheckCircle2,
-  Plus, Trash2,
+  Film, X, Loader2, Clock, User, AlertTriangle,
+  LayoutGrid, User2, CalendarDays, ChevronLeft, ChevronRight,
+  Save, CheckCircle2, Plus, Trash2, Camera,
+  Image, FileText, Palette, ExternalLink, Link2,
+  ChevronDown,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const MEMBERS  = ['Matheus', 'Sávio'];
-const CLIENTS  = ['fastimoveis', 'mafro'];
+const MEMBERS   = ['Matheus', 'Sávio'];
+const CLIENTS   = ['fastimoveis', 'mafro'];
+const FORMATOS  = ['Reels', 'Carrossel', 'Stories', 'Post', 'Vídeo', 'TikTok', 'YouTube'];
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const WEEKDAYS_PT = ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
 
-const ROTEIRO_STATES = [
-  { value: 'Não iniciada',         label: 'Não iniciada',         color: '#64748b' },
-  { value: 'Em Produção',          label: 'Em criação',           color: '#a78bfa' },
-  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação',    color: '#f59e0b' },
-  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado',    color: '#f97316' },
-  { value: 'Aprovado',             label: 'Aprovado',             color: '#10b981' },
-  { value: 'Concluido',            label: 'Concluído',            color: '#64748b' },
+const ESTADO_OPTIONS = [
+  { value: 'não iniciado',         label: 'Não iniciado',      color: '#64748b' },
+  { value: 'Em Produção',          label: 'Em Produção',       color: '#0ea5e9' },
+  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#f59e0b' },
+  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#f97316' },
+  { value: 'Aprovado',             label: 'Aprovado',          color: '#10b981' },
+  { value: 'Concluido',            label: 'Concluído',         color: '#64748b' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'não iniciado',         label: 'Não iniciado',         dot: '#64748b' },
-  { value: 'Em Produção',          label: 'Em Produção',          dot: '#0ea5e9' },
-  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação',    dot: '#f59e0b' },
-  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado',    dot: '#f97316' },
-  { value: 'Aprovado',             label: 'Aprovado',             dot: '#10b981' },
-  { value: 'Concluido',            label: 'Concluído',            dot: '#64748b' },
-];
-
-const COLUMNS = [
-  { id: 'nao-iniciado',      label: 'Não Iniciado',      sublabel: 'Backlog',             color: '#64748b', glow: 'rgba(100,116,139,0.10)' },
-  { id: 'roteirizacao',      label: 'Em Roteirização',   sublabel: 'Script em criação',   color: '#a78bfa', glow: 'rgba(124,58,237,0.12)'  },
-  { id: 'aguardando-cliente',label: 'Aguardando Cliente',sublabel: 'Aprovação pendente',  color: '#fbbf24', glow: 'rgba(245,158,11,0.12)',  urgent: true },
-  { id: 'em-producao',       label: 'Em Produção',       sublabel: 'Edição / Gravação',   color: '#38bdf8', glow: 'rgba(14,165,233,0.12)'  },
-  { id: 'concluido',         label: 'Pronto',            sublabel: 'Aprovado / Concluído',color: '#34d399', glow: 'rgba(16,185,129,0.10)'  },
+const CONTEUDO_STATES = [
+  { value: 'Não iniciada',         label: 'Não iniciada',      color: '#64748b' },
+  { value: 'Em Produção',          label: 'Em criação',        color: '#a78bfa' },
+  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#f59e0b' },
+  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#f97316' },
+  { value: 'Aprovado',             label: 'Aprovado',          color: '#10b981' },
+  { value: 'Concluido',            label: 'Concluído',         color: '#64748b' },
 ];
 
 const CLIENT_COLORS = {
-  'fastimoveis': { bg: 'rgba(244,63,94,0.15)', text: '#fb7185', border: 'rgba(244,63,94,0.3)'  },
-  'mafro':       { bg: 'rgba(6,182,212,0.15)', text: '#22d3ee', border: 'rgba(6,182,212,0.3)'  },
+  fastimoveis: { bg: 'rgba(244,63,94,0.15)',  text: '#fb7185', border: 'rgba(244,63,94,0.3)'  },
+  mafro:       { bg: 'rgba(6,182,212,0.15)',  text: '#22d3ee', border: 'rgba(6,182,212,0.3)'  },
 };
 
-const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const FORMAT_COLORS = {
+  Reels:     '#a78bfa', Carrossel: '#38bdf8', Stories: '#f472b6',
+  Post:      '#34d399', Vídeo:     '#fb923c', TikTok:  '#f9a8d4',
+  YouTube:   '#f87171',
+};
+
+const SECTION_STATUS = {
+  aprovado:     { label: 'Aprovado',      color: '#10b981', bg: 'rgba(16,185,129,0.15)',  border: 'rgba(16,185,129,0.3)'  },
+  'em-aprovacao':{ label: 'Em Aprovação', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.3)'  },
+  'em-producao': { label: 'Em Produção',  color: '#0ea5e9', bg: 'rgba(14,165,233,0.15)',  border: 'rgba(14,165,233,0.3)'  },
+  'em-criacao':  { label: 'Em Criação',   color: '#a78bfa', bg: 'rgba(124,58,237,0.15)',  border: 'rgba(124,58,237,0.3)'  },
+  pendente:     { label: 'Pendente',      color: '#64748b', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.2)' },
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const nrm = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-const clientColor = (nome) =>
-  CLIENT_COLORS[nrm(nome).replace(/\s/g,'')] ||
+const nrm       = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const clientColor = n => CLIENT_COLORS[nrm(n).replace(/\s/g,'')] ||
   { bg:'rgba(255,255,255,0.06)', text:'rgba(255,255,255,0.45)', border:'rgba(255,255,255,0.1)' };
+const fmtShort  = d => { if (!d) return null; const [,m,day] = d.split('-'); return `${day}/${m}`; };
+const fmtFull   = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
+const isoDate   = d => d.toISOString().slice(0, 10);
 
-const fmtShort = (d) => {
-  if (!d) return null;
-  const [,m,day] = d.split('-');
-  return `${day}/${m}`;
-};
-const fmtFull = (d) => {
-  if (!d) return '';
-  const [y,m,day] = d.split('-');
-  return `${day}/${m}/${y}`;
-};
-
-function classifyItem(item) {
+function sectionStatus(item, section) {
   const e = nrm(item.estado);
   const r = nrm(item.estadoRoteiro);
-  if (e === 'aprovado' || e === 'concluido')                                       return 'concluido';
-  if (e.includes('aguardando')||r.includes('aguardando')||e.includes('ajuste')||r.includes('ajuste')) return 'aguardando-cliente';
-  if (e.includes('producao')||e.includes('produção'))                              return 'em-producao';
-  if (r.includes('producao')||r.includes('produção'))                             return 'roteirizacao';
-  return 'nao-iniciado';
+  if (section === 'tema') {
+    if (e === 'aprovado' || e === 'concluido')                                         return 'aprovado';
+    if (e.includes('aguardando') || e.includes('ajuste'))                              return 'em-aprovacao';
+    if (e.includes('producao') || e.includes('produção'))                              return 'em-producao';
+    return 'pendente';
+  }
+  if (section === 'conteudo') {
+    if (r === 'aprovado' || r === 'concluido')                                         return 'aprovado';
+    if (r.includes('aguardando') || r.includes('ajuste'))                              return 'em-aprovacao';
+    if (r.includes('producao') || r.includes('produção'))                              return 'em-criacao';
+    return 'pendente';
+  }
+  if (section === 'midia') {
+    if (item.linkFicheiro || item.linkCapa)                                            return 'aprovado';
+    return 'pendente';
+  }
 }
 
-// Monday of the week containing `date`
+function buildCalendar(year, month) {
+  const first      = new Date(year, month, 1);
+  const last       = new Date(year, month + 1, 0);
+  const startOffset = (first.getDay() + 6) % 7; // Mon = 0
+  const days = [];
+  for (let i = 0; i < startOffset; i++)
+    days.push({ date: new Date(year, month, 1 - startOffset + i), current: false });
+  for (let i = 1; i <= last.getDate(); i++)
+    days.push({ date: new Date(year, month, i), current: true });
+  const rem = 42 - days.length;
+  for (let i = 1; i <= rem; i++)
+    days.push({ date: new Date(year, month + 1, i), current: false });
+  return days;
+}
+
 function weekMonday(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -82,161 +106,279 @@ function weekMonday(date) {
 }
 
 function groupByWeek(items) {
-  const map = {};
-  const noDate = [];
+  const map = {}, noDate = [];
   items.forEach(item => {
-    const dateStr = item.postagem || item.dataGravacao;
-    if (!dateStr) { noDate.push(item); return; }
-    const mon = weekMonday(new Date(dateStr));
-    const key = mon.toISOString().slice(0,10);
+    const ds = item.postagem || item.dataGravacao;
+    if (!ds) { noDate.push(item); return; }
+    const mon = weekMonday(new Date(ds));
+    const key = isoDate(mon);
     if (!map[key]) map[key] = { monday: mon, items: [] };
     map[key].items.push(item);
   });
-  const weeks = Object.values(map).sort((a,b) => a.monday - b.monday);
-  return { weeks, noDate };
+  return { weeks: Object.values(map).sort((a,b) => a.monday - b.monday), noDate };
 }
 
 function weekLabel(monday) {
-  const sun = new Date(monday);
-  sun.setDate(monday.getDate() + 6);
-  const d1 = monday.getDate();
-  const d2 = sun.getDate();
+  const sun = new Date(monday); sun.setDate(monday.getDate() + 6);
+  const d1 = monday.getDate(), d2 = sun.getDate();
   const m1 = MONTHS_PT[monday.getMonth()].slice(0,3);
   const m2 = MONTHS_PT[sun.getMonth()].slice(0,3);
-  if (monday.getMonth() === sun.getMonth())
-    return `${d1}–${d2} ${m1}`;
-  return `${d1} ${m1} – ${d2} ${m2}`;
+  return monday.getMonth() === sun.getMonth() ? `${d1}–${d2} ${m1}` : `${d1} ${m1} – ${d2} ${m2}`;
 }
 
-// ── Inline status dropdown ────────────────────────────────────────────────────
-function StatusDropdown({ item, onUpdate }) {
-  const [open,setBusy2] = useState(false);
-  const [busy,setBusy]  = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setBusy2(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-  const cur = STATUS_OPTIONS.find(o => nrm(o.value) === nrm(item.estado)) || STATUS_OPTIONS[0];
-  const update = async (val) => {
-    setBusy2(false); setBusy(true);
-    await onUpdate(item.id, { estado: val });
-    setBusy(false);
-  };
+// ── Section status badge ──────────────────────────────────────────────────────
+function SectionBadge({ status }) {
+  const m = SECTION_STATUS[status] || SECTION_STATUS.pendente;
   return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setBusy2(v=>!v)} disabled={busy}
-        className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg cursor-pointer transition-all duration-150 hover:brightness-125"
-        style={{ background:`${cur.dot}18`, color:cur.dot, border:`1px solid ${cur.dot}30` }}>
-        {busy ? <Loader2 className="w-2.5 h-2.5 animate-spin"/> : <div className="w-1.5 h-1.5 rounded-full" style={{background:cur.dot}}/>}
-        <span className="hidden sm:inline">{cur.label}</span>
-        <ChevronDown className="w-2.5 h-2.5"/>
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 rounded-xl py-1 w-44 shadow-2xl"
-          style={{background:'rgba(10,18,35,0.99)',border:'1px solid rgba(255,255,255,0.1)'}}>
-          {STATUS_OPTIONS.map(o => (
-            <button key={o.value} onClick={() => update(o.value)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium hover:bg-white/[0.05] cursor-pointer"
-              style={{color: nrm(o.value)===nrm(item.estado) ? o.dot : 'rgba(255,255,255,0.65)'}}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{background:o.dot}}/>
-              {o.label}
-            </button>
+    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md"
+      style={{ background: m.bg, color: m.color, border: `1px solid ${m.border}` }}>
+      {m.label}
+    </span>
+  );
+}
+
+// ── Mini card (Monthly & Weekly) ──────────────────────────────────────────────
+function MiniCard({ item, onClick }) {
+  const fmtColor = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const st = sectionStatus(item, 'tema');
+  const stMeta = SECTION_STATUS[st];
+  return (
+    <button onClick={() => onClick(item)}
+      className="w-full text-left rounded-lg p-1.5 transition-all duration-150 hover:brightness-125 cursor-pointer"
+      style={{ background: `${fmtColor}10`, border: `1px solid ${fmtColor}20` }}>
+      <div className="flex items-center gap-1 mb-0.5">
+        {item.formato && (
+          <span className="text-[9px] font-bold truncate" style={{ color: fmtColor }}>{item.formato}</span>
+        )}
+        <div className="w-1.5 h-1.5 rounded-full ml-auto shrink-0" style={{ background: stMeta?.color || '#64748b' }}/>
+      </div>
+      <p className="text-[10px] text-white/70 leading-tight line-clamp-2">{item.nome}</p>
+    </button>
+  );
+}
+
+// ── Feed card ─────────────────────────────────────────────────────────────────
+function FeedCard({ item, onClick }) {
+  const cl       = clientColor(item.cliente);
+  const fmtColor = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const tabs     = ['tema', 'conteudo', 'midia'];
+
+  return (
+    <button onClick={() => onClick(item)}
+      className="text-left rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:shadow-lg cursor-pointer group"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+
+      {/* Cover / format strip */}
+      <div className="w-full aspect-video flex items-center justify-center relative overflow-hidden"
+        style={{ background: `${fmtColor}0d` }}>
+        {item.linkCapa
+          ? <img src={item.linkCapa} alt="" className="w-full h-full object-cover"/>
+          : <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
+        }
+        {item.formato && (
+          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${fmtColor}25`, color: fmtColor, border: `1px solid ${fmtColor}40`, backdropFilter: 'blur(4px)' }}>
+            {item.formato}
+          </span>
+        )}
+        {item.postagem && (
+          <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+            {fmtShort(item.postagem)}
+          </span>
+        )}
+      </div>
+
+      <div className="p-3">
+        {/* Client + title */}
+        {item.cliente && (
+          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1.5 inline-block"
+            style={{ background: cl.bg, color: cl.text, border: `1px solid ${cl.border}` }}>
+            {item.cliente}
+          </span>
+        )}
+        <p className="text-xs font-semibold text-white/85 leading-snug line-clamp-2 mb-3">{item.nome}</p>
+
+        {/* Section status row */}
+        <div className="grid grid-cols-3 gap-1">
+          {tabs.map(s => {
+            const st   = sectionStatus(item, s);
+            const meta = SECTION_STATUS[st];
+            const labels = { tema: 'Tema', conteudo: 'Conteúdo', midia: 'Mídia' };
+            return (
+              <div key={s} className="flex flex-col items-center gap-0.5 py-1.5 rounded-lg"
+                style={{ background: `${meta.color}0d` }}>
+                <span className="text-[8px] font-bold text-white/30 uppercase tracking-wider">{labels[s]}</span>
+                <span className="text-[9px] font-semibold" style={{ color: meta.color }}>{meta.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── Monthly view ──────────────────────────────────────────────────────────────
+function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
+  const days     = buildCalendar(year, month);
+  const byDate   = {};
+  items.forEach(item => {
+    const d = item.postagem || item.dataGravacao;
+    if (d) { if (!byDate[d]) byDate[d] = []; byDate[d].push(item); }
+  });
+  const todayStr = isoDate(new Date());
+
+  return (
+    <div>
+      {/* Nav */}
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onPrev} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="text-base font-bold text-white font-display min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <button onClick={onNext} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="text-[11px] text-white/30 ml-1">
+          {items.filter(i => i.postagem || i.dataGravacao).length} postagens
+        </span>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {WEEKDAYS_PT.map(d => (
+          <div key={d} className="text-center text-[10px] font-bold text-white/20 uppercase tracking-wider py-1.5">{d}</div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map(({ date, current }, i) => {
+          const ds       = isoDate(date);
+          const dayItems = byDate[ds] || [];
+          const isToday  = ds === todayStr;
+          return (
+            <div key={i} className="min-h-[90px] p-1.5 rounded-xl transition-all duration-150"
+              style={{
+                background: isToday ? 'rgba(124,58,237,0.07)' : current ? 'rgba(255,255,255,0.025)' : 'transparent',
+                border: isToday ? '1px solid rgba(124,58,237,0.25)' : '1px solid rgba(255,255,255,0.04)',
+                opacity: current ? 1 : 0.4,
+              }}>
+              <div className={`text-[11px] font-bold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
+                ${isToday ? 'bg-violet-600 text-white text-[10px]' : 'text-white/35'}`}>
+                {date.getDate()}
+              </div>
+              {loading
+                ? i < 7 && <div className="h-8 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }}/>
+                : (
+                  <div className="space-y-0.5">
+                    {dayItems.slice(0, 3).map(item => (
+                      <MiniCard key={item.id} item={item} onClick={onSelect}/>
+                    ))}
+                    {dayItems.length > 3 && (
+                      <button className="text-[9px] text-white/25 w-full text-center py-0.5 hover:text-white/50 cursor-pointer">
+                        +{dayItems.length - 3} mais
+                      </button>
+                    )}
+                  </div>
+                )
+              }
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Weekly view ───────────────────────────────────────────────────────────────
+function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
+  const { weeks, noDate } = groupByWeek(items);
+  const monthWeeks = weeks.filter(({ monday }) => {
+    const sun = new Date(monday); sun.setDate(monday.getDate() + 6);
+    return monday.getMonth() === month || sun.getMonth() === month;
+  });
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onPrev} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="text-base font-bold text-white font-display min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <button onClick={onNext} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="text-[11px] text-white/30">{items.length} conteúdos</span>
+      </div>
+
+      {loading ? (
+        <div className="flex gap-4">
+          {[...Array(3)].map((_,i) => (
+            <div key={i} className="min-w-[260px] flex-1 h-48 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }}/>
           ))}
+        </div>
+      ) : (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {monthWeeks.length === 0 && noDate.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 w-full">
+              <CalendarDays className="w-10 h-10 text-white/10 mb-3"/>
+              <p className="text-sm text-white/30">Nenhum conteúdo em {MONTHS_PT[month]}</p>
+            </div>
+          )}
+          {monthWeeks.map(({ monday, items: wi }) => {
+            const sun = new Date(monday); sun.setDate(monday.getDate() + 6);
+            const isCurrent = todayD >= monday && todayD <= sun;
+            return (
+              <div key={isoDate(monday)} className="flex flex-col min-w-[240px] max-w-[280px] flex-1">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex items-center gap-2">
+                    {isCurrent && <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"/>}
+                    <p className={`text-xs font-bold ${isCurrent ? 'text-violet-300' : 'text-white/55'}`}>{weekLabel(monday)}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: isCurrent ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.05)', color: isCurrent ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
+                    {wi.length}
+                  </span>
+                </div>
+                <div className="flex-1 rounded-xl p-2 space-y-1.5 min-h-[80px]"
+                  style={{ background: isCurrent ? 'rgba(124,58,237,0.06)' : 'rgba(255,255,255,0.025)', border: isCurrent ? '1px solid rgba(124,58,237,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+                  {wi.sort((a,b) => (a.postagem||a.dataGravacao||'') > (b.postagem||b.dataGravacao||'') ? 1 : -1)
+                     .map(item => <MiniCard key={item.id} item={item} onClick={onSelect}/>)}
+                </div>
+              </div>
+            );
+          })}
+          {noDate.length > 0 && (
+            <div className="flex flex-col min-w-[220px] max-w-[260px]">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <p className="text-xs font-bold text-white/30">Sem data</p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 text-white/25">{noDate.length}</span>
+              </div>
+              <div className="flex-1 rounded-xl p-2 space-y-1.5 min-h-[80px]"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.06)' }}>
+                {noDate.map(item => <MiniCard key={item.id} item={item} onClick={onSelect}/>)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ── Content Card (shared between Kanban + Weekly) ─────────────────────────────
-function ContentCard({ item, onUpdate, onEdit }) {
-  const cl    = clientColor(item.cliente);
-  const isAjuste = nrm(item.estado).includes('ajuste') || nrm(item.estadoRoteiro).includes('ajuste');
-  const roteiroState = ROTEIRO_STATES.find(s => nrm(s.value) === nrm(item.estadoRoteiro));
-
+// ── Feed view ─────────────────────────────────────────────────────────────────
+function FeedView({ items, onSelect, loading }) {
   return (
-    <article
-      className="rounded-xl p-3 transition-all duration-200 group cursor-default"
-      style={{
-        background:'rgba(255,255,255,0.045)',
-        border: isAjuste ? '1px solid rgba(249,115,22,0.35)' : '1px solid rgba(255,255,255,0.07)',
-      }}>
-
-      {/* Ajuste strip */}
-      {isAjuste && (
-        <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg text-[10px] font-semibold text-orange-400"
-          style={{background:'rgba(249,115,22,0.12)',border:'1px solid rgba(249,115,22,0.2)'}}>
-          <AlertTriangle className="w-3 h-3 shrink-0"/> Ajuste solicitado
-        </div>
-      )}
-
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-1 mb-2">
-        <p className="text-xs font-semibold text-white/90 leading-snug line-clamp-2 flex-1">
-          {item.nome}
-        </p>
-        {/* Edit button */}
-        <button
-          onClick={() => onEdit(item)}
-          aria-label="Editar conteúdo"
-          className="ml-1 w-6 h-6 flex items-center justify-center rounded-lg shrink-0
-            text-white/15 hover:text-violet-400 hover:bg-violet-500/15
-            opacity-0 group-hover:opacity-100 transition-all duration-150 cursor-pointer">
-          <PenLine className="w-3 h-3"/>
-        </button>
-      </div>
-
-      {/* Tags */}
-      <div className="flex flex-wrap items-center gap-1 mb-2.5">
-        {item.cliente && (
-          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
-            style={{background:cl.bg, color:cl.text, border:`1px solid ${cl.border}`}}>
-            {item.cliente}
-          </span>
-        )}
-        {item.formato && (
-          <span className="text-[9px] text-white/30 font-medium px-1.5 py-0.5 rounded-md bg-white/[0.04]">
-            {item.formato}
-          </span>
-        )}
-        {roteiroState && nrm(roteiroState.value) !== 'nao iniciada' && (
-          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md"
-            style={{background:`${roteiroState.color}15`, color:roteiroState.color, border:`1px solid ${roteiroState.color}30`}}>
-            <Edit3 className="w-2 h-2"/> {roteiroState.label}
-          </span>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {item.responsavel && (
-            <span className="flex items-center gap-1 text-[10px] text-white/30 font-medium truncate">
-              <User className="w-2.5 h-2.5 shrink-0"/> {item.responsavel}
-            </span>
-          )}
-          {(item.postagem || item.dataGravacao) && (
-            <span className="flex items-center gap-1 text-[10px] text-white/25 font-medium shrink-0">
-              <Clock className="w-2.5 h-2.5 shrink-0"/> {fmtShort(item.postagem||item.dataGravacao)}
-            </span>
-          )}
-        </div>
-        <StatusDropdown item={item} onUpdate={onUpdate}/>
-      </div>
-
-      {item.feedbackCliente && (
-        <div className="mt-2 px-2 py-1.5 rounded-lg text-[10px] text-orange-300/80 leading-snug"
-          style={{background:'rgba(249,115,22,0.08)',border:'1px solid rgba(249,115,22,0.15)'}}>
-          {item.feedbackCliente.slice(0,80)}{item.feedbackCliente.length>80?'…':''}
-        </div>
-      )}
-    </article>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {loading
+        ? [...Array(8)].map((_,i) => <div key={i} className="h-52 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }}/>)
+        : items.length === 0
+          ? (
+            <div className="col-span-full flex flex-col items-center py-24">
+              <Film className="w-10 h-10 text-white/10 mb-3"/>
+              <p className="text-sm text-white/30">Nenhum conteúdo encontrado</p>
+            </div>
+          )
+          : items.map(item => <FeedCard key={item.id} item={item} onClick={onSelect}/>)
+      }
+    </div>
   );
 }
-
-const FORMATOS = ['Reels', 'Carrossel', 'Stories', 'Post', 'Vídeo', 'TikTok', 'YouTube'];
 
 // ── New Content Modal ─────────────────────────────────────────────────────────
 function NewContentModal({ onClose, onCreate }) {
@@ -249,220 +391,100 @@ function NewContentModal({ onClose, onCreate }) {
   const [saving,       setSaving]       = useState(false);
   const [error,        setError]        = useState('');
 
-  const canSave = nome.trim().length > 0;
+  const memberColors = {
+    Matheus: { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
+    Sávio:   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+  };
 
   const submit = async () => {
-    if (!canSave || saving) return;
-    setSaving(true);
-    setError('');
+    if (!nome.trim() || saving) return;
+    setSaving(true); setError('');
     try {
       const res = await fetch('/api/crm/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome, cliente, formato, responsavel, postagem: postagem||undefined, dataGravacao: dataGravacao||undefined }),
       });
-      if (!res.ok) throw new Error('Erro ao criar');
+      if (!res.ok) throw new Error();
       const { content } = await res.json();
-      onCreate(content);
-      onClose();
-    } catch {
-      setError('Não foi possível criar o conteúdo. Tente novamente.');
-      setSaving(false);
-    }
-  };
-
-  const memberColors = {
-    'Matheus': { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
-    'Sávio':   { bg:'rgba(16,185,129,0.2)',  text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+      onCreate(content); onClose();
+    } catch { setError('Erro ao criar. Tente novamente.'); setSaving(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
       <div className="relative w-full max-w-lg rounded-2xl flex flex-col overflow-hidden"
-        style={{
-          background:'rgba(9,16,30,0.98)',
-          backdropFilter:'blur(32px)',
-          border:'1px solid rgba(255,255,255,0.1)',
-          boxShadow:'0 40px 80px rgba(0,0,0,0.6)',
-          maxHeight:'90vh',
-        }}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b"
-          style={{borderColor:'rgba(255,255,255,0.07)'}}>
-          <div>
-            <p className="text-[10px] text-white/30 font-semibold uppercase tracking-widest mb-0.5">Novo conteúdo</p>
-            <p className="text-base font-bold text-white font-display">Adicionar à esteira</p>
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl
-              text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150 cursor-pointer">
-            <X className="w-4 h-4"/>
-          </button>
+        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 40px 80px rgba(0,0,0,0.6)', maxHeight:'90vh' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <p className="text-base font-bold text-white font-display">Novo conteúdo</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"><X className="w-4 h-4"/></button>
         </div>
-
-        {/* Body */}
         <div className="overflow-y-auto px-6 py-5 space-y-5">
-
-          {/* Nome */}
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Nome do conteúdo <span className="text-rose-400">*</span>
-            </label>
-            <input
-              autoFocus
-              type="text"
-              value={nome}
-              onChange={e => setNome(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && submit()}
-              placeholder="Ex: Vídeo de lançamento novembro"
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-white/20
-                outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/40"
-              style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)'}}
-            />
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Nome <span className="text-rose-400">*</span></label>
+            <input autoFocus type="text" value={nome} onChange={e => setNome(e.target.value)} onKeyDown={e => e.key==='Enter' && submit()}
+              placeholder="Ex: Reels lançamento novembro"
+              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/40"
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
           </div>
-
-          {/* Cliente */}
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Projeto / Cliente
-            </label>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Cliente</label>
             <div className="flex gap-2">
               {CLIENTS.map(c => {
-                const cc = CLIENT_COLORS[c] || {};
-                const active = cliente === c;
-                return (
-                  <button key={c} type="button"
-                    onClick={() => setCliente(active ? '' : c)}
-                    className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all duration-150"
-                    style={{
-                      background: active ? cc.bg : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? cc.border : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? cc.text : 'rgba(255,255,255,0.35)',
-                    }}>
-                    {c}
-                  </button>
-                );
+                const cc = CLIENT_COLORS[c] || {}; const active = cliente === c;
+                return <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
+                  style={{ background: active ? cc.bg : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? cc.border : 'rgba(255,255,255,0.08)'}`, color: active ? cc.text : 'rgba(255,255,255,0.35)' }}>
+                  {c}
+                </button>;
               })}
             </div>
           </div>
-
-          {/* Formato */}
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Formato
-            </label>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Formato</label>
             <div className="flex flex-wrap gap-2">
               {FORMATOS.map(f => {
-                const active = formato === f;
-                return (
-                  <button key={f} type="button"
-                    onClick={() => setFormato(active ? '' : f)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-150"
-                    style={{
-                      background: active ? 'rgba(14,165,233,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? 'rgba(14,165,233,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? '#38bdf8' : 'rgba(255,255,255,0.35)',
-                    }}>
-                    {f}
-                  </button>
-                );
+                const active = formato === f; const fc = FORMAT_COLORS[f] || '#a78bfa';
+                return <button key={f} type="button" onClick={() => setFormato(active ? '' : f)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+                  style={{ background: active ? `${fc}20` : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? `${fc}40` : 'rgba(255,255,255,0.08)'}`, color: active ? fc : 'rgba(255,255,255,0.35)' }}>
+                  {f}
+                </button>;
               })}
             </div>
           </div>
-
-          {/* Responsável */}
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Responsável
-            </label>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Responsável</label>
             <div className="flex gap-2">
               {MEMBERS.map(m => {
-                const c = memberColors[m] || {};
-                const active = responsavel === m;
-                return (
-                  <button key={m} type="button"
-                    onClick={() => setResponsavel(active ? '' : m)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
-                    style={{
-                      background: active ? c.bg : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? c.text : 'rgba(255,255,255,0.35)',
-                    }}>
-                    {m}
-                  </button>
-                );
+                const c = memberColors[m] || {}; const active = responsavel === m;
+                return <button key={m} type="button" onClick={() => setResponsavel(active ? '' : m)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all"
+                  style={{ background: active ? c.bg : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.08)'}`, color: active ? c.text : 'rgba(255,255,255,0.35)' }}>
+                  {m}
+                </button>;
               })}
             </div>
           </div>
-
-          {/* Datas */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-                Data de gravação
-              </label>
-              <input
-                type="date"
-                value={dataGravacao}
-                onChange={e => setDataGravacao(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/80
-                  outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/30"
-                style={{
-                  background:'rgba(255,255,255,0.05)',
-                  border:'1px solid rgba(255,255,255,0.08)',
-                  colorScheme:'dark',
-                }}
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-                Data de postagem
-              </label>
-              <input
-                type="date"
-                value={postagem}
-                onChange={e => setPostagem(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/80
-                  outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/30"
-                style={{
-                  background:'rgba(255,255,255,0.05)',
-                  border:'1px solid rgba(255,255,255,0.08)',
-                  colorScheme:'dark',
-                }}
-              />
-            </div>
+            {[['Gravação', dataGravacao, setDataGravacao], ['Postagem', postagem, setPostagem]].map(([lbl, val, set]) => (
+              <div key={lbl}>
+                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">{lbl}</label>
+                <input type="date" value={val} onChange={e => set(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 outline-none focus:ring-2 focus:ring-violet-500/30"
+                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', colorScheme:'dark' }}/>
+              </div>
+            ))}
           </div>
-
-          {error && (
-            <p className="text-xs text-rose-400 font-medium px-3 py-2 rounded-xl"
-              style={{background:'rgba(244,63,94,0.1)',border:'1px solid rgba(244,63,94,0.2)'}}>
-              {error}
-            </p>
-          )}
+          {error && <p className="text-xs text-rose-400 px-3 py-2 rounded-xl" style={{ background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.2)' }}>{error}</p>}
         </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t flex gap-3"
-          style={{borderColor:'rgba(255,255,255,0.07)'}}>
-          <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm font-bold cursor-pointer transition-all duration-150
-              text-white/40 hover:text-white/70 hover:bg-white/[0.05]"
-            style={{border:'1px solid rgba(255,255,255,0.08)'}}>
-            Cancelar
-          </button>
-          <button
-            onClick={submit}
-            disabled={!canSave || saving}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
-              text-sm font-bold text-white cursor-pointer transition-all duration-200
-              disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
-            style={{background:'linear-gradient(135deg, #7c3aed, #5b21b6)'}}>
-            {saving
-              ? <Loader2 className="w-4 h-4 animate-spin"/>
-              : <Plus className="w-4 h-4"/>
-            }
+        <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-bold cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all" style={{ border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
+          <button onClick={submit} disabled={!nome.trim()||saving}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 hover:brightness-110"
+            style={{ background:'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
             {saving ? 'Criando…' : 'Criar conteúdo'}
           </button>
         </div>
@@ -471,396 +493,288 @@ function NewContentModal({ onClose, onCreate }) {
   );
 }
 
-// ── Edit Panel (slide-in) ─────────────────────────────────────────────────────
-function EditPanel({ item, onSave, onDelete, onClose }) {
-  const [nome,          setNome]          = useState(item.nome);
-  const [responsavel,   setResponsavel]   = useState(item.responsavel || '');
-  const [estadoRoteiro, setEstadoRoteiro] = useState(item.estadoRoteiro || '');
-  const [roteiro,       setRoteiro]       = useState(item.roteiro || '');
-  const [saving,        setSaving]        = useState(false);
-  const [saved,         setSaved]         = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting,      setDeleting]      = useState(false);
+// ── Detail Panel (Tema / Conteúdo / Mídia) ────────────────────────────────────
+function DetailPanel({ item, onSave, onDelete, onClose }) {
+  const [tab,          setTab]          = useState('tema');
+  const [nome,         setNome]         = useState(item.nome);
+  const [responsavel,  setResponsavel]  = useState(item.responsavel || '');
+  const [estado,       setEstado]       = useState(item.estado || '');
+  const [estadoR,      setEstadoR]      = useState(item.estadoRoteiro || '');
+  const [conteudo,     setConteudo]     = useState(item.conteudo || '');
+  const [postagem,     setPostagem]     = useState(item.postagem || '');
+  const [gravacao,     setGravacao]     = useState(item.dataGravacao || '');
+  const [saving,       setSaving]       = useState(false);
+  const [saved,        setSaved]        = useState(false);
+  const [confirmDel,   setConfirmDel]   = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
 
-  const dirty = nome !== item.nome ||
-    responsavel   !== (item.responsavel   || '') ||
-    estadoRoteiro !== (item.estadoRoteiro || '') ||
-    roteiro       !== (item.roteiro       || '');
+  useEffect(() => {
+    setNome(item.nome); setResponsavel(item.responsavel||'');
+    setEstado(item.estado||''); setEstadoR(item.estadoRoteiro||'');
+    setConteudo(item.conteudo||''); setPostagem(item.postagem||'');
+    setGravacao(item.dataGravacao||'');
+  }, [item.id]);
+
+  const dirty = nome !== item.nome || responsavel !== (item.responsavel||'') ||
+    estado !== (item.estado||'') || estadoR !== (item.estadoRoteiro||'') ||
+    conteudo !== (item.conteudo||'') || postagem !== (item.postagem||'') ||
+    gravacao !== (item.dataGravacao||'');
 
   const save = async () => {
     if (!nome.trim() || saving) return;
     setSaving(true);
-    await onSave(item.id, { nome, responsavel, estadoRoteiro, roteiro });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    await onSave(item.id, { nome, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined });
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete) { setConfirmDelete(true); return; }
-    setDeleting(true);
-    await onDelete(item.id);
-    onClose();
+    if (!confirmDel) { setConfirmDel(true); return; }
+    setDeleting(true); await onDelete(item.id); onClose();
   };
 
-  const rsCur = ROTEIRO_STATES.find(s => nrm(s.value) === nrm(estadoRoteiro)) || ROTEIRO_STATES[0];
-  const cl    = clientColor(item.cliente);
+  const cl = clientColor(item.cliente);
+
+  const TABS = [
+    { id:'tema',     label:'Tema',     icon: Palette,  section:'tema'     },
+    { id:'conteudo', label:'Conteúdo', icon: FileText,  section:'conteudo' },
+    { id:'midia',    label:'Mídia',    icon: Image,     section:'midia'    },
+  ];
+
+  const memberColors = {
+    Matheus: { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
+    Sávio:   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative w-full max-w-md flex flex-col h-full"
+        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', borderLeft:'1px solid rgba(255,255,255,0.1)', boxShadow:'-24px 0 60px rgba(0,0,0,0.5)' }}>
 
-      {/* Panel */}
-      <div className="relative w-full max-w-md flex flex-col h-full animate-slide-in-right"
-        style={{
-          background:'rgba(9,16,30,0.98)',
-          backdropFilter:'blur(32px)',
-          borderLeft:'1px solid rgba(255,255,255,0.1)',
-          boxShadow:'-24px 0 60px rgba(0,0,0,0.5)',
-        }}>
-
-        {/* Panel header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b"
-          style={{borderColor:'rgba(255,255,255,0.07)'}}>
-          <div>
-            <p className="text-[10px] text-white/30 font-semibold uppercase tracking-widest mb-0.5">Editar conteúdo</p>
-            <div className="flex items-center gap-2">
-              {item.cliente && (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                  style={{background:cl.bg, color:cl.text, border:`1px solid ${cl.border}`}}>
-                  {item.cliente}
-                </span>
-              )}
-              {item.formato && (
-                <span className="text-[10px] text-white/30">{item.formato}</span>
-              )}
-            </div>
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl
-              text-white/40 hover:text-white hover:bg-white/[0.06]
-              transition-all duration-150 cursor-pointer">
-            <X className="w-4 h-4"/>
-          </button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-
-          {/* Nome */}
-          <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Nome do conteúdo
-            </label>
-            <input
-              type="text"
-              value={nome}
-              onChange={e => setNome(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-                outline-none transition-all duration-150 focus:ring-2 focus:ring-violet-500/40"
-              style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)'}}
-            />
-          </div>
-
-          {/* Responsável */}
-          <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Responsável
-            </label>
-            <div className="flex gap-2">
-              {MEMBERS.map(m => {
-                const colors = {
-                  'Matheus': { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
-                  'Sávio':   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
-                };
-                const c = colors[m] || {};
-                const active = nrm(responsavel) === nrm(m);
-                return (
-                  <button key={m} type="button"
-                    onClick={() => setResponsavel(active ? '' : m)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
-                    style={{
-                      background: active ? c.bg : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? c.text : 'rgba(255,255,255,0.35)',
-                    }}>
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Estado do Roteiro */}
-          <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-              Estado do Roteiro
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {ROTEIRO_STATES.map(s => {
-                const active = nrm(estadoRoteiro) === nrm(s.value);
-                return (
-                  <button key={s.value} type="button"
-                    onClick={() => setEstadoRoteiro(s.value)}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
-                      cursor-pointer transition-all duration-150 text-left"
-                    style={{
-                      background: active ? `${s.color}20` : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? s.color : 'rgba(255,255,255,0.35)',
-                    }}>
-                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{background: active ? s.color : 'rgba(255,255,255,0.15)'}}/>
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Roteiro / Script */}
-          <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Edit3 className="w-3 h-3"/> Roteiro
-            </label>
-            <textarea
-              value={roteiro}
-              onChange={e => setRoteiro(e.target.value)}
-              rows={10}
-              placeholder="Escreva o roteiro do conteúdo aqui..."
-              className="w-full px-4 py-3 rounded-xl text-sm text-white/90 placeholder-white/20
-                font-medium resize-none outline-none transition-all duration-150
-                focus:ring-2 focus:ring-violet-500/40 leading-relaxed"
-              style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}
-            />
-            <p className="text-[10px] text-white/20 mt-1.5 text-right">
-              {roteiro.length} caracteres
-            </p>
-          </div>
-
-          {/* Read-only info */}
-          <div className="grid grid-cols-2 gap-3">
-            {item.dataGravacao && (
-              <div className="px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.03)'}}>
-                <p className="text-[10px] text-white/25 font-semibold uppercase tracking-wider mb-0.5">Gravação</p>
-                <p className="text-xs text-white/60 font-medium">{fmtFull(item.dataGravacao)}</p>
-              </div>
-            )}
-            {item.postagem && (
-              <div className="px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.03)'}}>
-                <p className="text-[10px] text-white/25 font-semibold uppercase tracking-wider mb-0.5">Postagem</p>
-                <p className="text-xs text-white/60 font-medium">{fmtFull(item.postagem)}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Save footer */}
-        <div className="px-5 py-4 border-t space-y-2" style={{borderColor:'rgba(255,255,255,0.07)'}}>
-          <button
-            onClick={save}
-            disabled={!dirty || saving || !nome.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-              text-sm font-bold text-white cursor-pointer
-              transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-              hover:brightness-110 active:scale-[0.98]"
-            style={{background: saved ? 'rgba(16,185,129,0.8)' : 'linear-gradient(135deg, #7c3aed, #5b21b6)'}}>
-            {saving
-              ? <Loader2 className="w-4 h-4 animate-spin"/>
-              : saved
-                ? <CheckCircle2 className="w-4 h-4"/>
-                : <Save className="w-4 h-4"/>
-            }
-            {saving ? 'Salvando…' : saved ? 'Salvo!' : 'Salvar alterações'}
-          </button>
-          {!dirty && (
-            <p className="text-center text-[10px] text-white/20">Nenhuma alteração pendente</p>
-          )}
-
-          {/* Delete */}
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-              text-xs font-bold cursor-pointer transition-all duration-200
-              disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
-            style={{
-              background: confirmDelete ? 'rgba(244,63,94,0.2)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${confirmDelete ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.07)'}`,
-              color: confirmDelete ? '#fb7185' : 'rgba(255,255,255,0.25)',
-            }}>
-            {deleting
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
-              : <Trash2 className="w-3.5 h-3.5"/>
-            }
-            {deleting ? 'Removendo…' : confirmDelete ? 'Confirmar exclusão' : 'Remover conteúdo'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ col, items, onUpdate, onEdit, loading }) {
-  return (
-    <div className="flex flex-col min-w-[260px] lg:min-w-0 lg:flex-1" style={{maxWidth:'320px'}}>
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full shrink-0" style={{background:col.color}}/>
-          <div>
-            <p className="text-xs font-bold text-white/80">{col.label}</p>
-            <p className="text-[10px] text-white/30">{col.sublabel}</p>
-          </div>
-        </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{background: items.length>0 ? `${col.color}18`:'rgba(255,255,255,0.05)', color: items.length>0 ? col.color:'rgba(255,255,255,0.2)'}}>
-          {loading ? '—' : items.length}
-        </span>
-      </div>
-      <div className="flex-1 rounded-xl p-2 space-y-2 min-h-[120px]"
-        style={{background:col.glow, border:`1px solid ${col.color}15`}}>
-        {loading
-          ? [...Array(2)].map((_,i) => <div key={i} className="h-20 rounded-xl animate-pulse" style={{background:'rgba(255,255,255,0.05)'}}/>)
-          : items.length > 0
-            ? items.map(item => <ContentCard key={item.id} item={item} onUpdate={onUpdate} onEdit={onEdit}/>)
-            : <div className="flex items-center justify-center py-8"><p className="text-[11px] text-white/15 font-medium">Nenhum item</p></div>
-        }
-      </div>
-    </div>
-  );
-}
-
-// ── Weekly board ──────────────────────────────────────────────────────────────
-function WeeklyBoard({ items, onUpdate, onEdit, loading, year, month, onPrevMonth, onNextMonth }) {
-  const { weeks, noDate } = groupByWeek(items);
-
-  // Filter to show only weeks touching the current month
-  const monthWeeks = weeks.filter(({ monday }) => {
-    const sun = new Date(monday); sun.setDate(monday.getDate()+6);
-    return monday.getMonth() === month || sun.getMonth() === month ||
-           monday.getFullYear() === year;
-  });
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Month nav */}
-      <div className="flex items-center gap-3 mb-4 px-1">
-        <button onClick={onPrevMonth}
-          className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer
-            text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
-          <ChevronLeft className="w-4 h-4"/>
-        </button>
-        <span className="text-sm font-bold text-white font-display">
-          {MONTHS_PT[month]} {year}
-        </span>
-        <button onClick={onNextMonth}
-          className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer
-            text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
-          <ChevronRight className="w-4 h-4"/>
-        </button>
-        <span className="ml-2 text-[11px] text-white/30">{items.length} conteúdos</span>
-      </div>
-
-      {/* Week columns */}
-      {loading ? (
-        <div className="flex gap-4">
-          {[...Array(3)].map((_,i) => (
-            <div key={i} className="min-w-[260px] flex-1 h-48 rounded-2xl animate-pulse"
-              style={{background:'rgba(255,255,255,0.04)'}}/>
-          ))}
-        </div>
-      ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4" style={{minWidth:`${(monthWeeks.length + (noDate.length?1:0)) * 280}px`}}>
-          {monthWeeks.length === 0 && noDate.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 w-full">
-              <CalendarDays className="w-10 h-10 text-white/10 mb-3"/>
-              <p className="text-sm text-white/30">Nenhum conteúdo em {MONTHS_PT[month]}</p>
-            </div>
-          )}
-
-          {monthWeeks.map(({ monday, items: weekItems }) => {
-            const sun = new Date(monday); sun.setDate(monday.getDate()+6);
-            const label = weekLabel(monday);
-            const isCurrentWeek = (() => {
-              const now = new Date(); now.setHours(0,0,0,0);
-              return now >= monday && now <= sun;
-            })();
-
-            return (
-              <div key={monday.toISOString()} className="flex flex-col min-w-[260px] max-w-[300px] flex-1">
-                {/* Week header */}
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <div className="flex items-center gap-2">
-                    {isCurrentWeek && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"/>
-                    )}
-                    <p className={`text-xs font-bold ${isCurrentWeek ? 'text-violet-300' : 'text-white/60'}`}>
-                      {label}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      background: isCurrentWeek ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.05)',
-                      color: isCurrentWeek ? '#a78bfa' : 'rgba(255,255,255,0.3)',
-                    }}>
-                    {weekItems.length}
+        {/* Header */}
+        <div className="px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1 min-w-0 pr-2">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                {item.cliente && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                    style={{ background:cl.bg, color:cl.text, border:`1px solid ${cl.border}` }}>
+                    {item.cliente}
                   </span>
+                )}
+                {item.formato && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ color: FORMAT_COLORS[item.formato]||'#a78bfa', background: `${FORMAT_COLORS[item.formato]||'#a78bfa'}15` }}>
+                    {item.formato}
+                  </span>
+                )}
+                {item.responsavel && (
+                  <span className="text-[10px] text-white/35 flex items-center gap-1">
+                    <User className="w-3 h-3"/> {item.responsavel}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">{item.nome}</h3>
+              {(item.postagem || item.dataGravacao) && (
+                <div className="flex items-center gap-3 mt-1.5">
+                  {item.dataGravacao && <span className="flex items-center gap-1 text-[10px] text-white/30"><Camera className="w-3 h-3"/> {fmtFull(item.dataGravacao)}</span>}
+                  {item.postagem && <span className="flex items-center gap-1 text-[10px] text-white/30"><Clock className="w-3 h-3"/> {fmtFull(item.postagem)}</span>}
                 </div>
+              )}
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer shrink-0">
+              <X className="w-4 h-4"/>
+            </button>
+          </div>
 
-                {/* Cards */}
-                <div className="flex-1 rounded-xl p-2 space-y-2 min-h-[100px]"
+          {/* Tab selector with section status */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {TABS.map(t => {
+              const st   = sectionStatus(item, t.section);
+              const meta = SECTION_STATUS[st];
+              const isActive = tab === t.id;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className="flex flex-col items-center gap-1 py-2 px-2 rounded-xl cursor-pointer transition-all duration-150"
                   style={{
-                    background: isCurrentWeek ? 'rgba(124,58,237,0.06)' : 'rgba(255,255,255,0.03)',
-                    border: isCurrentWeek ? '1px solid rgba(124,58,237,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                    background: isActive ? meta.bg : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isActive ? meta.border : 'rgba(255,255,255,0.06)'}`,
                   }}>
-                  {weekItems
-                    .sort((a,b) => (a.postagem||a.dataGravacao||'') > (b.postagem||b.dataGravacao||'') ? 1 : -1)
-                    .map(item => (
-                      <ContentCard key={item.id} item={item} onUpdate={onUpdate} onEdit={onEdit}/>
-                    ))
-                  }
-                </div>
-              </div>
-            );
-          })}
+                  <t.icon className="w-3.5 h-3.5" style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.3)' }}/>
+                  <span className="text-[10px] font-bold" style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.5)' }}>{t.label}</span>
+                  <span className="text-[9px] font-medium" style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.2)' }}>{meta.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          {/* No date column */}
-          {noDate.length > 0 && (
-            <div className="flex flex-col min-w-[260px] max-w-[280px]">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <p className="text-xs font-bold text-white/35">Sem data</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 text-white/25">
-                  {noDate.length}
-                </span>
-              </div>
-              <div className="flex-1 rounded-xl p-2 space-y-2 min-h-[100px]"
-                style={{background:'rgba(255,255,255,0.02)',border:'1px dashed rgba(255,255,255,0.07)'}}>
-                {noDate.map(item => (
-                  <ContentCard key={item.id} item={item} onUpdate={onUpdate} onEdit={onEdit}/>
-                ))}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+          {/* ── Tema ── */}
+          {tab === 'tema' && <>
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Título / Tema</label>
+              <input type="text" value={nome} onChange={e => setNome(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white outline-none focus:ring-2 focus:ring-violet-500/40"
+                style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Responsável</label>
+              <div className="flex gap-2">
+                {MEMBERS.map(m => {
+                  const c = memberColors[m]||{}; const active = nrm(responsavel)===nrm(m);
+                  return <button key={m} type="button" onClick={() => setResponsavel(active?'':m)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all"
+                    style={{ background: active?c.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?c.border:'rgba(255,255,255,0.08)'}`, color: active?c.text:'rgba(255,255,255,0.35)' }}>
+                    {m}
+                  </button>;
+                })}
               </div>
             </div>
-          )}
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Estado geral</label>
+              <div className="grid grid-cols-2 gap-2">
+                {ESTADO_OPTIONS.map(s => {
+                  const active = nrm(estado)===nrm(s.value);
+                  return <button key={s.value} type="button" onClick={() => setEstado(s.value)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all text-left"
+                    style={{ background: active?`${s.color}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${s.color}50`:'rgba(255,255,255,0.08)'}`, color: active?s.color:'rgba(255,255,255,0.35)' }}>
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(255,255,255,0.15)' }}/>
+                    {s.label}
+                  </button>;
+                })}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[['Gravação', gravacao, setGravacao], ['Postagem', postagem, setPostagem]].map(([lbl,val,set]) => (
+                <div key={lbl}>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">{lbl}</label>
+                  <input type="date" value={val} onChange={e => set(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 outline-none focus:ring-2 focus:ring-violet-500/30"
+                    style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', colorScheme:'dark' }}/>
+                </div>
+              ))}
+            </div>
+          </>}
+
+          {/* ── Conteúdo ── */}
+          {tab === 'conteudo' && <>
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Estado do Conteúdo</label>
+              <div className="grid grid-cols-2 gap-2">
+                {CONTEUDO_STATES.map(s => {
+                  const active = nrm(estadoR)===nrm(s.value);
+                  return <button key={s.value} type="button" onClick={() => setEstadoR(s.value)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all text-left"
+                    style={{ background: active?`${s.color}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${s.color}50`:'rgba(255,255,255,0.08)'}`, color: active?s.color:'rgba(255,255,255,0.35)' }}>
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(255,255,255,0.15)' }}/>
+                    {s.label}
+                  </button>;
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+                Conteúdo / Roteiro
+              </label>
+              <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={14}
+                placeholder="Escreva o conteúdo ou roteiro aqui..."
+                className="w-full px-4 py-3 rounded-xl text-sm text-white/90 placeholder-white/20 font-medium resize-none outline-none focus:ring-2 focus:ring-violet-500/40 leading-relaxed"
+                style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
+              <p className="text-[10px] text-white/20 mt-1 text-right">{conteudo.length} caracteres</p>
+            </div>
+            {item.feedbackRoteiro && (
+              <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)' }}>
+                <p className="text-[10px] text-amber-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
+                <p className="text-xs text-amber-300/80 leading-relaxed">{item.feedbackRoteiro}</p>
+              </div>
+            )}
+          </>}
+
+          {/* ── Mídia ── */}
+          {tab === 'midia' && <>
+            {(item.linkCapa || item.linkCapa2) && (
+              <div>
+                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Capas</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[item.linkCapa, item.linkCapa2].filter(Boolean).map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer"
+                      className="block rounded-xl overflow-hidden aspect-video cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                      <img src={url} alt={`Capa ${i+1}`} className="w-full h-full object-cover"
+                        onError={e => { e.target.style.display='none'; }}/>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {item.linkFicheiro ? (
+              <div>
+                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Arquivo</label>
+                <a href={item.linkFicheiro} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:brightness-125 transition-all"
+                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)' }}>
+                  <Link2 className="w-4 h-4 text-cyan-400 shrink-0"/>
+                  <span className="text-sm text-white/70 font-medium truncate flex-1">{item.linkFicheiro}</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-white/30 shrink-0"/>
+                </a>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 rounded-xl"
+                style={{ background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.08)' }}>
+                <Image className="w-8 h-8 text-white/15 mb-2"/>
+                <p className="text-xs text-white/25">Nenhuma mídia vinculada</p>
+                <p className="text-[10px] text-white/15 mt-0.5">Links cadastrados no Notion</p>
+              </div>
+            )}
+            {item.feedbackCliente && (
+              <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
+                <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback do Cliente</p>
+                <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+              </div>
+            )}
+            {!item.linkCapa && !item.linkCapa2 && !item.linkFicheiro && !item.feedbackCliente && (
+              <div/>
+            )}
+          </>}
         </div>
-      )}
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t space-y-2 shrink-0" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <button onClick={save} disabled={!dirty||saving||!nome.trim()}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
+            style={{ background: saved?'rgba(16,185,129,0.8)':'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+            {saving?<Loader2 className="w-4 h-4 animate-spin"/>:saved?<CheckCircle2 className="w-4 h-4"/>:<Save className="w-4 h-4"/>}
+            {saving?'Salvando…':saved?'Salvo!':'Salvar alterações'}
+          </button>
+          {!dirty && <p className="text-center text-[10px] text-white/20">Nenhuma alteração pendente</p>}
+          <button onClick={handleDelete} disabled={deleting}
+            onBlur={() => setTimeout(() => setConfirmDel(false), 200)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-40"
+            style={{ background: confirmDel?'rgba(244,63,94,0.2)':'rgba(255,255,255,0.03)', border:`1px solid ${confirmDel?'rgba(244,63,94,0.4)':'rgba(255,255,255,0.07)'}`, color: confirmDel?'#fb7185':'rgba(255,255,255,0.25)' }}>
+            {deleting?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Trash2 className="w-3.5 h-3.5"/>}
+            {deleting?'Removendo…':confirmDel?'Confirmar exclusão':'Remover conteúdo'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Conteudo() {
-  const today = new Date();
+  const now = new Date();
   const [content,       setContent]       = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [view,          setView]          = useState('semanas'); // 'kanban' | 'semanas'
-  const [memberView,    setMemberView]    = useState('geral');   // 'geral' | 'minhas'
+  const [view,          setView]          = useState('mensal');  // mensal | semanal | feed
+  const [memberView,    setMemberView]    = useState('geral');
   const [filterCliente, setFilterCliente] = useState('');
-  const [editItem,      setEditItem]      = useState(null);
+  const [selectedItem,  setSelectedItem]  = useState(null);
   const [showNew,       setShowNew]       = useState(false);
-  const [calMonth,      setCalMonth]      = useState(today.getMonth());
-  const [calYear,       setCalYear]       = useState(today.getFullYear());
+  const [calMonth,      setCalMonth]      = useState(now.getMonth());
+  const [calYear,       setCalYear]       = useState(now.getFullYear());
 
   useEffect(() => {
     setLoading(true);
@@ -870,119 +784,88 @@ export default function Conteudo() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Create a new content item
-  const createItem = useCallback((newContent) => {
-    setContent(prev => [newContent, ...prev]);
-  }, []);
+  const createItem = useCallback(c => setContent(prev => [c, ...prev]), []);
 
-  // Delete (archive) a content item
-  const deleteItem = useCallback(async (id) => {
-    await fetch('/api/crm/content', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
+  const deleteItem = useCallback(async id => {
+    await fetch('/api/crm/content', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
     setContent(prev => prev.filter(c => c.id !== id));
   }, []);
 
-  // Update any field(s) on a content item
   const updateItem = useCallback(async (id, fields) => {
     const res = await fetch('/api/crm/content', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ id, ...fields }),
     });
     if (res.ok) {
       const { content: updated } = await res.json();
       setContent(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
-      // Also refresh editItem if open
-      if (editItem?.id === id) setEditItem(prev => prev ? { ...prev, ...updated } : null);
+      setSelectedItem(prev => prev?.id === id ? { ...prev, ...updated } : prev);
     }
-  }, [editItem]);
+  }, []);
 
-  // ── Filter pipeline ──
+  // Filter pipeline
   const filtered = content.filter(item => {
-    if (memberView === 'minhas') {
-      const r = nrm(item.responsavel);
-      if (!r.includes('savio')) return false;
-    }
-    if (filterCliente) {
-      if (nrm(item.cliente).replace(/\s/g,'') !== nrm(filterCliente).replace(/\s/g,'')) return false;
-    }
+    if (memberView === 'minhas' && !nrm(item.responsavel).includes('savio')) return false;
+    if (filterCliente && nrm(item.cliente).replace(/\s/g,'') !== nrm(filterCliente).replace(/\s/g,'')) return false;
     return true;
   });
 
-  // Kanban distribution
-  const columnItems = {};
-  COLUMNS.forEach(col => { columnItems[col.id] = []; });
-  filtered.forEach(item => { columnItems[classifyItem(item)].push(item); });
-
-  // Weekly filter: only items in calYear/calMonth window (postagem or gravacao)
-  const weeklyItems = filtered.filter(item => {
+  // Monthly: only items in exact cal month
+  const monthItems = filtered.filter(item => {
     const d = item.postagem || item.dataGravacao;
-    if (!d) return true; // no-date items always show
-    const itemDate = new Date(d);
-    // Show items within ±1 month to include cross-week items
-    return Math.abs((itemDate.getFullYear() - calYear) * 12 + (itemDate.getMonth() - calMonth)) <= 1;
+    if (!d) return false;
+    const dt = new Date(d);
+    return dt.getFullYear() === calYear && dt.getMonth() === calMonth;
   });
 
-  const urgentes = columnItems['aguardando-cliente']?.length ?? 0;
+  // Weekly: ±1 month window
+  const weeklyItems = filtered.filter(item => {
+    const d = item.postagem || item.dataGravacao;
+    if (!d) return true;
+    const dt = new Date(d);
+    return Math.abs((dt.getFullYear() - calYear)*12 + (dt.getMonth() - calMonth)) <= 1;
+  });
 
-  const prevMonth = () => {
-    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); }
-    else setCalMonth(m => m-1);
-  };
-  const nextMonth = () => {
-    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); }
-    else setCalMonth(m => m+1);
-  };
+  const prevMonth = () => { if (calMonth===0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); };
+  const nextMonth = () => { if (calMonth===11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); };
+
+  const VIEWS = [
+    { key:'mensal',  label:'Mensal',  icon: CalendarDays },
+    { key:'semanal', label:'Semanal', icon: LayoutGrid   },
+    { key:'feed',    label:'Feed',    icon: Film         },
+  ];
 
   return (
     <CRMLayout title="Conteúdo — T3 Studio CRM">
-      <div className="flex flex-col" style={{minHeight:'calc(100vh - 56px)'}}>
+      <div className="flex flex-col min-h-screen">
 
-        {/* ── Top bar ── */}
-        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0">
+        {/* Top bar */}
+        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b" style={{ borderColor:'rgba(255,255,255,0.05)' }}>
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-xl font-bold text-white font-display flex items-center gap-2">
-                <Film className="w-5 h-5 text-cyan-400"/>
-                Esteira de Conteúdo
+                <Film className="w-5 h-5 text-cyan-400"/> Esteira de Conteúdo
               </h1>
               <p className="text-xs text-white/35 mt-0.5">
                 {loading ? '…' : `${content.length} conteúdos`}
-                {urgentes > 0 && (
-                  <span className="ml-2 text-amber-400 font-semibold">· {urgentes} aguardando cliente</span>
-                )}
               </p>
             </div>
 
-            {/* Controls row */}
             <div className="flex items-center gap-2 shrink-0">
-              {/* New content button */}
-              <button
-                onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold
-                  text-white cursor-pointer transition-all duration-150
-                  hover:brightness-110 active:scale-[0.97]"
-                style={{background:'linear-gradient(135deg, #7c3aed, #0e7490)', border:'1px solid rgba(124,58,237,0.4)'}}>
+              {/* New */}
+              <button onClick={() => setShowNew(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:brightness-110 active:scale-[0.97]"
+                style={{ background:'linear-gradient(135deg,#7c3aed,#0e7490)', border:'1px solid rgba(124,58,237,0.4)' }}>
                 <Plus className="w-3.5 h-3.5"/>
                 <span className="hidden sm:inline">Novo</span>
               </button>
+
               {/* Member toggle */}
-              <div className="flex items-center rounded-xl p-1"
-                style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
-                {[
-                  { key:'geral',  label:'Geral',   icon: LayoutGrid },
-                  { key:'minhas', label:'Minhas',   icon: User2      },
-                ].map(({ key, label, icon: Icon }) => (
+              <div className="flex items-center rounded-xl p-1" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                {[{key:'geral',label:'Geral',icon:LayoutGrid},{key:'minhas',label:'Minhas',icon:User2}].map(({key,label,icon:Icon}) => (
                   <button key={key} onClick={() => setMemberView(key)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-150"
-                    style={{
-                      background: memberView===key ? 'rgba(124,58,237,0.25)' : 'transparent',
-                      color:      memberView===key ? '#a78bfa' : 'rgba(255,255,255,0.35)',
-                      border:     memberView===key ? '1px solid rgba(124,58,237,0.35)' : '1px solid transparent',
-                    }}>
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+                    style={{ background: memberView===key?'rgba(124,58,237,0.25)':'transparent', color: memberView===key?'#a78bfa':'rgba(255,255,255,0.35)', border: memberView===key?'1px solid rgba(124,58,237,0.35)':'1px solid transparent' }}>
                     <Icon className="w-3 h-3"/>
                     <span className="hidden sm:inline">{label}</span>
                   </button>
@@ -990,19 +873,11 @@ export default function Conteudo() {
               </div>
 
               {/* View toggle */}
-              <div className="flex items-center rounded-xl p-1"
-                style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
-                {[
-                  { key:'semanas', label:'Semanas', icon: CalendarDays },
-                  { key:'kanban',  label:'Kanban',  icon: LayoutGrid   },
-                ].map(({ key, label, icon: Icon }) => (
+              <div className="flex items-center rounded-xl p-1" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                {VIEWS.map(({key,label,icon:Icon}) => (
                   <button key={key} onClick={() => setView(key)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-150"
-                    style={{
-                      background: view===key ? 'rgba(14,165,233,0.2)' : 'transparent',
-                      color:      view===key ? '#38bdf8' : 'rgba(255,255,255,0.35)',
-                      border:     view===key ? '1px solid rgba(14,165,233,0.3)' : '1px solid transparent',
-                    }}>
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+                    style={{ background: view===key?'rgba(14,165,233,0.2)':'transparent', color: view===key?'#38bdf8':'rgba(255,255,255,0.35)', border: view===key?'1px solid rgba(14,165,233,0.3)':'1px solid transparent' }}>
                     <Icon className="w-3 h-3"/>
                     <span className="hidden sm:inline">{label}</span>
                   </button>
@@ -1015,36 +890,23 @@ export default function Conteudo() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] text-white/25 font-semibold uppercase tracking-wider">Projeto:</span>
             <button onClick={() => setFilterCliente('')}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150"
-              style={{
-                background: !filterCliente ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${!filterCliente ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`,
-                color: !filterCliente ? 'white' : 'rgba(255,255,255,0.3)',
-              }}>
+              className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
+              style={{ background: !filterCliente?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterCliente?'rgba(255,255,255,0.2)':'rgba(255,255,255,0.07)'}`, color: !filterCliente?'white':'rgba(255,255,255,0.3)' }}>
               Todos
             </button>
             {CLIENTS.map(c => {
-              const cc = CLIENT_COLORS[c] || { text:'#fff', bg:'rgba(255,255,255,0.1)', border:'rgba(255,255,255,0.2)' };
-              const active = nrm(filterCliente).replace(/\s/g,'') === nrm(c).replace(/\s/g,'');
-              return (
-                <button key={c} onClick={() => setFilterCliente(active ? '' : c)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer transition-all duration-150"
-                  style={{
-                    background: active ? cc.bg : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${active ? cc.border : 'rgba(255,255,255,0.07)'}`,
-                    color: active ? cc.text : 'rgba(255,255,255,0.3)',
-                  }}>
-                  {c}
-                </button>
-              );
+              const cc = CLIENT_COLORS[c]||{}; const active = nrm(filterCliente).replace(/\s/g,'')=== nrm(c).replace(/\s/g,'');
+              return <button key={c} onClick={() => setFilterCliente(active?'':c)}
+                className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
+                style={{ background: active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.07)'}`, color: active?cc.text:'rgba(255,255,255,0.3)' }}>
+                {c}
+              </button>;
             })}
-
-            {(memberView==='minhas' || filterCliente) && (
+            {(memberView==='minhas'||filterCliente) && (
               <span className="flex items-center gap-1 text-[10px] text-violet-400 font-semibold px-2 py-1 rounded-full"
-                style={{background:'rgba(124,58,237,0.1)',border:'1px solid rgba(124,58,237,0.2)'}}>
+                style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)' }}>
                 {[memberView==='minhas'&&'Sávio', filterCliente].filter(Boolean).join(' · ')}
-                <button onClick={() => { setMemberView('geral'); setFilterCliente(''); }}
-                  className="ml-0.5 cursor-pointer hover:text-white transition-colors">
+                <button onClick={() => { setMemberView('geral'); setFilterCliente(''); }} className="ml-0.5 cursor-pointer hover:text-white transition-colors">
                   <X className="w-3 h-3"/>
                 </button>
               </span>
@@ -1052,50 +914,31 @@ export default function Conteudo() {
           </div>
         </div>
 
-        {/* ── Board area ── */}
-        <div className="flex-1 overflow-x-auto px-5 lg:px-8 pb-8">
-          {view === 'kanban' ? (
-            <div className="flex gap-4 pb-4" style={{minWidth:`${COLUMNS.length * 280}px`}}>
-              {COLUMNS.map(col => (
-                <KanbanColumn key={col.id} col={col}
-                  items={columnItems[col.id] || []}
-                  onUpdate={(id, fields) => updateItem(id, fields)}
-                  onEdit={setEditItem}
-                  loading={loading}
-                />
-              ))}
-            </div>
-          ) : (
-            <WeeklyBoard
-              items={weeklyItems}
-              onUpdate={(id, fields) => updateItem(id, fields)}
-              onEdit={setEditItem}
-              loading={loading}
-              year={calYear}
-              month={calMonth}
-              onPrevMonth={prevMonth}
-              onNextMonth={nextMonth}
-            />
+        {/* Board area */}
+        <div className="flex-1 overflow-x-auto px-5 lg:px-8 py-6">
+          {view === 'mensal' && (
+            <MonthlyView items={monthItems} onSelect={setSelectedItem} loading={loading}
+              year={calYear} month={calMonth} onPrev={prevMonth} onNext={nextMonth}/>
+          )}
+          {view === 'semanal' && (
+            <WeeklyView items={weeklyItems} onSelect={setSelectedItem} loading={loading}
+              year={calYear} month={calMonth} onPrev={prevMonth} onNext={nextMonth}/>
+          )}
+          {view === 'feed' && (
+            <FeedView items={filtered} onSelect={setSelectedItem} loading={loading}/>
           )}
         </div>
       </div>
 
-      {/* ── Edit Panel ── */}
-      {editItem && (
-        <EditPanel
-          item={editItem}
+      {selectedItem && (
+        <DetailPanel item={selectedItem}
           onSave={async (id, fields) => { await updateItem(id, fields); }}
           onDelete={deleteItem}
-          onClose={() => setEditItem(null)}
-        />
+          onClose={() => setSelectedItem(null)}/>
       )}
 
-      {/* ── New Content Modal ── */}
       {showNew && (
-        <NewContentModal
-          onClose={() => setShowNew(false)}
-          onCreate={createItem}
-        />
+        <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem}/>
       )}
     </CRMLayout>
   );
