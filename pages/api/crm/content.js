@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     const {
       id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
       postagem, responsavel, nome, conteudo, galeria, linkDrive,
-      linkFicheiro, linkCapa, plataforma,
+      linkFicheiro, linkCapa, plataforma, formato, cliente,
     } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
@@ -156,6 +156,8 @@ export default async function handler(req, res) {
       if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
       if (linkCapa !== undefined)     properties['Link da Capa']       = { url: linkCapa || null };
       if (plataforma !== undefined)   properties['plataforma']         = { select: plataforma ? { name: plataforma } : null };
+      if (formato)                    properties['Formato']            = { select: { name: formato } };
+      if (cliente)                    properties['Cliente']            = { select: { name: cliente } };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });

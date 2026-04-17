@@ -166,37 +166,120 @@ function MiniCard({ item, onClick }) {
   );
 }
 
+// ── Card Carousel (Instagram-style) ──────────────────────────────────────────
+function CardCarousel({ images, fmtColor, formato, postagem }) {
+  const [idx, setIdx] = useState(0);
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); };
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
+
+  if (!images.length) return (
+    <div className="w-full aspect-square flex items-center justify-center relative"
+      style={{ background: `${fmtColor}0d` }}>
+      <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
+      {formato && (
+        <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+          {formato}
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="relative w-full aspect-square overflow-hidden group/car select-none"
+      style={{ background: `${fmtColor}0d` }}>
+      {/* Image */}
+      <img src={images[idx]} alt="" className="w-full h-full object-cover transition-opacity duration-200"/>
+
+      {/* Format badge */}
+      {formato && (
+        <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
+          style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+          {formato}
+        </span>
+      )}
+      {postagem && (
+        <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md z-10"
+          style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}>
+          {fmtShort(postagem)}
+        </span>
+      )}
+
+      {/* Navigation arrows */}
+      {images.length > 1 && (
+        <>
+          <button onClick={prev}
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10
+              opacity-0 group-hover/car:opacity-100 transition-opacity duration-150 cursor-pointer hover:scale-110"
+            style={{ background:'rgba(0,0,0,0.65)', border:'1px solid rgba(255,255,255,0.15)' }}>
+            <ChevronLeft className="w-4 h-4 text-white"/>
+          </button>
+          <button onClick={next}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10
+              opacity-0 group-hover/car:opacity-100 transition-opacity duration-150 cursor-pointer hover:scale-110"
+            style={{ background:'rgba(0,0,0,0.65)', border:'1px solid rgba(255,255,255,0.15)' }}>
+            <ChevronRight className="w-4 h-4 text-white"/>
+          </button>
+
+          {/* Dot indicators */}
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+            {images.map((_, i) => (
+              <button key={i} onClick={e => { e.stopPropagation(); setIdx(i); }}
+                className="rounded-full transition-all duration-200 cursor-pointer"
+                style={{ width: i===idx?16:6, height:6, background: i===idx?'white':'rgba(255,255,255,0.45)' }}/>
+            ))}
+          </div>
+
+          {/* Counter */}
+          <div className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md z-10"
+            style={{ background:'rgba(0,0,0,0.55)', color:'rgba(255,255,255,0.7)' }}>
+            {idx+1}/{images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Feed card ─────────────────────────────────────────────────────────────────
 function FeedCard({ item, onClick }) {
-  const cl       = clientColor(item.cliente);
-  const fmtColor = FORMAT_COLORS[item.formato] || '#a78bfa';
-  const tabs     = ['tema', 'conteudo', 'midia'];
+  const cl        = clientColor(item.cliente);
+  const fmtColor  = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const tabs      = ['tema', 'conteudo', 'midia'];
+  const isCar     = isCarouselFmt(item.formato);
+  const carImages = isCar && item.galeria
+    ? item.galeria.split(',').map(u => u.trim()).filter(Boolean)
+    : [];
 
   return (
     <button onClick={() => onClick(item)}
       className="text-left rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:shadow-lg cursor-pointer group"
       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
 
-      {/* Cover / format strip */}
-      <div className="w-full aspect-video flex items-center justify-center relative overflow-hidden"
-        style={{ background: `${fmtColor}0d` }}>
-        {item.linkCapa
-          ? <img src={item.linkCapa} alt="" className="w-full h-full object-cover"/>
-          : <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
-        }
-        {item.formato && (
-          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: `${fmtColor}25`, color: fmtColor, border: `1px solid ${fmtColor}40`, backdropFilter: 'blur(4px)' }}>
-            {item.formato}
-          </span>
-        )}
-        {item.postagem && (
-          <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-            {fmtShort(item.postagem)}
-          </span>
-        )}
-      </div>
+      {/* Cover / carousel */}
+      {isCar ? (
+        <CardCarousel images={carImages} fmtColor={fmtColor} formato={item.formato} postagem={item.postagem}/>
+      ) : (
+        <div className="w-full aspect-video flex items-center justify-center relative overflow-hidden"
+          style={{ background: `${fmtColor}0d` }}>
+          {item.linkCapa
+            ? <img src={item.linkCapa} alt="" className="w-full h-full object-cover"/>
+            : <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
+          }
+          {item.formato && (
+            <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+              {item.formato}
+            </span>
+          )}
+          {item.postagem && (
+            <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md"
+              style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}>
+              {fmtShort(item.postagem)}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="p-3">
         {/* Client + title */}
@@ -595,9 +678,11 @@ function isCarouselFmt(formato) {
 }
 
 // ── Detail Panel — vertical layout (tabs left, content right) ────────────────
-function DetailPanel({ item, onSave, onDelete, onClose }) {
+function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIENTS }) {
   const [tab,         setTab]         = useState('tema');
   const [nome,        setNome]        = useState(item.nome);
+  const [formato,     setFormato]     = useState(item.formato || '');
+  const [cliente,     setCliente]     = useState(item.cliente || '');
   const [responsavel, setResponsavel] = useState(item.responsavel || '');
   const [estado,      setEstado]      = useState(item.estado || '');
   const [estadoR,     setEstadoR]     = useState(item.estadoRoteiro || '');
@@ -614,7 +699,8 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
   const [deleting,   setDeleting]   = useState(false);
 
   useEffect(() => {
-    setNome(item.nome); setResponsavel(item.responsavel||'');
+    setNome(item.nome); setFormato(item.formato||''); setCliente(item.cliente||'');
+    setResponsavel(item.responsavel||'');
     setEstado(item.estado||''); setEstadoR(item.estadoRoteiro||'');
     setConteudo(item.conteudo||''); setPostagem(item.postagem||'');
     setGravacao(item.dataGravacao||''); setLinkDrive(item.linkDrive||'');
@@ -622,7 +708,8 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
     setTab('tema');
   }, [item.id]);
 
-  const dirty = nome !== item.nome || responsavel !== (item.responsavel||'') ||
+  const dirty = nome !== item.nome || formato !== (item.formato||'') ||
+    cliente !== (item.cliente||'') || responsavel !== (item.responsavel||'') ||
     estado !== (item.estado||'') || estadoR !== (item.estadoRoteiro||'') ||
     conteudo !== (item.conteudo||'') || postagem !== (item.postagem||'') ||
     gravacao !== (item.dataGravacao||'') || linkDrive !== (item.linkDrive||'');
@@ -630,7 +717,7 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
   const save = async () => {
     if (!nome.trim() || saving) return;
     setSaving(true);
-    await onSave(item.id, { nome, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
+    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
@@ -653,7 +740,7 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
     setDeleting(true); await onDelete(item.id); onClose();
   };
 
-  const cl = clientColor(item.cliente);
+  const cl = clientColor(cliente || item.cliente);
   const memberColors = {
     Matheus: { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
     Sávio:   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
@@ -674,6 +761,41 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
           className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white outline-none focus:ring-2 focus:ring-violet-500/40"
           style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
       </div>
+
+      {/* Cliente */}
+      <div>
+        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Cliente</label>
+        <div className="flex flex-wrap gap-1.5">
+          {availableClients.map(c => {
+            const cc = CLIENT_COLORS[c] || {}; const active = nrm(cliente) === nrm(c);
+            return (
+              <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
+                style={{ background:active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.08)'}`, color:active?cc.text:'rgba(255,255,255,0.35)' }}>
+                {c}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Formato */}
+      <div>
+        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Formato</label>
+        <div className="flex flex-wrap gap-1.5">
+          {FORMATOS.map(f => {
+            const fc = FORMAT_COLORS[f] || '#a78bfa'; const active = nrm(formato) === nrm(f);
+            return (
+              <button key={f} type="button" onClick={() => setFormato(active ? '' : f)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+                style={{ background:active?`${fc}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${fc}40`:'rgba(255,255,255,0.08)'}`, color:active?fc:'rgba(255,255,255,0.35)' }}>
+                {f}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div>
         <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Responsável</label>
         <div className="flex gap-2">
@@ -884,21 +1006,21 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
         <div className="px-5 pt-4 pb-3 shrink-0">
           {/* Badges row */}
           <div className="flex items-center gap-2 mb-2 pr-8">
-            {item.cliente && (
+            {(cliente || item.cliente) && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                 style={{ background:cl.bg, color:cl.text, border:`1px solid ${cl.border}` }}>
-                {item.cliente}
+                {cliente || item.cliente}
               </span>
             )}
-            {item.formato && (
+            {(formato || item.formato) && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ color: FORMAT_COLORS[item.formato]||'#a78bfa', background: `${FORMAT_COLORS[item.formato]||'#a78bfa'}15`, border:`1px solid ${FORMAT_COLORS[item.formato]||'#a78bfa'}25` }}>
-                {item.formato}
+                style={{ color: FORMAT_COLORS[formato||item.formato]||'#a78bfa', background: `${FORMAT_COLORS[formato||item.formato]||'#a78bfa'}15`, border:`1px solid ${FORMAT_COLORS[formato||item.formato]||'#a78bfa'}25` }}>
+                {formato || item.formato}
               </span>
             )}
-            {item.responsavel && (
+            {responsavel && (
               <span className="text-[10px] text-white/40 flex items-center gap-1 ml-1">
-                <User className="w-3 h-3"/> {item.responsavel}
+                <User className="w-3 h-3"/> {responsavel}
               </span>
             )}
           </div>
@@ -1224,7 +1346,8 @@ export default function Conteudo() {
         <DetailPanel item={selectedItem}
           onSave={async (id, fields) => { await updateItem(id, fields); }}
           onDelete={deleteItem}
-          onClose={() => setSelectedItem(null)}/>
+          onClose={() => setSelectedItem(null)}
+          availableClients={availableClients}/>
       )}
 
       {showNew && (
