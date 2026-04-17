@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Film, X, Loader2, Clock, User, AlertTriangle,
@@ -139,13 +139,22 @@ function SectionBadge({ status }) {
 
 // ── Mini card (Monthly & Weekly) ──────────────────────────────────────────────
 function MiniCard({ item, onClick }) {
-  const fmtColor = FORMAT_COLORS[item.formato] || '#a78bfa';
-  const st = sectionStatus(item, 'tema');
-  const stMeta = SECTION_STATUS[st];
+  const fmtColor  = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const st        = sectionStatus(item, 'tema');
+  const stMeta    = SECTION_STATUS[st];
+  const previewImg = item.linkCapa || (item.galeria ? item.galeria.split(',')[0]?.trim() : null);
+
   return (
     <button onClick={() => onClick(item)}
-      className="w-full text-left rounded-lg p-1.5 transition-all duration-150 hover:brightness-125 cursor-pointer"
+      className="w-full text-left rounded-lg p-1.5 transition-all duration-200 hover:brightness-125 cursor-pointer group overflow-hidden"
       style={{ background: `${fmtColor}10`, border: `1px solid ${fmtColor}20` }}>
+      {/* Hover image preview — expands inline */}
+      {previewImg && (
+        <div className="max-h-0 group-hover:max-h-20 overflow-hidden transition-all duration-300 ease-out">
+          <img src={previewImg} alt="" className="w-full aspect-video object-cover rounded-md mb-1 block"
+            style={{ border: `1px solid ${fmtColor}25` }}/>
+        </div>
+      )}
       <div className="flex items-center gap-1 mb-0.5">
         {item.formato && (
           <span className="text-[9px] font-bold truncate" style={{ color: fmtColor }}>{item.formato}</span>
@@ -986,8 +995,9 @@ export default function Conteudo() {
   const [loading,       setLoading]       = useState(true);
   const [view,          setView]          = useState('mensal');  // mensal | semanal | feed
   const [memberView,    setMemberView]    = useState('geral');
-  const [filterCliente, setFilterCliente] = useState('');
-  const [selectedItem,  setSelectedItem]  = useState(null);
+  const [filterCliente,   setFilterCliente]   = useState('');
+  const [filterPlataforma, setFilterPlataforma] = useState('');
+  const [selectedItem,    setSelectedItem]    = useState(null);
   const [showNew,       setShowNew]       = useState(false);
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
@@ -1019,10 +1029,27 @@ export default function Conteudo() {
     }
   }, []);
 
+  // Dynamic filter options
+  const availableClients = useMemo(() => (
+    [...new Set(content.map(c => (c.cliente||'').toLowerCase().replace(/\s+/g,'')).filter(Boolean))]
+  ), [content]);
+
+  const availablePlatforms = useMemo(() => {
+    const set = new Set();
+    content.forEach(c => {
+      if (c.plataforma) c.plataforma.split(',').forEach(p => { const t = p.trim(); if (t) set.add(t); });
+    });
+    return [...set].sort();
+  }, [content]);
+
   // Filter pipeline
   const filtered = content.filter(item => {
     if (memberView === 'minhas' && !nrm(item.responsavel).includes('savio')) return false;
     if (filterCliente && nrm(item.cliente).replace(/\s/g,'') !== nrm(filterCliente).replace(/\s/g,'')) return false;
+    if (filterPlataforma) {
+      const platforms = (item.plataforma||'').split(',').map(p => nrm(p).trim());
+      if (!platforms.includes(nrm(filterPlataforma))) return false;
+    }
     return true;
   });
 
@@ -1102,30 +1129,64 @@ export default function Conteudo() {
             </div>
           </div>
 
-          {/* Client filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-white/25 font-semibold uppercase tracking-wider">Projeto:</span>
-            <button onClick={() => setFilterCliente('')}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
-              style={{ background: !filterCliente?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterCliente?'rgba(255,255,255,0.2)':'rgba(255,255,255,0.07)'}`, color: !filterCliente?'white':'rgba(255,255,255,0.3)' }}>
-              Todos
-            </button>
-            {CLIENTS.map(c => {
-              const cc = CLIENT_COLORS[c]||{}; const active = nrm(filterCliente).replace(/\s/g,'')=== nrm(c).replace(/\s/g,'');
-              return <button key={c} onClick={() => setFilterCliente(active?'':c)}
-                className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
-                style={{ background: active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.07)'}`, color: active?cc.text:'rgba(255,255,255,0.3)' }}>
-                {c}
-              </button>;
-            })}
-            {(memberView==='minhas'||filterCliente) && (
-              <span className="flex items-center gap-1 text-[10px] text-violet-400 font-semibold px-2 py-1 rounded-full"
-                style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)' }}>
-                {[memberView==='minhas'&&'Sávio', filterCliente].filter(Boolean).join(' · ')}
-                <button onClick={() => { setMemberView('geral'); setFilterCliente(''); }} className="ml-0.5 cursor-pointer hover:text-white transition-colors">
-                  <X className="w-3 h-3"/>
+          {/* Alternating list filters */}
+          <div className="space-y-2">
+            {/* Row 1: Cliente */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
+              <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Cliente</span>
+              <button onClick={() => setFilterCliente('')}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                style={{ background:!filterCliente?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterCliente?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`, color:!filterCliente?'white':'rgba(255,255,255,0.35)' }}>
+                Todos
+              </button>
+              {availableClients.map(c => {
+                const cc = CLIENT_COLORS[c] || {};
+                const active = nrm(filterCliente).replace(/\s/g,'') === nrm(c).replace(/\s/g,'');
+                return (
+                  <button key={c} onClick={() => setFilterCliente(active ? '' : c)}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all"
+                    style={{ background:active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.07)'}`, color:active?cc.text:'rgba(255,255,255,0.35)' }}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Row 2: Plataforma */}
+            {availablePlatforms.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
+                <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Plataforma</span>
+                <button onClick={() => setFilterPlataforma('')}
+                  className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                  style={{ background:!filterPlataforma?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterPlataforma?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:!filterPlataforma?'#38bdf8':'rgba(255,255,255,0.35)' }}>
+                  Todas
                 </button>
-              </span>
+                {availablePlatforms.map(p => {
+                  const active = nrm(filterPlataforma) === nrm(p);
+                  return (
+                    <button key={p} onClick={() => setFilterPlataforma(active ? '' : p)}
+                      className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                      style={{ background:active?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${active?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:active?'#38bdf8':'rgba(255,255,255,0.35)' }}>
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Active filters badge */}
+            {(memberView==='minhas' || filterCliente || filterPlataforma) && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Ativos</span>
+                <span className="flex items-center gap-1 text-[10px] text-violet-400 font-semibold px-2 py-1 rounded-full"
+                  style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)' }}>
+                  {[memberView==='minhas'&&'Sávio', filterCliente, filterPlataforma].filter(Boolean).join(' · ')}
+                  <button onClick={() => { setMemberView('geral'); setFilterCliente(''); setFilterPlataforma(''); }}
+                    className="ml-0.5 cursor-pointer hover:text-white transition-colors">
+                    <X className="w-3 h-3"/>
+                  </button>
+                </span>
+              </div>
             )}
           </div>
         </div>

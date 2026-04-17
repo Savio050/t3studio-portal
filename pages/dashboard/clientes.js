@@ -4,7 +4,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
-  Loader2,
+  Loader2, Plus, X,
 } from 'lucide-react';
 
 // ── Client colors ─────────────────────────────────────────────────────────────
@@ -178,17 +178,122 @@ function SummaryCard({ label, value, color, icon: Icon }) {
   );
 }
 
+// ── New Client Modal ──────────────────────────────────────────────────────────
+function NewClientModal({ onClose, onCreate }) {
+  const [nome,      setNome]      = useState('');
+  const [categoria, setCategoria] = useState('');
+  const [saving,    setSaving]    = useState(false);
+  const [error,     setError]     = useState('');
+
+  const CATEGORIAS = ['Imobiliária', 'Moda', 'Gastronomia', 'Saúde', 'Tecnologia', 'Educação', 'Varejo', 'Outro'];
+
+  const submit = async () => {
+    if (!nome.trim() || saving) return;
+    setSaving(true); setError('');
+    try {
+      const res = await fetch('/api/crm/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, categoria }),
+      });
+      if (!res.ok) throw new Error();
+      onCreate(); onClose();
+    } catch {
+      setError('Erro ao criar cliente. Tente novamente.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative w-full max-w-sm rounded-2xl flex flex-col overflow-hidden"
+        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 40px 80px rgba(0,0,0,0.6)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <p className="text-base font-bold text-white font-display">Novo cliente</p>
+          <button onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer">
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-5 space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
+              Nome <span className="text-rose-400">*</span>
+            </label>
+            <input autoFocus type="text" value={nome} onChange={e => setNome(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submit()}
+              placeholder="Ex: Fast Imóveis"
+              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/40"
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Categoria</label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIAS.map(cat => {
+                const active = categoria === cat;
+                return (
+                  <button key={cat} type="button" onClick={() => setCategoria(active ? '' : cat)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+                    style={{
+                      background: active ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${active ? 'rgba(124,58,237,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)',
+                    }}>
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-xs text-rose-400 px-3 py-2 rounded-xl"
+              style={{ background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.2)' }}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t flex gap-3" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all"
+            style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+            Cancelar
+          </button>
+          <button onClick={submit} disabled={!nome.trim() || saving}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 hover:brightness-110"
+            style={{ background:'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
+            {saving ? 'Criando…' : 'Criar cliente'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function Clientes() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showNew, setShowNew] = useState(false);
 
-  useEffect(() => {
+  const loadClients = () => {
+    setLoading(true);
     fetch('/api/crm/clients')
       .then(r => r.json())
       .then(d => { setClients(d.clients || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadClients(); }, []);
 
   const totalContent   = clients.reduce((s, c) => s + c.totalContent, 0);
   const totalAwaiting  = clients.reduce((s, c) => s + c.awaitingApproval, 0);
@@ -199,14 +304,22 @@ export default function Clientes() {
       <div className="px-5 lg:px-8 py-6 max-w-5xl mx-auto">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-white font-display flex items-center gap-2">
-            <Users className="w-5 h-5 text-emerald-400" />
-            Clientes
-          </h1>
-          <p className="text-sm text-white/40 mt-0.5">
-            {loading ? '...' : `${clients.length} cliente${clients.length !== 1 ? 's' : ''} ativo${clients.length !== 1 ? 's' : ''}`}
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-white font-display flex items-center gap-2">
+              <Users className="w-5 h-5 text-emerald-400" />
+              Clientes
+            </h1>
+            <p className="text-sm text-white/40 mt-0.5">
+              {loading ? '...' : `${clients.length} cliente${clients.length !== 1 ? 's' : ''} ativo${clients.length !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+          <button onClick={() => setShowNew(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:brightness-110 active:scale-[0.97]"
+            style={{ background:'linear-gradient(135deg,#7c3aed,#0e7490)', border:'1px solid rgba(124,58,237,0.4)' }}>
+            <Plus className="w-3.5 h-3.5"/>
+            Novo cliente
+          </button>
         </div>
 
         {/* Summary */}
@@ -266,6 +379,10 @@ export default function Clientes() {
           </div>
         </div>
       </div>
+
+      {showNew && (
+        <NewClientModal onClose={() => setShowNew(false)} onCreate={loadClients}/>
+      )}
     </CRMLayout>
   );
 }

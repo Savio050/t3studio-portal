@@ -32,6 +32,25 @@ async function queryAll(dbId) {
 }
 
 export default async function handler(req, res) {
+  // ── POST: create new client ───────────────────────────────────────────────────
+  if (req.method === 'POST') {
+    const { nome, categoria } = req.body || {};
+    if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
+    try {
+      const properties = {
+        'Nome': { title: [{ text: { content: nome.trim() } }] },
+      };
+      if (categoria?.trim()) {
+        properties['categoria'] = { rich_text: [{ text: { content: categoria.trim() } }] };
+      }
+      const page = await notion.pages.create({ parent: { database_id: SECTORS_DB }, properties });
+      return res.status(201).json({ ok: true, id: page.id, nome: nome.trim() });
+    } catch (err) {
+      console.error('Client POST error:', err);
+      return res.status(500).json({ error: 'Failed to create client' });
+    }
+  }
+
   if (req.method !== 'GET') return res.status(405).end();
 
   try {

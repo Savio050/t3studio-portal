@@ -6,14 +6,15 @@ const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID || '329f7ecb-bb9b-8018-b303-
 function getProp(prop) {
   if (!prop) return null;
   switch (prop.type) {
-    case 'title':       return prop.title?.[0]?.plain_text || '';
-    case 'rich_text':   return prop.rich_text?.[0]?.plain_text || '';
-    case 'select':      return prop.select?.name || '';
-    case 'status':      return prop.status?.name || '';
-    case 'date':        return prop.date?.start || null;
-    case 'url':         return prop.url || null;
-    case 'formula':     return prop.formula?.string || prop.formula?.number || null;
-    default:            return null;
+    case 'title':        return prop.title?.[0]?.plain_text || '';
+    case 'rich_text':    return prop.rich_text?.[0]?.plain_text || '';
+    case 'select':       return prop.select?.name || '';
+    case 'multi_select': return prop.multi_select?.map(i => i.name).join(', ') || '';
+    case 'status':       return prop.status?.name || '';
+    case 'date':         return prop.date?.start || null;
+    case 'url':          return prop.url || null;
+    case 'formula':      return prop.formula?.string || prop.formula?.number || null;
+    default:             return null;
   }
 }
 
@@ -57,6 +58,7 @@ function mapContent(page) {
     linkDrive:        getProp(p['Link Drive'])          || null,
     idCliente:        getProp(p['ID do Cliente'])       || '',
     portalLink:       getProp(p['FórmulaLink Portal do Cliente']) || null,
+    plataforma:       getProp(p['Plataforma']) || '',
   };
 }
 
@@ -135,7 +137,7 @@ export default async function handler(req, res) {
     const {
       id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
       postagem, responsavel, nome, conteudo, galeria, linkDrive,
-      linkFicheiro, linkCapa,
+      linkFicheiro, linkCapa, plataforma,
     } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
@@ -153,6 +155,7 @@ export default async function handler(req, res) {
       if (linkDrive !== undefined)   properties['Link Drive']          = { url: linkDrive || null };
       if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
       if (linkCapa !== undefined)     properties['Link da Capa']       = { url: linkCapa || null };
+      if (plataforma !== undefined)   properties['Plataforma']         = { select: plataforma ? { name: plataforma } : null };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Calendar, ChevronLeft, ChevronRight, X,
-  Clock, Film, User,
+  Clock, Film, User, Monitor,
 } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -124,11 +124,13 @@ function DayModal({ date, posts, onClose }) {
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function Calendario() {
   const today = new Date();
-  const [year,    setYear]    = useState(today.getFullYear());
-  const [month,   setMonth]   = useState(today.getMonth());
-  const [content, setContent] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null); // { date, posts }
+  const [year,            setYear]            = useState(today.getFullYear());
+  const [month,           setMonth]           = useState(today.getMonth());
+  const [content,         setContent]         = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [selected,        setSelected]        = useState(null);
+  const [filterCliente,   setFilterCliente]   = useState('');
+  const [filterPlataforma, setFilterPlataforma] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -138,10 +140,38 @@ export default function Calendario() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Dynamic filter options
+  const availableClients = useMemo(() => (
+    [...new Set(content.map(c => (c.cliente||'').toLowerCase().replace(/\s+/g,'')).filter(Boolean))]
+  ), [content]);
+
+  const availablePlatforms = useMemo(() => {
+    const set = new Set();
+    content.forEach(c => {
+      if (c.plataforma) c.plataforma.split(',').forEach(p => { const t = p.trim(); if (t) set.add(t); });
+    });
+    return [...set].sort();
+  }, [content]);
+
+  // Filtered content
+  const filteredContent = useMemo(() => content.filter(item => {
+    if (filterCliente) {
+      const k = (item.cliente||'').toLowerCase().replace(/\s+/g,'');
+      if (k !== filterCliente) return false;
+    }
+    if (filterPlataforma) {
+      const platforms = (item.plataforma||'').split(',').map(p => p.trim().toLowerCase());
+      if (!platforms.includes(filterPlataforma.toLowerCase())) return false;
+    }
+    return true;
+  }), [content, filterCliente, filterPlataforma]);
+
+  const nrm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
   // Map posts by date string "YYYY-MM-DD"
   const postsByDate = useMemo(() => {
     const map = {};
-    content.forEach(item => {
+    filteredContent.forEach(item => {
       const d = item.postagem || item.dataGravacao;
       if (!d) return;
       const key = d.slice(0, 10);
@@ -149,7 +179,7 @@ export default function Calendario() {
       map[key].push(item);
     });
     return map;
-  }, [content]);
+  }, [filteredContent]);
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
@@ -179,10 +209,10 @@ export default function Calendario() {
 
   // Month stats
   const monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
-  const monthPosts = content.filter(c => (c.postagem || '').startsWith(monthPrefix));
+  const monthPosts = filteredContent.filter(c => (c.postagem || '').startsWith(monthPrefix));
   const monthByClient = {};
   monthPosts.forEach(p => {
-    const c = (p.cliente || 'Outros').toLowerCase();
+    const c = (p.cliente || 'Outros').toLowerCase().replace(/\s+/g,'');
     monthByClient[c] = (monthByClient[c] || 0) + 1;
   });
 
@@ -224,6 +254,67 @@ export default function Calendario() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* Alternating list filters */}
+        <div className="space-y-2 mb-5 px-0.5">
+          {/* Row 1: Cliente */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
+            <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Cliente</span>
+            <button onClick={() => setFilterCliente('')}
+              className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+              style={{ background:!filterCliente?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterCliente?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`, color:!filterCliente?'white':'rgba(255,255,255,0.35)' }}>
+              Todos
+            </button>
+            {availableClients.map(c => {
+              const cl = getClientColor(c);
+              const active = filterCliente === c;
+              return (
+                <button key={c} onClick={() => setFilterCliente(active ? '' : c)}
+                  className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all"
+                  style={{ background:active?cl.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cl.border:'rgba(255,255,255,0.07)'}`, color:active?cl.text:'rgba(255,255,255,0.35)' }}>
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Row 2: Plataforma */}
+          {availablePlatforms.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
+              <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Plataforma</span>
+              <button onClick={() => setFilterPlataforma('')}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                style={{ background:!filterPlataforma?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterPlataforma?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:!filterPlataforma?'#38bdf8':'rgba(255,255,255,0.35)' }}>
+                Todas
+              </button>
+              {availablePlatforms.map(p => {
+                const active = filterPlataforma.toLowerCase() === p.toLowerCase();
+                return (
+                  <button key={p} onClick={() => setFilterPlataforma(active ? '' : p)}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                    style={{ background:active?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${active?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:active?'#38bdf8':'rgba(255,255,255,0.35)' }}>
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Active filters badge */}
+          {(filterCliente || filterPlataforma) && (
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Ativos</span>
+              <span className="flex items-center gap-1 text-[10px] text-violet-400 font-semibold px-2 py-1 rounded-full"
+                style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)' }}>
+                {[filterCliente, filterPlataforma].filter(Boolean).join(' · ')}
+                <button onClick={() => { setFilterCliente(''); setFilterPlataforma(''); }}
+                  className="ml-0.5 cursor-pointer hover:text-white transition-colors">
+                  <X className="w-3 h-3"/>
+                </button>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Client legend */}
@@ -283,11 +374,15 @@ export default function Calendario() {
                   .slice(0, 3)
                   .map(c => getClientColor(c).dot);
 
+                // Find first post with an image for hover preview
+                const previewImg = posts.find(p => p.linkCapa)?.linkCapa ||
+                  posts.find(p => p.galeria)?.galeria?.split(',')[0]?.trim() || null;
+
                 return (
                   <div key={day}
                     onClick={() => hasPosts && handleDayClick(day)}
                     className={`aspect-square border-r border-b p-1.5 flex flex-col
-                      transition-all duration-150 relative
+                      transition-all duration-150 relative group
                       ${hasPosts ? 'cursor-pointer' : ''}
                     `}
                     style={{
@@ -297,18 +392,13 @@ export default function Calendario() {
 
                     {/* Hover overlay */}
                     {hasPosts && (
-                      <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-150 rounded-sm pointer-events-none"
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-sm pointer-events-none"
                         style={{ background: 'rgba(124,58,237,0.08)' }} />
                     )}
 
                     {/* Day number */}
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mx-auto
-                      ${isToday
-                        ? 'text-white'
-                        : hasPosts
-                          ? 'text-white/80'
-                          : 'text-white/30'
-                      }`}
+                      ${isToday ? 'text-white' : hasPosts ? 'text-white/80' : 'text-white/30'}`}
                       style={isToday ? { background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' } : {}}>
                       {day}
                     </div>
@@ -317,12 +407,20 @@ export default function Calendario() {
                     {hasPosts && (
                       <div className="flex items-center justify-center gap-0.5 mt-1 flex-wrap">
                         {clientDots.map((color, i) => (
-                          <div key={i} className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: color }} />
+                          <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
                         ))}
                         {posts.length > 3 && (
                           <span className="text-[8px] text-white/30 font-bold">+{posts.length - 3}</span>
                         )}
+                      </div>
+                    )}
+
+                    {/* Hover image preview — inline expand */}
+                    {hasPosts && previewImg && (
+                      <div className="max-h-0 group-hover:max-h-16 overflow-hidden transition-all duration-300 ease-out mt-0.5">
+                        <img src={previewImg} alt=""
+                          className="w-full aspect-video object-cover rounded-sm block"
+                          style={{ border: '1px solid rgba(255,255,255,0.1)' }}/>
                       </div>
                     )}
                   </div>
@@ -355,13 +453,29 @@ export default function Calendario() {
                   const [y,m,d] = (post.postagem||'').split('-');
                   const dateLabel = d && m ? `${d}/${m}` : '—';
 
+                  const rowPreview = post.linkCapa || post.galeria?.split(',')[0]?.trim() || null;
                   return (
-                    <div key={post.id} className="flex items-center gap-3 py-3 border-b last:border-0"
+                    <div key={post.id}
+                      className="flex items-center gap-3 py-3 border-b last:border-0 group cursor-default"
                       style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
-                        style={{ background: cl.bg, color: cl.text }}>
-                        {dateLabel}
-                      </div>
+                      {/* Cover thumbnail on hover */}
+                      {rowPreview ? (
+                        <div className="relative shrink-0 w-8 h-8">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold
+                            group-hover:opacity-0 transition-opacity duration-200 absolute inset-0"
+                            style={{ background: cl.bg, color: cl.text }}>
+                            {dateLabel}
+                          </div>
+                          <div className="w-8 h-8 rounded-xl overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute inset-0">
+                            <img src={rowPreview} alt="" className="w-full h-full object-cover"/>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
+                          style={{ background: cl.bg, color: cl.text }}>
+                          {dateLabel}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white/80 truncate">{post.nome}</p>
                         <div className="flex items-center gap-2 mt-0.5">
