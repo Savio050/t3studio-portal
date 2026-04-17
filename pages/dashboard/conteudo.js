@@ -1129,65 +1129,78 @@ export default function Conteudo() {
             </div>
           </div>
 
-          {/* Alternating list filters */}
-          <div className="space-y-2">
-            {/* Row 1: Cliente */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
-              <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Cliente</span>
-              <button onClick={() => setFilterCliente('')}
-                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
-                style={{ background:!filterCliente?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterCliente?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`, color:!filterCliente?'white':'rgba(255,255,255,0.35)' }}>
-                Todos
-              </button>
-              {availableClients.map(c => {
-                const cc = CLIENT_COLORS[c] || {};
-                const active = nrm(filterCliente).replace(/\s/g,'') === nrm(c).replace(/\s/g,'');
-                return (
-                  <button key={c} onClick={() => setFilterCliente(active ? '' : c)}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all"
-                    style={{ background:active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.07)'}`, color:active?cc.text:'rgba(255,255,255,0.35)' }}>
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
+          {/* ── Alternating filter list ── */}
+          <div className="rounded-xl overflow-hidden" style={{ border:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
 
-            {/* Row 2: Plataforma */}
-            {availablePlatforms.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth:'none' }}>
-                <span className="shrink-0 text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Plataforma</span>
-                <button onClick={() => setFilterPlataforma('')}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
-                  style={{ background:!filterPlataforma?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${!filterPlataforma?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:!filterPlataforma?'#38bdf8':'rgba(255,255,255,0.35)' }}>
-                  Todas
-                </button>
-                {availablePlatforms.map(p => {
-                  const active = nrm(filterPlataforma) === nrm(p);
+            {/* Row 1 — Cliente */}
+            <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none"
+                style={{ borderRight:'1px solid rgba(255,255,255,0.06)', minWidth:100 }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'rgba(167,139,250,0.6)' }}/>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Cliente</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
+                {[{ key:'', label:'Todos', cc:{} }, ...availableClients.map(c => ({ key:c, label:c, cc: CLIENT_COLORS[c]||{} }))].map(({ key, label, cc }) => {
+                  const active = nrm(filterCliente).replace(/\s/g,'') === nrm(key).replace(/\s/g,'');
                   return (
-                    <button key={p} onClick={() => setFilterPlataforma(active ? '' : p)}
-                      className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
-                      style={{ background:active?'rgba(14,165,233,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${active?'rgba(14,165,233,0.3)':'rgba(255,255,255,0.07)'}`, color:active?'#38bdf8':'rgba(255,255,255,0.35)' }}>
-                      {p}
+                    <button key={key||'todos'} onClick={() => setFilterCliente(active && key ? '' : key)}
+                      className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all duration-150 active:scale-95"
+                      style={{
+                        background: active ? (key ? cc.bg : 'rgba(255,255,255,0.14)') : 'transparent',
+                        border: `1px solid ${active ? (key ? cc.border : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.08)'}`,
+                        color: active ? (key ? cc.text : 'white') : 'rgba(255,255,255,0.35)',
+                        boxShadow: active && key ? `0 0 12px ${cc.border}` : 'none',
+                      }}>
+                      {label}
                     </button>
                   );
                 })}
               </div>
-            )}
+              {filterCliente && (
+                <button onClick={() => setFilterCliente('')}
+                  className="shrink-0 mr-3 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer text-white/30 hover:text-white transition-colors"
+                  style={{ background:'rgba(255,255,255,0.06)' }}>
+                  <X className="w-3 h-3"/>
+                </button>
+              )}
+            </div>
 
-            {/* Active filters badge */}
-            {(memberView==='minhas' || filterCliente || filterPlataforma) && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-white/25 font-bold uppercase tracking-wider w-20">Ativos</span>
-                <span className="flex items-center gap-1 text-[10px] text-violet-400 font-semibold px-2 py-1 rounded-full"
-                  style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)' }}>
-                  {[memberView==='minhas'&&'Sávio', filterCliente, filterPlataforma].filter(Boolean).join(' · ')}
-                  <button onClick={() => { setMemberView('geral'); setFilterCliente(''); setFilterPlataforma(''); }}
-                    className="ml-0.5 cursor-pointer hover:text-white transition-colors">
-                    <X className="w-3 h-3"/>
-                  </button>
-                </span>
+            {/* Row 2 — Plataforma (always visible; shows placeholder if no data) */}
+            <div className="flex items-center">
+              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none"
+                style={{ borderRight:'1px solid rgba(255,255,255,0.06)', minWidth:100 }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'rgba(34,211,238,0.5)' }}/>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Plataforma</span>
               </div>
-            )}
+              <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
+                {availablePlatforms.length === 0 ? (
+                  <span className="text-[10px] text-white/18 italic">Nenhuma plataforma cadastrada no Notion</span>
+                ) : (
+                  [{ key:'', label:'Todas' }, ...availablePlatforms.map(p => ({ key:p, label:p }))].map(({ key, label }) => {
+                    const active = nrm(filterPlataforma) === nrm(key);
+                    return (
+                      <button key={key||'todas'} onClick={() => setFilterPlataforma(active && key ? '' : key)}
+                        className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-semibold cursor-pointer transition-all duration-150 active:scale-95"
+                        style={{
+                          background: active ? (key ? 'rgba(34,211,238,0.15)' : 'rgba(255,255,255,0.12)') : 'transparent',
+                          border: `1px solid ${active ? (key ? 'rgba(34,211,238,0.35)' : 'rgba(255,255,255,0.22)') : 'rgba(255,255,255,0.08)'}`,
+                          color: active ? (key ? '#22d3ee' : 'white') : 'rgba(255,255,255,0.35)',
+                          boxShadow: active && key ? '0 0 10px rgba(34,211,238,0.15)' : 'none',
+                        }}>
+                        {label}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              {filterPlataforma && (
+                <button onClick={() => setFilterPlataforma('')}
+                  className="shrink-0 mr-3 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer text-white/30 hover:text-white transition-colors"
+                  style={{ background:'rgba(255,255,255,0.06)' }}>
+                  <X className="w-3 h-3"/>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
