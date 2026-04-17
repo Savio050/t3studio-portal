@@ -58,7 +58,7 @@ function mapContent(page) {
     linkDrive:        getProp(p['Link Drive'])          || null,
     idCliente:        getProp(p['ID do Cliente'])       || '',
     portalLink:       getProp(p['FórmulaLink Portal do Cliente']) || null,
-    plataforma:       getProp(p['Plataforma']) || '',
+    plataforma:       getProp(p['plataforma']) || getProp(p['Plataforma']) || '',
   };
 }
 
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
       if (linkDrive !== undefined)   properties['Link Drive']          = { url: linkDrive || null };
       if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
       if (linkCapa !== undefined)     properties['Link da Capa']       = { url: linkCapa || null };
-      if (plataforma !== undefined)   properties['Plataforma']         = { select: plataforma ? { name: plataforma } : null };
+      if (plataforma !== undefined)   properties['plataforma']         = { select: plataforma ? { name: plataforma } : null };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });
