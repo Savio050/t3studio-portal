@@ -351,25 +351,47 @@ function SmartImage({ url, label, showDownload }) {
   );
 }
 
-// ─── Smart media section (replaces MediaGrid) ─────────────────────────────────
+// ─── Format helpers ───────────────────────────────────────────────────────────
+function normFmt(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+function fmtIsVideo(f) {
+  const n = normFmt(f);
+  return ['video', 'reels', 'reel', 'tiktok', 'youtube'].some(k => n.includes(k));
+}
+function fmtIsCarousel(f) { return normFmt(f).includes('carrossel'); }
+
+// ─── Smart media section ──────────────────────────────────────────────────────
 function SmartMedia({ item, showDownload }) {
-  const fmt         = (item.formato || '').toLowerCase();
-  const isVideo     = ['reels', 'vídeo', 'video', 'tiktok', 'youtube'].includes(fmt);
-  const isCarousel  = fmt === 'carrossel';
   const galeriaUrls = item.galeria
     ? item.galeria.split(',').map(u => u.trim()).filter(Boolean)
     : [];
+  const coverUrl = item.linkCapa || galeriaUrls[0] || null;
 
-  // Carousel with gallery images
-  if (isCarousel && galeriaUrls.length > 0) {
+  // ── VIDEO (video curto, Reels, TikTok, YouTube) ──
+  if (fmtIsVideo(item.formato)) {
     return (
-      <div className="px-4 pb-4">
-        <CarouselViewer images={galeriaUrls} />
+      <div className="px-4 pb-4 space-y-3">
+        {item.linkFicheiro
+          ? <VideoPlayer src={item.linkFicheiro} poster={coverUrl || undefined} />
+          : coverUrl
+            ? <img src={coverUrl} alt={item.nome}
+                className="w-full rounded-xl object-cover max-h-64" />
+            : (
+              <div className="w-full aspect-video rounded-xl bg-gray-100
+                flex flex-col items-center justify-center gap-2">
+                <Film className="w-10 h-10 text-gray-300" />
+                <span className="text-xs text-gray-400 font-medium">Vídeo em produção</span>
+              </div>
+            )
+        }
         {showDownload && item.linkDrive && (
           <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
-              bg-green-500 hover:bg-green-600 text-white text-sm font-black uppercase tracking-widest
-              active:scale-[0.98] transition-all duration-150">
+            className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+              bg-green-500 hover:bg-green-600 text-white
+              text-sm font-black uppercase tracking-widest
+              active:scale-[0.98] transition-all duration-150
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
             <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
           </a>
         )}
@@ -377,25 +399,68 @@ function SmartMedia({ item, showDownload }) {
     );
   }
 
-  // Video with R2 or Drive source
-  if (isVideo && item.linkFicheiro) {
+  // ── CARROSSEL ──
+  if (fmtIsCarousel(item.formato)) {
+    if (galeriaUrls.length > 0) {
+      return (
+        <div className="px-4 pb-4 space-y-3">
+          <CarouselViewer images={galeriaUrls} />
+          {showDownload && (
+            <a href={item.linkDrive || galeriaUrls[0]} target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+                bg-[#0d2440] hover:bg-[#0f2d52] text-white
+                text-sm font-black uppercase tracking-widest
+                active:scale-[0.98] transition-all duration-150
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
+              <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR
+            </a>
+          )}
+        </div>
+      );
+    }
+    // Carrossel sem imagens ainda
     return (
       <div className="px-4 pb-4">
-        <VideoPlayer src={item.linkFicheiro} poster={item.linkCapa || undefined} />
-        {showDownload && item.linkDrive && (
-          <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
-              bg-green-500 hover:bg-green-600 text-white text-sm font-black uppercase tracking-widest
-              active:scale-[0.98] transition-all duration-150">
-            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+        <div className="w-full aspect-square rounded-xl bg-gray-100
+          flex flex-col items-center justify-center gap-2">
+          <ImageIcon className="w-10 h-10 text-gray-300" />
+          <span className="text-xs text-gray-400 font-medium">Carrossel em produção</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STORIES / ESTÁTICO / POST — imagem única ──
+  if (coverUrl) {
+    return (
+      <div className="px-4 pb-4 space-y-3">
+        <img src={coverUrl} alt={item.nome}
+          className="w-full rounded-xl object-contain max-h-[420px] bg-gray-50" />
+        {showDownload && (
+          <a href={item.linkDrive || coverUrl} target="_blank" rel="noopener noreferrer"
+            download={!item.linkDrive}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+              border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
+              text-sm font-black uppercase tracking-widest
+              active:scale-[0.98] transition-all duration-150
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300">
+            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR
           </a>
         )}
       </div>
     );
   }
 
-  // Fallback: original layout for legacy Drive embeds
-  return <MediaGrid item={item} showDownload={showDownload} />;
+  // ── Sem mídia ──
+  return (
+    <div className="px-4 pb-4">
+      <div className="w-full aspect-video rounded-xl bg-gray-100
+        flex flex-col items-center justify-center gap-2">
+        <Film className="w-10 h-10 text-gray-300" aria-hidden="true" />
+        <span className="text-xs text-gray-400 font-medium">Mídia em produção</span>
+      </div>
+    </div>
+  );
 }
 
 // ─── Grid de mídia compartilhado ──────────────────────────────────────────────

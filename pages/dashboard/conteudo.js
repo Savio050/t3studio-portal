@@ -498,29 +498,58 @@ function UploadZone({ label, accept, multiple = false, onUpload }) {
   const inputRef   = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err,  setErr]  = useState('');
+  const [prog, setProg] = useState('');
 
   const handleFiles = async (files) => {
     if (!files?.length || busy) return;
-    setBusy(true); setErr('');
+    setBusy(true); setErr(''); setProg('');
     try {
       const results = [];
-      for (const file of files) {
-        const r = await fetch('/api/crm/upload', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ filename: file.name, contentType: file.type }),
-        });
-        if (!r.ok) throw new Error('Erro ao gerar URL de upload');
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (files.length > 1) setProg(`Enviando ${i + 1}/${files.length}…`);
+        else setProg('Gerando URL…');
+
+        // Step 1: get presigned URL
+        let r;
+        try {
+          r = await fetch('/api/crm/upload', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ filename: file.name, contentType: file.type }),
+          });
+        } catch {
+          throw new Error('Sem conexão com o servidor. Verifique sua internet.');
+        }
+
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.error || `Servidor retornou ${r.status}`);
+        }
+
         const { presignedUrl, publicUrl } = await r.json();
-        const up = await fetch(presignedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        if (!up.ok) throw new Error('Falha no upload');
+        setProg(files.length > 1 ? `Enviando arquivo ${i + 1}/${files.length}…` : 'Enviando arquivo…');
+
+        // Step 2: PUT directly to R2
+        let up;
+        try {
+          up = await fetch(presignedUrl, {
+            method:  'PUT',
+            body:    file,
+            headers: { 'Content-Type': file.type },
+          });
+        } catch {
+          throw new Error('Falha ao enviar para o servidor de mídia. Verifique as configurações R2.');
+        }
+
+        if (!up.ok) throw new Error(`Upload falhou (${up.status})`);
         results.push(publicUrl);
       }
       onUpload(multiple ? results : results[0]);
     } catch (e) {
       setErr(e.message);
     } finally {
-      setBusy(false);
+      setBusy(false); setProg('');
       if (inputRef.current) inputRef.current.value = '';
     }
   };
@@ -532,11 +561,28 @@ function UploadZone({ label, accept, multiple = false, onUpload }) {
       <button onClick={() => inputRef.current?.click()} disabled={busy}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50 hover:brightness-125 active:scale-[0.98]"
         style={{ background:'rgba(255,255,255,0.05)', border:'1px dashed rgba(255,255,255,0.15)', color:'rgba(255,255,255,0.4)' }}>
-        {busy ? <><Loader2 className="w-3.5 h-3.5 animate-spin"/> Enviando…</> : <><Upload className="w-3.5 h-3.5"/> {label}</>}
+        {busy ? <><Loader2 className="w-3.5 h-3.5 animate-spin"/> {prog || 'Enviando…'}</> : <><Upload className="w-3.5 h-3.5"/> {label}</>}
       </button>
-      {err && <p className="text-[11px] text-rose-400 mt-1">{err}</p>}
+      {err && (
+        <p className="text-[11px] text-rose-400 mt-1.5 px-2 py-1.5 rounded-lg leading-snug"
+          style={{ background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.2)' }}>
+          {err}
+        </p>
+      )}
     </div>
   );
+}
+
+// ── Format helpers ────────────────────────────────────────────────────────────
+function fmtNorm(s) {
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function isVideoFmt(formato) {
+  const f = fmtNorm(formato);
+  return ['video', 'reels', 'reel', 'tiktok', 'youtube'].some(k => f.includes(k));
+}
+function isCarouselFmt(formato) {
+  return fmtNorm(formato).includes('carrossel');
 }
 
 // ── Detail Panel (Tema / Conteúdo / Mídia) — centered modal ──────────────────
@@ -758,91 +804,128 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
           </>}
 
           {/* ── Mídia ── */}
-          {tab === 'midia' && (
-            <div className="grid grid-cols-2 gap-4">
+          {tab === 'midia' && (() => {
+            const isVid = isVideoFmt(item.formato);
+            const isCar = isCarouselFmt(item.formato);
 
-              {/* Left column: Vídeo + Drive */}
-              <div className="space-y-4">
-                {/* Vídeo preview */}
-                <div>
-                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Play className="w-3 h-3"/> Vídeo
-                  </label>
-                  {item.linkFicheiro && (
-                    <div className="mb-2 rounded-xl overflow-hidden aspect-video bg-black"
-                      style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
-                      {item.linkFicheiro.includes('drive.google.com') ? (
-                        <iframe src={item.linkFicheiro.replace(/\/view.*$/,'/preview')} className="w-full h-full border-0" allow="autoplay; fullscreen"/>
-                      ) : (
-                        <video src={item.linkFicheiro} controls playsInline className="w-full h-full object-contain"/>
-                      )}
-                    </div>
-                  )}
-                  <UploadZone label="Upload vídeo (R2)" accept="video/*"
-                    onUpload={url => saveMedia({ linkFicheiro: url })}/>
-                </div>
-
-                {/* Drive link */}
-                <div>
-                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Link do Drive (download alta)</label>
-                  <input type="url" value={linkDrive} onChange={e => setLinkDrive(e.target.value)}
-                    placeholder="https://drive.google.com/…"
-                    className="w-full px-3 py-2.5 rounded-xl text-xs text-white/70 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/30"
-                    style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
-                  <p className="text-[10px] text-white/20 mt-1">Salvo com o botão principal</p>
-                </div>
-
-                {/* Feedback do cliente */}
-                {item.feedbackCliente && (
-                  <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
-                    <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback do Cliente</p>
-                    <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+            // VIDEO: 2-col — player+drive left, cover right
+            if (isVid) return (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Play className="w-3 h-3"/> Vídeo
+                    </label>
+                    {item.linkFicheiro && (
+                      <div className="mb-2 rounded-xl overflow-hidden aspect-video bg-black"
+                        style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+                        {item.linkFicheiro.includes('drive.google.com')
+                          ? <iframe src={item.linkFicheiro.replace(/\/view.*$/,'/preview')} className="w-full h-full border-0" allow="autoplay; fullscreen"/>
+                          : <video src={item.linkFicheiro} controls playsInline className="w-full h-full object-contain"/>
+                        }
+                      </div>
+                    )}
+                    <UploadZone label="Upload vídeo (R2)" accept="video/*"
+                      onUpload={url => saveMedia({ linkFicheiro: url })}/>
                   </div>
-                )}
-              </div>
-
-              {/* Right column: Capa + Galeria */}
-              <div className="space-y-4">
-                {/* Capa */}
-                <div>
-                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Image className="w-3 h-3"/> Capa / Thumbnail
-                  </label>
-                  {item.linkCapa && (
-                    <div className="mb-2 rounded-xl overflow-hidden aspect-video"
-                      style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
-                      <img src={item.linkCapa} alt="Capa" className="w-full h-full object-cover"
-                        onError={e => { e.target.style.display='none'; }}/>
+                  <div>
+                    <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Link Drive (download alta)</label>
+                    <input type="url" value={linkDrive} onChange={e => setLinkDrive(e.target.value)}
+                      placeholder="https://drive.google.com/…"
+                      className="w-full px-3 py-2.5 rounded-xl text-xs text-white/70 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/30"
+                      style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
+                    <p className="text-[10px] text-white/20 mt-1">Salvo com o botão abaixo</p>
+                  </div>
+                  {item.feedbackCliente && (
+                    <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
+                      <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
+                      <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
                     </div>
                   )}
-                  <UploadZone label="Upload capa" accept="image/*"
-                    onUpload={url => saveMedia({ linkCapa: url })}/>
                 </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Image className="w-3 h-3"/> Capa / Thumbnail
+                    </label>
+                    {item.linkCapa && (
+                      <div className="mb-2 rounded-xl overflow-hidden aspect-video"
+                        style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+                        <img src={item.linkCapa} alt="Capa" className="w-full h-full object-cover"
+                          onError={e => { e.target.style.display='none'; }}/>
+                      </div>
+                    )}
+                    <UploadZone label="Upload capa" accept="image/*"
+                      onUpload={url => saveMedia({ linkCapa: url })}/>
+                  </div>
+                </div>
+              </div>
+            );
 
-                {/* Galeria de imagens */}
+            // CARROSSEL: full-width gallery grid
+            if (isCar) return (
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Galeria (Carrossel)</label>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Image className="w-3 h-3"/> Imagens do Carrossel
+                    <span className="text-white/20 font-normal">({galeriaList.length} imagens)</span>
+                  </label>
                   {galeriaList.length > 0 && (
-                    <div className="grid grid-cols-3 gap-1 mb-2">
+                    <div className="grid grid-cols-4 gap-1.5 mb-3">
                       {galeriaList.map((url, i) => (
                         <div key={i} className="relative aspect-square rounded-lg overflow-hidden group"
                           style={{ border:'1px solid rgba(255,255,255,0.07)' }}>
-                          <img src={url} alt={`Galeria ${i+1}`} className="w-full h-full object-cover"/>
-                          <button onClick={() => removeGalleryImage(i)}
-                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            style={{ background:'rgba(244,63,94,0.9)' }}>
-                            <X className="w-2.5 h-2.5 text-white"/>
-                          </button>
+                          <img src={url} alt={`Slide ${i+1}`} className="w-full h-full object-cover"/>
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-all">
+                            <button onClick={() => removeGalleryImage(i)}
+                              className="w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              style={{ background:'rgba(244,63,94,0.9)' }}>
+                              <X className="w-3 h-3 text-white"/>
+                            </button>
+                          </div>
+                          <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold text-white/60 bg-black/40 px-1 rounded">{i+1}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                  <UploadZone label="Adicionar imagens" accept="image/*" multiple
+                  <UploadZone label="Adicionar imagens ao carrossel" accept="image/*" multiple
                     onUpload={urls => addGalleryImages(Array.isArray(urls) ? urls : [urls])}/>
                 </div>
+                {item.feedbackCliente && (
+                  <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
+                    <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
+                    <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+
+            // STORIES / ESTÁTICO / POST: single image upload
+            return (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Image className="w-3 h-3"/> Imagem
+                  </label>
+                  {item.linkCapa && (
+                    <div className="mb-3 rounded-xl overflow-hidden"
+                      style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+                      <img src={item.linkCapa} alt="Imagem" className="w-full object-contain max-h-64"
+                        onError={e => { e.target.style.display='none'; }}/>
+                    </div>
+                  )}
+                  <UploadZone label="Upload imagem" accept="image/*"
+                    onUpload={url => saveMedia({ linkCapa: url })}/>
+                </div>
+                {item.feedbackCliente && (
+                  <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
+                    <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
+                    <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Footer */}
