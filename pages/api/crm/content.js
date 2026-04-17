@@ -53,6 +53,8 @@ function mapContent(page) {
     linkFicheiro:     getProp(p['Link do Ficheiro'])    || null,
     linkCapa:         getProp(p['Link da Capa'])        || null,
     linkCapa2:        getProp(p['linkcapa2'])           || null,
+    galeria:          getProp(p['Galeria'])             || '',
+    linkDrive:        getProp(p['Link Drive'])          || null,
     idCliente:        getProp(p['ID do Cliente'])       || '',
     portalLink:       getProp(p['FórmulaLink Portal do Cliente']) || null,
   };
@@ -132,7 +134,8 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const {
       id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
-      postagem, responsavel, nome, conteudo,
+      postagem, responsavel, nome, conteudo, galeria, linkDrive,
+      linkFicheiro, linkCapa,
     } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
@@ -146,6 +149,10 @@ export default async function handler(req, res) {
       if (responsavel)               properties['responsável']         = { select: { name: responsavel } };
       if (nome?.trim())              properties['Nome']                = { title: [{ text: { content: nome.trim() } }] };
       if (conteudo !== undefined)     properties['Roteiro']             = { rich_text: [{ text: { content: conteudo } }] };
+      if (galeria !== undefined)     properties['Galeria']             = { rich_text: [{ text: { content: galeria } }] };
+      if (linkDrive !== undefined)   properties['Link Drive']          = { url: linkDrive || null };
+      if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
+      if (linkCapa !== undefined)     properties['Link da Capa']       = { url: linkCapa || null };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });

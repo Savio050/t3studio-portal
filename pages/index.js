@@ -6,7 +6,7 @@ import {
   Calendar, FileText, Check, Film, Send,
   ChevronDown, ChevronUp, CheckCircle2, AlertCircle,
   Loader2, MoreHorizontal, AlertTriangle, Clock, Download,
-  Image as ImageIcon, ZoomIn, X,
+  Image as ImageIcon, ZoomIn, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -206,10 +206,10 @@ function CardHead({ nome, dataGravacao, categoria, statusLabel, statusColor }) {
   );
 }
 
-// ─── Roteiro accordion ────────────────────────────────────────────────────────
-function Roteiro({ roteiro, label = 'Ver Roteiro' }) {
+// ─── Conteúdo / Roteiro accordion ─────────────────────────────────────────────
+function Roteiro({ content, label = 'Ver Roteiro' }) {
   const [open, setOpen] = useState(false);
-  if (!roteiro) return null;
+  if (!content) return null;
   return (
     <div className="mb-4">
       <button
@@ -232,42 +232,199 @@ function Roteiro({ roteiro, label = 'Ver Roteiro' }) {
       {open && (
         <div className="mt-2 p-4 rounded-xl bg-gray-50 border border-gray-200
           text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-          {renderLinks(roteiro)}
+          {renderLinks(content)}
         </div>
       )}
     </div>
   );
 }
 
+// ─── Video player (R2 direct or Google Drive iframe) ──────────────────────────
+function VideoPlayer({ src, poster }) {
+  if (!src) return null;
+  const isDrive = src.includes('drive.google.com');
+  if (isDrive) {
+    const embedSrc = src.replace(/\/view.*$/, '/preview');
+    return (
+      <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-900">
+        <iframe src={embedSrc} className="w-full h-full border-0"
+          allow="autoplay; fullscreen" title="Vídeo" />
+      </div>
+    );
+  }
+  return (
+    <video src={src} poster={poster || undefined} controls playsInline
+      className="w-full aspect-video rounded-xl bg-black object-contain">
+      Seu navegador não suporta reprodução de vídeo.
+    </video>
+  );
+}
+
+// ─── Carousel viewer ──────────────────────────────────────────────────────────
+function CarouselViewer({ images }) {
+  const [idx, setIdx] = useState(0);
+  if (!images?.length) return null;
+  const prev = () => setIdx(i => (i - 1 + images.length) % images.length);
+  const next = () => setIdx(i => (i + 1) % images.length);
+  return (
+    <div className="w-full">
+      <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100">
+        <img src={images[idx]} alt={`Slide ${idx + 1} de ${images.length}`}
+          className="w-full h-full object-cover" />
+        {images.length > 1 && (
+          <>
+            <button onClick={prev} aria-label="Anterior"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full
+                bg-black/40 hover:bg-black/60 flex items-center justify-center
+                text-white cursor-pointer transition-all duration-150">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={next} aria-label="Próximo"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full
+                bg-black/40 hover:bg-black/60 flex items-center justify-center
+                text-white cursor-pointer transition-all duration-150">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+              {images.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} aria-label={`Slide ${i + 1}`}
+                  className={`rounded-full transition-all duration-200 cursor-pointer ${i === idx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/80'}`}/>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <p className="text-center text-xs text-gray-400 mt-1.5">
+        {idx + 1} / {images.length}
+      </p>
+    </div>
+  );
+}
+
+// ─── Smart image (R2 → <img> with zoom, Drive → iframe) ───────────────────────
+function SmartImage({ url, label, showDownload }) {
+  const [open, setOpen] = useState(false);
+  if (!url) return null;
+  const isDrive = url.includes('drive.google.com');
+
+  if (isDrive) {
+    return <CapaThumb url={url} label={label} showDownload={showDownload} />;
+  }
+
+  return (
+    <div className="flex-1 flex flex-col gap-1.5">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">{label}</p>
+      <button onClick={() => setOpen(true)} aria-label={`Ampliar ${label}`}
+        className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-gray-100 relative group cursor-pointer
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+        <img src={url} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center
+          bg-black/0 group-hover:bg-black/25 transition-all duration-200">
+          <div className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center
+            opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-200">
+            <ZoomIn className="w-5 h-5 text-gray-800" />
+          </div>
+        </div>
+      </button>
+      {showDownload && (
+        <a href={url} target="_blank" rel="noopener noreferrer" download
+          className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
+            border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
+            text-xs font-black uppercase tracking-widest active:scale-[0.98] transition-all duration-150">
+          BAIXAR
+        </a>
+      )}
+      {open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setOpen(false)}
+          role="dialog" aria-modal="true" aria-label={`Ampliar ${label}`}>
+          <div className="relative max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <img src={url} alt={label} className="w-full rounded-2xl object-contain max-h-[85vh]" />
+            <button onClick={() => setOpen(false)} aria-label="Fechar"
+              className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-xl cursor-pointer hover:bg-gray-100 active:scale-95 transition-all">
+              <X className="w-5 h-5 text-gray-800" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Smart media section (replaces MediaGrid) ─────────────────────────────────
+function SmartMedia({ item, showDownload }) {
+  const fmt         = (item.formato || '').toLowerCase();
+  const isVideo     = ['reels', 'vídeo', 'video', 'tiktok', 'youtube'].includes(fmt);
+  const isCarousel  = fmt === 'carrossel';
+  const galeriaUrls = item.galeria
+    ? item.galeria.split(',').map(u => u.trim()).filter(Boolean)
+    : [];
+
+  // Carousel with gallery images
+  if (isCarousel && galeriaUrls.length > 0) {
+    return (
+      <div className="px-4 pb-4">
+        <CarouselViewer images={galeriaUrls} />
+        {showDownload && item.linkDrive && (
+          <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+              bg-green-500 hover:bg-green-600 text-white text-sm font-black uppercase tracking-widest
+              active:scale-[0.98] transition-all duration-150">
+            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  // Video with R2 or Drive source
+  if (isVideo && item.linkFicheiro) {
+    return (
+      <div className="px-4 pb-4">
+        <VideoPlayer src={item.linkFicheiro} poster={item.linkCapa || undefined} />
+        {showDownload && item.linkDrive && (
+          <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+              bg-green-500 hover:bg-green-600 text-white text-sm font-black uppercase tracking-widest
+              active:scale-[0.98] transition-all duration-150">
+            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: original layout for legacy Drive embeds
+  return <MediaGrid item={item} showDownload={showDownload} />;
+}
+
 // ─── Grid de mídia compartilhado ──────────────────────────────────────────────
 function CapaThumb({ url, label, showDownload }) {
   const [open, setOpen] = useState(false);
+  const isDrive  = url?.includes('drive.google.com');
   const embedUrl = getEmbedUrl(url);
+
   return (
     <div className="flex-1 flex flex-col gap-1.5">
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
         {label}
       </p>
-      {/* Botão clicável que abre o lightbox */}
       <button
         onClick={() => setOpen(true)}
         aria-label={`Ampliar ${label}`}
         className="w-full aspect-[9/16] rounded-xl overflow-hidden bg-gray-900 relative group
           cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
-        <iframe
-          src={embedUrl}
-          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-          title={label}
-          style={{ transform: 'scale(1.05)' }}
-        />
-        {/* Overlay com ícone zoom ao hover/focus */}
+        {isDrive ? (
+          <iframe src={embedUrl} className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+            title={label} style={{ transform: 'scale(1.05)' }} />
+        ) : (
+          <img src={url} alt={label} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+        )}
         <div className="absolute inset-0 flex items-center justify-center
           bg-black/0 group-hover:bg-black/25 transition-all duration-200">
-          <div className="w-10 h-10 rounded-full bg-white/90 shadow-lg
-            flex items-center justify-center
-            opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100
-            transition-all duration-200">
+          <div className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center
+            opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-200">
             <ZoomIn className="w-5 h-5 text-gray-800" />
           </div>
         </div>
@@ -277,15 +434,27 @@ function CapaThumb({ url, label, showDownload }) {
         <a href={url} target="_blank" rel="noopener noreferrer"
           className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
             border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
-            text-xs font-black uppercase tracking-widest
-            active:scale-[0.98] transition-all duration-150">
+            text-xs font-black uppercase tracking-widest active:scale-[0.98] transition-all duration-150">
           BAIXAR
         </a>
       )}
 
-      {/* Lightbox */}
       {open && (
-        <Lightbox url={embedUrl} title={label} onClose={() => setOpen(false)} />
+        isDrive
+          ? <Lightbox url={embedUrl} title={label} onClose={() => setOpen(false)} />
+          : (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+              style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setOpen(false)}
+              role="dialog" aria-modal="true" aria-label={`Ampliar ${label}`}>
+              <div className="relative max-w-sm w-full" onClick={e => e.stopPropagation()}>
+                <img src={url} alt={label} className="w-full rounded-2xl object-contain max-h-[85vh]" />
+                <button onClick={() => setOpen(false)} aria-label="Fechar"
+                  className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-xl cursor-pointer hover:bg-gray-100 active:scale-95 transition-all">
+                  <X className="w-5 h-5 text-gray-800" />
+                </button>
+              </div>
+            </div>
+          )
       )}
     </div>
   );
@@ -576,8 +745,8 @@ function ApprovalCard({ item, onApprove, onReject }) {
         statusColor={st.color}
       />
       <div className="px-5 pb-5">
-        {item.roteiro
-          ? <Roteiro roteiro={item.roteiro} />
+        {item.conteudo
+          ? <Roteiro content={item.conteudo} />
           : (
             <div className="mb-4 flex items-center gap-2.5 px-4 py-3.5
               bg-slate-50 border border-slate-100 rounded-xl">
@@ -631,7 +800,7 @@ function ReviewCard({ item, onApprove, onReject }) {
         statusLabel="Ação Necessária"
         statusColor="text-orange-500"
       />
-      <MediaGrid item={item} showDownload={false} />
+      <SmartMedia item={item} showDownload={false} />
       <div className="px-4 pb-5">
         <ActionButtons
           onApprove={approve}
@@ -657,11 +826,10 @@ function DownloadCard({ item }) {
         statusLabel={label}
         statusColor="text-green-500"
       />
-      <MediaGrid item={item} showDownload={true} />
-      {/* Roteiro — sempre exibido se existir */}
-      {item.roteiro && (
+      <SmartMedia item={item} showDownload={true} />
+      {item.conteudo && (
         <div className="px-4 pb-5">
-          <Roteiro roteiro={item.roteiro} label="Ver Roteiro do Projeto" />
+          <Roteiro content={item.conteudo} label="Ver Roteiro do Projeto" />
         </div>
       )}
     </article>

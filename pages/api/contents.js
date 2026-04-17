@@ -49,14 +49,17 @@ export default async function handler(req, res) {
         nome: getPropertyValue(props['Nome']) || 'Sem título',
         dataGravacao: getPropertyValue(props['Data de Gravação']),
         categoria: getPropertyValue(props['Categoria']) || '',
+        formato: getPropertyValue(props['Formato']) || '',
         mesRelativo: getPropertyValue(props['Relativo ao mês de']) || '',
-        roteiro: getPropertyValue(props['Roteiro']) || '',
+        conteudo: getPropertyValue(props['Roteiro']) || '',
         estadoRoteiro: getPropertyValue(props['EstadoRoteiro']) || 'Pendente',
         feedbackRoteiro: getPropertyValue(props['Feedback do Roteiro']) || '',
         estado: getPropertyValue(props['Estado']) || 'Pendente',
         linkFicheiro: getPropertyValue(props['Link do Ficheiro']) || null,
+        linkDrive: getPropertyValue(props['Link Drive']) || null,
         linkCapa: getPropertyValue(props['Link da Capa']) || null,
-        linkCapa2: getPropertyValue(props['linkcapa2']) || null, // <--- Nova coluna mapeada aqui
+        linkCapa2: getPropertyValue(props['linkcapa2']) || null,
+        galeria: getPropertyValue(props['Galeria']) || '',
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };
     });

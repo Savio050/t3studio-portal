@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Film, X, Loader2, Clock, User, AlertTriangle,
   LayoutGrid, User2, CalendarDays, ChevronLeft, ChevronRight,
   Save, CheckCircle2, Plus, Trash2, Camera,
   Image, FileText, Palette, ExternalLink, Link2,
-  ChevronDown,
+  ChevronDown, Upload, Video, Play,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function sectionStatus(item, section) {
     return 'pendente';
   }
   if (section === 'midia') {
-    if (item.linkFicheiro || item.linkCapa)                                            return 'aprovado';
+    if (item.linkFicheiro || item.linkCapa || item.galeria)                            return 'aprovado';
     return 'pendente';
   }
 }
@@ -493,7 +493,53 @@ function NewContentModal({ onClose, onCreate }) {
   );
 }
 
-// ── Detail Panel (Tema / Conteúdo / Mídia) ────────────────────────────────────
+// ── Upload zone (presigned R2) ────────────────────────────────────────────────
+function UploadZone({ label, accept, multiple = false, onUpload }) {
+  const inputRef   = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr]  = useState('');
+
+  const handleFiles = async (files) => {
+    if (!files?.length || busy) return;
+    setBusy(true); setErr('');
+    try {
+      const results = [];
+      for (const file of files) {
+        const r = await fetch('/api/crm/upload', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ filename: file.name, contentType: file.type }),
+        });
+        if (!r.ok) throw new Error('Erro ao gerar URL de upload');
+        const { presignedUrl, publicUrl } = await r.json();
+        const up = await fetch(presignedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+        if (!up.ok) throw new Error('Falha no upload');
+        results.push(publicUrl);
+      }
+      onUpload(multiple ? results : results[0]);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept={accept} multiple={multiple} className="hidden"
+        onChange={e => handleFiles([...e.target.files])} />
+      <button onClick={() => inputRef.current?.click()} disabled={busy}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50 hover:brightness-125 active:scale-[0.98]"
+        style={{ background:'rgba(255,255,255,0.05)', border:'1px dashed rgba(255,255,255,0.15)', color:'rgba(255,255,255,0.4)' }}>
+        {busy ? <><Loader2 className="w-3.5 h-3.5 animate-spin"/> Enviando…</> : <><Upload className="w-3.5 h-3.5"/> {label}</>}
+      </button>
+      {err && <p className="text-[11px] text-rose-400 mt-1">{err}</p>}
+    </div>
+  );
+}
+
+// ── Detail Panel (Tema / Conteúdo / Mídia) — centered modal ──────────────────
 function DetailPanel({ item, onSave, onDelete, onClose }) {
   const [tab,          setTab]          = useState('tema');
   const [nome,         setNome]         = useState(item.nome);
@@ -503,6 +549,10 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
   const [conteudo,     setConteudo]     = useState(item.conteudo || '');
   const [postagem,     setPostagem]     = useState(item.postagem || '');
   const [gravacao,     setGravacao]     = useState(item.dataGravacao || '');
+  const [linkDrive,    setLinkDrive]    = useState(item.linkDrive || '');
+  const [galeriaList,  setGaleriaList]  = useState(() =>
+    item.galeria ? item.galeria.split(',').map(u => u.trim()).filter(Boolean) : []
+  );
   const [saving,       setSaving]       = useState(false);
   const [saved,        setSaved]        = useState(false);
   const [confirmDel,   setConfirmDel]   = useState(false);
@@ -512,19 +562,35 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
     setNome(item.nome); setResponsavel(item.responsavel||'');
     setEstado(item.estado||''); setEstadoR(item.estadoRoteiro||'');
     setConteudo(item.conteudo||''); setPostagem(item.postagem||'');
-    setGravacao(item.dataGravacao||'');
+    setGravacao(item.dataGravacao||''); setLinkDrive(item.linkDrive||'');
+    setGaleriaList(item.galeria ? item.galeria.split(',').map(u => u.trim()).filter(Boolean) : []);
   }, [item.id]);
 
   const dirty = nome !== item.nome || responsavel !== (item.responsavel||'') ||
     estado !== (item.estado||'') || estadoR !== (item.estadoRoteiro||'') ||
     conteudo !== (item.conteudo||'') || postagem !== (item.postagem||'') ||
-    gravacao !== (item.dataGravacao||'');
+    gravacao !== (item.dataGravacao||'') || linkDrive !== (item.linkDrive||'');
 
   const save = async () => {
     if (!nome.trim() || saving) return;
     setSaving(true);
-    await onSave(item.id, { nome, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined });
+    await onSave(item.id, { nome, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
+  };
+
+  // Immediate saves for media uploads
+  const saveMedia = async (fields) => onSave(item.id, fields);
+
+  const addGalleryImages = async (urls) => {
+    const next = [...galeriaList, ...urls];
+    setGaleriaList(next);
+    await saveMedia({ galeria: next.join(',') });
+  };
+
+  const removeGalleryImage = async (idx) => {
+    const next = galeriaList.filter((_, i) => i !== idx);
+    setGaleriaList(next);
+    await saveMedia({ galeria: next.join(',') });
   };
 
   const handleDelete = async () => {
@@ -546,10 +612,10 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative w-full max-w-md flex flex-col h-full"
-        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', borderLeft:'1px solid rgba(255,255,255,0.1)', boxShadow:'-24px 0 60px rgba(0,0,0,0.5)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative w-full max-w-2xl flex flex-col rounded-2xl overflow-hidden"
+        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 40px 80px rgba(0,0,0,0.7)', maxHeight:'92vh' }}>
 
         {/* Header */}
         <div className="px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
@@ -574,7 +640,7 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
                   </span>
                 )}
               </div>
-              <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">{item.nome}</h3>
+              <h3 className="text-sm font-bold text-white leading-snug">{item.nome}</h3>
               {(item.postagem || item.dataGravacao) && (
                 <div className="flex items-center gap-3 mt-1.5">
                   {item.dataGravacao && <span className="flex items-center gap-1 text-[10px] text-white/30"><Camera className="w-3 h-3"/> {fmtFull(item.dataGravacao)}</span>}
@@ -676,10 +742,8 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">
-                Conteúdo / Roteiro
-              </label>
-              <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={14}
+              <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Conteúdo / Roteiro</label>
+              <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={12}
                 placeholder="Escreva o conteúdo ou roteiro aqui..."
                 className="w-full px-4 py-3 rounded-xl text-sm text-white/90 placeholder-white/20 font-medium resize-none outline-none focus:ring-2 focus:ring-violet-500/40 leading-relaxed"
                 style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
@@ -694,68 +758,107 @@ function DetailPanel({ item, onSave, onDelete, onClose }) {
           </>}
 
           {/* ── Mídia ── */}
-          {tab === 'midia' && <>
-            {(item.linkCapa || item.linkCapa2) && (
-              <div>
-                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Capas</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[item.linkCapa, item.linkCapa2].filter(Boolean).map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer"
-                      className="block rounded-xl overflow-hidden aspect-video cursor-pointer hover:opacity-80 transition-opacity"
-                      style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                      <img src={url} alt={`Capa ${i+1}`} className="w-full h-full object-cover"
+          {tab === 'midia' && (
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* Left column: Vídeo + Drive */}
+              <div className="space-y-4">
+                {/* Vídeo preview */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Play className="w-3 h-3"/> Vídeo
+                  </label>
+                  {item.linkFicheiro && (
+                    <div className="mb-2 rounded-xl overflow-hidden aspect-video bg-black"
+                      style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+                      {item.linkFicheiro.includes('drive.google.com') ? (
+                        <iframe src={item.linkFicheiro.replace(/\/view.*$/,'/preview')} className="w-full h-full border-0" allow="autoplay; fullscreen"/>
+                      ) : (
+                        <video src={item.linkFicheiro} controls playsInline className="w-full h-full object-contain"/>
+                      )}
+                    </div>
+                  )}
+                  <UploadZone label="Upload vídeo (R2)" accept="video/*"
+                    onUpload={url => saveMedia({ linkFicheiro: url })}/>
+                </div>
+
+                {/* Drive link */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Link do Drive (download alta)</label>
+                  <input type="url" value={linkDrive} onChange={e => setLinkDrive(e.target.value)}
+                    placeholder="https://drive.google.com/…"
+                    className="w-full px-3 py-2.5 rounded-xl text-xs text-white/70 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/30"
+                    style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
+                  <p className="text-[10px] text-white/20 mt-1">Salvo com o botão principal</p>
+                </div>
+
+                {/* Feedback do cliente */}
+                {item.feedbackCliente && (
+                  <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
+                    <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback do Cliente</p>
+                    <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right column: Capa + Galeria */}
+              <div className="space-y-4">
+                {/* Capa */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Image className="w-3 h-3"/> Capa / Thumbnail
+                  </label>
+                  {item.linkCapa && (
+                    <div className="mb-2 rounded-xl overflow-hidden aspect-video"
+                      style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+                      <img src={item.linkCapa} alt="Capa" className="w-full h-full object-cover"
                         onError={e => { e.target.style.display='none'; }}/>
-                    </a>
-                  ))}
+                    </div>
+                  )}
+                  <UploadZone label="Upload capa" accept="image/*"
+                    onUpload={url => saveMedia({ linkCapa: url })}/>
+                </div>
+
+                {/* Galeria de imagens */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Galeria (Carrossel)</label>
+                  {galeriaList.length > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mb-2">
+                      {galeriaList.map((url, i) => (
+                        <div key={i} className="relative aspect-square rounded-lg overflow-hidden group"
+                          style={{ border:'1px solid rgba(255,255,255,0.07)' }}>
+                          <img src={url} alt={`Galeria ${i+1}`} className="w-full h-full object-cover"/>
+                          <button onClick={() => removeGalleryImage(i)}
+                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            style={{ background:'rgba(244,63,94,0.9)' }}>
+                            <X className="w-2.5 h-2.5 text-white"/>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <UploadZone label="Adicionar imagens" accept="image/*" multiple
+                    onUpload={urls => addGalleryImages(Array.isArray(urls) ? urls : [urls])}/>
                 </div>
               </div>
-            )}
-            {item.linkFicheiro ? (
-              <div>
-                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Arquivo</label>
-                <a href={item.linkFicheiro} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:brightness-125 transition-all"
-                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)' }}>
-                  <Link2 className="w-4 h-4 text-cyan-400 shrink-0"/>
-                  <span className="text-sm text-white/70 font-medium truncate flex-1">{item.linkFicheiro}</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-white/30 shrink-0"/>
-                </a>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 rounded-xl"
-                style={{ background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.08)' }}>
-                <Image className="w-8 h-8 text-white/15 mb-2"/>
-                <p className="text-xs text-white/25">Nenhuma mídia vinculada</p>
-                <p className="text-[10px] text-white/15 mt-0.5">Links cadastrados no Notion</p>
-              </div>
-            )}
-            {item.feedbackCliente && (
-              <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
-                <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback do Cliente</p>
-                <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
-              </div>
-            )}
-            {!item.linkCapa && !item.linkCapa2 && !item.linkFicheiro && !item.feedbackCliente && (
-              <div/>
-            )}
-          </>}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t space-y-2 shrink-0" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+        <div className="px-5 py-4 border-t flex gap-3 shrink-0" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
+          <button onClick={handleDelete} disabled={deleting}
+            onBlur={() => setTimeout(() => setConfirmDel(false), 200)}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-40"
+            style={{ background: confirmDel?'rgba(244,63,94,0.2)':'rgba(255,255,255,0.03)', border:`1px solid ${confirmDel?'rgba(244,63,94,0.4)':'rgba(255,255,255,0.07)'}`, color: confirmDel?'#fb7185':'rgba(255,255,255,0.25)' }}>
+            {deleting?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Trash2 className="w-3.5 h-3.5"/>}
+            {deleting?'Removendo…':confirmDel?'Confirmar':'Excluir'}
+          </button>
           <button onClick={save} disabled={!dirty||saving||!nome.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
             style={{ background: saved?'rgba(16,185,129,0.8)':'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
             {saving?<Loader2 className="w-4 h-4 animate-spin"/>:saved?<CheckCircle2 className="w-4 h-4"/>:<Save className="w-4 h-4"/>}
             {saving?'Salvando…':saved?'Salvo!':'Salvar alterações'}
-          </button>
-          {!dirty && <p className="text-center text-[10px] text-white/20">Nenhuma alteração pendente</p>}
-          <button onClick={handleDelete} disabled={deleting}
-            onBlur={() => setTimeout(() => setConfirmDel(false), 200)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-40"
-            style={{ background: confirmDel?'rgba(244,63,94,0.2)':'rgba(255,255,255,0.03)', border:`1px solid ${confirmDel?'rgba(244,63,94,0.4)':'rgba(255,255,255,0.07)'}`, color: confirmDel?'#fb7185':'rgba(255,255,255,0.25)' }}>
-            {deleting?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Trash2 className="w-3.5 h-3.5"/>}
-            {deleting?'Removendo…':confirmDel?'Confirmar exclusão':'Remover conteúdo'}
           </button>
         </div>
       </div>
