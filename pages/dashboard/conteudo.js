@@ -11,7 +11,7 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MEMBERS   = ['Matheus', 'Sávio'];
 const CLIENTS   = ['fastimoveis', 'mafro'];
-const FORMATOS  = ['Reels', 'Carrossel', 'Stories', 'Post', 'Vídeo', 'TikTok', 'YouTube'];
+const FORMATOS  = ['Carrossel', 'Stories', 'Post', 'Vídeo curto', 'Estático'];
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const WEEKDAYS_PT = ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
