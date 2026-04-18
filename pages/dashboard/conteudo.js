@@ -311,6 +311,59 @@ function FeedCard({ item, onClick }) {
   );
 }
 
+// ── Day items modal (shows all items for a single day) ────────────────────────
+function DayItemsModal({ date, items, onSelect, onClose }) {
+  const label = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{ background:'rgba(9,16,30,0.99)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 32px 64px rgba(0,0,0,0.7)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+          <div>
+            <p className="text-[10px] text-white/35 font-bold uppercase tracking-wider">{items.length} conteúdos</p>
+            <h3 className="text-sm font-bold text-white capitalize mt-0.5">{label}</h3>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer">
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="p-3 space-y-1.5 max-h-[70vh] overflow-y-auto">
+          {items.map(item => (
+            <button key={item.id} onClick={() => { onClose(); onSelect(item); }}
+              className="w-full text-left rounded-xl p-3 cursor-pointer transition-all hover:brightness-125"
+              style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-2 mb-1">
+                {item.formato && (
+                  <span className="text-[9px] font-bold" style={{ color: FORMAT_COLORS[item.formato]||'#a78bfa' }}>
+                    {item.formato}
+                  </span>
+                )}
+                {item.cliente && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider ml-auto"
+                    style={{ color: clientColor(item.cliente).text }}>
+                    {item.cliente}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-semibold text-white/85 leading-snug">{item.nome}</p>
+              {item.responsavel && (
+                <p className="text-[10px] text-white/30 mt-1">{item.responsavel}</p>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Monthly view ──────────────────────────────────────────────────────────────
 function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
   const days     = buildCalendar(year, month);
@@ -320,6 +373,7 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
     if (d) { if (!byDate[d]) byDate[d] = []; byDate[d].push(item); }
   });
   const todayStr = isoDate(new Date());
+  const [dayModal, setDayModal] = useState(null); // { date, items }
 
   return (
     <div>
@@ -346,6 +400,7 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           const ds       = isoDate(date);
           const dayItems = byDate[ds] || [];
           const isToday  = ds === todayStr;
+          const PREVIEW  = 2; // cards shown before "ver todos"
           return (
             <div key={i} className="min-h-[90px] p-1.5 rounded-xl transition-all duration-150"
               style={{
@@ -361,12 +416,15 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
                 ? i < 7 && <div className="h-8 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }}/>
                 : (
                   <div className="space-y-0.5">
-                    {dayItems.slice(0, 3).map(item => (
+                    {dayItems.slice(0, PREVIEW).map(item => (
                       <MiniCard key={item.id} item={item} onClick={onSelect}/>
                     ))}
-                    {dayItems.length > 3 && (
-                      <button className="text-[9px] text-white/25 w-full text-center py-0.5 hover:text-white/50 cursor-pointer">
-                        +{dayItems.length - 3} mais
+                    {dayItems.length > PREVIEW && (
+                      <button
+                        onClick={() => setDayModal({ date, items: dayItems })}
+                        className="text-[9px] font-bold w-full text-center py-1 rounded-lg cursor-pointer transition-all hover:text-white/70"
+                        style={{ background:'rgba(124,58,237,0.1)', color:'rgba(167,139,250,0.7)', border:'1px solid rgba(124,58,237,0.2)' }}>
+                        +{dayItems.length - PREVIEW} mais
                       </button>
                     )}
                   </div>
@@ -376,6 +434,15 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           );
         })}
       </div>
+
+      {dayModal && (
+        <DayItemsModal
+          date={dayModal.date}
+          items={dayModal.items}
+          onSelect={onSelect}
+          onClose={() => setDayModal(null)}
+        />
+      )}
     </div>
   );
 }
