@@ -126,8 +126,8 @@ function ClientCard({ client, onDelete }) {
       {/* Body */}
       <div className="pt-8 px-5 pb-5">
         <h3 className="text-base font-bold text-white font-display capitalize">{client.nome}</h3>
-        {client.categoria && (
-          <p className="text-xs text-white/35 font-medium mt-0.5 capitalize">{client.categoria}</p>
+        {client.descricao && (
+          <p className="text-xs text-white/35 font-medium mt-0.5 leading-snug">{client.descricao}</p>
         )}
 
         {/* Progress */}
@@ -209,12 +209,11 @@ function SummaryCard({ label, value, color, icon: Icon }) {
 
 // ── New Client Modal ──────────────────────────────────────────────────────────
 function NewClientModal({ onClose, onCreate }) {
-  const [nome,      setNome]      = useState('');
-  const [categoria, setCategoria] = useState('');
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState('');
-
-  const CATEGORIAS = ['Imobiliária', 'Moda', 'Gastronomia', 'Saúde', 'Tecnologia', 'Educação', 'Varejo', 'Outro'];
+  const [nome,          setNome]          = useState('');
+  const [descricao,     setDescricao]     = useState('');
+  const [paginaCliente, setPaginaCliente] = useState('');
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState('');
 
   const submit = async () => {
     if (!nome.trim() || saving) return;
@@ -223,7 +222,7 @@ function NewClientModal({ onClose, onCreate }) {
       const res = await fetch('/api/crm/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, categoria }),
+        body: JSON.stringify({ nome, descricao, paginaCliente }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
@@ -263,23 +262,19 @@ function NewClientModal({ onClose, onCreate }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Categoria</label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIAS.map(cat => {
-                const active = categoria === cat;
-                return (
-                  <button key={cat} type="button" onClick={() => setCategoria(active ? '' : cat)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-                    style={{
-                      background: active ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${active ? 'rgba(124,58,237,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)',
-                    }}>
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Descrição</label>
+            <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2}
+              placeholder="Breve descrição do cliente…"
+              className="w-full px-4 py-3 rounded-xl text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/40 resize-none"
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Página do cliente (URL)</label>
+            <input type="url" value={paginaCliente} onChange={e => setPaginaCliente(e.target.value)}
+              placeholder="https://…"
+              className="w-full px-4 py-3 rounded-xl text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/40"
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
           </div>
 
           {error && (

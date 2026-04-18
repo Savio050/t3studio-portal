@@ -1,18 +1,20 @@
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const SECTORS_DB = process.env.NOTION_SECTORS_DB_ID  || '32df7ecb-bb9b-80f2-9f75-d82bda1944fc';
+const SECTORS_DB = process.env.NOTION_SECTORS_DB_ID  || '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID  || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
 
 function getProp(prop) {
   if (!prop) return null;
   switch (prop.type) {
-    case 'title':     return prop.title?.[0]?.plain_text     || '';
-    case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
-    case 'select':    return prop.select?.name               || '';
-    case 'status':    return prop.status?.name               || '';
-    case 'date':      return prop.date?.start                || null;
-    default:          return null;
+    case 'title':        return prop.title?.[0]?.plain_text     || '';
+    case 'rich_text':    return prop.rich_text?.[0]?.plain_text || '';
+    case 'select':       return prop.select?.name               || '';
+    case 'status':       return prop.status?.name               || '';
+    case 'date':         return prop.date?.start                || null;
+    case 'url':          return prop.url                        || null;
+    case 'created_time': return prop.created_time               || null;
+    default:             return null;
   }
 }
 
@@ -34,23 +36,16 @@ async function queryAll(dbId) {
 export default async function handler(req, res) {
   // ── POST: create new client ───────────────────────────────────────────────────
   if (req.method === 'POST') {
-    const { nome, categoria } = req.body || {};
+    const { nome, descricao, paginaCliente } = req.body || {};
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
     try {
-      // Build minimal properties — only include categoria if the field exists
       const properties = {
-        'Nome': { title: [{ text: { content: nome.trim() } }] },
+        'Nome':      { title: [{ text: { content: nome.trim() } }] },
+        'categoria': { select: { name: 'cliente' } },
       };
+      if (descricao?.trim())      properties['Descrição']         = { rich_text: [{ text: { content: descricao.trim() } }] };
+      if (paginaCliente?.trim())  properties['Página do cliente'] = { url: paginaCliente.trim() };
       const page = await notion.pages.create({ parent: { database_id: SECTORS_DB }, properties });
-      // Try to patch categoria separately so a missing field doesn't break creation
-      if (categoria?.trim()) {
-        try {
-          await notion.pages.update({
-            page_id: page.id,
-            properties: { 'categoria': { rich_text: [{ text: { content: categoria.trim() } }] } },
-          });
-        } catch { /* categoria field may not exist — ignore */ }
-      }
       return res.status(201).json({ ok: true, id: page.id, nome: nome.trim() });
     } catch (err) {
       console.error('Client POST error:', err);
@@ -121,6 +116,8 @@ export default async function handler(req, res) {
         id:               sectorPage?.id || nome,
         nome,
         categoria:        sectorPage ? (getProp(sectorPage.properties['categoria']) || '') : '',
+        descricao:        sectorPage ? (getProp(sectorPage.properties['Descrição']) || '') : '',
+        paginaCliente:    sectorPage ? (getProp(sectorPage.properties['Página do cliente']) || '') : '',
         idCliente:        stats.id || '',
         totalContent:     stats.total,
         approved:         stats.approved,
