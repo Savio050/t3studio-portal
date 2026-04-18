@@ -37,17 +37,39 @@ export default async function handler(req, res) {
     const { nome, categoria } = req.body || {};
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
     try {
+      // Build minimal properties — only include categoria if the field exists
       const properties = {
         'Nome': { title: [{ text: { content: nome.trim() } }] },
       };
-      if (categoria?.trim()) {
-        properties['categoria'] = { rich_text: [{ text: { content: categoria.trim() } }] };
-      }
       const page = await notion.pages.create({ parent: { database_id: SECTORS_DB }, properties });
+      // Try to patch categoria separately so a missing field doesn't break creation
+      if (categoria?.trim()) {
+        try {
+          await notion.pages.update({
+            page_id: page.id,
+            properties: { 'categoria': { rich_text: [{ text: { content: categoria.trim() } }] } },
+          });
+        } catch { /* categoria field may not exist — ignore */ }
+      }
       return res.status(201).json({ ok: true, id: page.id, nome: nome.trim() });
     } catch (err) {
       console.error('Client POST error:', err);
-      return res.status(500).json({ error: 'Failed to create client' });
+      const msg = err?.body ? JSON.parse(err.body)?.message : err?.message || 'Erro desconhecido';
+      return res.status(500).json({ error: msg });
+    }
+  }
+
+  // ── DELETE: archive client ────────────────────────────────────────────────────
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
+    try {
+      await notion.pages.update({ page_id: id, archived: true });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Client DELETE error:', err);
+      const msg = err?.body ? JSON.parse(err.body)?.message : err?.message || 'Erro ao excluir';
+      return res.status(500).json({ error: msg });
     }
   }
 

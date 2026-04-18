@@ -683,6 +683,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const [nome,        setNome]        = useState(item.nome);
   const [formato,     setFormato]     = useState(item.formato || '');
   const [cliente,     setCliente]     = useState(item.cliente || '');
+  const [plataforma,  setPlataforma]  = useState(item.plataforma || '');
   const [responsavel, setResponsavel] = useState(item.responsavel || '');
   const [estado,      setEstado]      = useState(item.estado || '');
   const [estadoR,     setEstadoR]     = useState(item.estadoRoteiro || '');
@@ -700,7 +701,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
   useEffect(() => {
     setNome(item.nome); setFormato(item.formato||''); setCliente(item.cliente||'');
-    setResponsavel(item.responsavel||'');
+    setPlataforma(item.plataforma||''); setResponsavel(item.responsavel||'');
     setEstado(item.estado||''); setEstadoR(item.estadoRoteiro||'');
     setConteudo(item.conteudo||''); setPostagem(item.postagem||'');
     setGravacao(item.dataGravacao||''); setLinkDrive(item.linkDrive||'');
@@ -709,7 +710,8 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   }, [item.id]);
 
   const dirty = nome !== item.nome || formato !== (item.formato||'') ||
-    cliente !== (item.cliente||'') || responsavel !== (item.responsavel||'') ||
+    cliente !== (item.cliente||'') || plataforma !== (item.plataforma||'') ||
+    responsavel !== (item.responsavel||'') ||
     estado !== (item.estado||'') || estadoR !== (item.estadoRoteiro||'') ||
     conteudo !== (item.conteudo||'') || postagem !== (item.postagem||'') ||
     gravacao !== (item.dataGravacao||'') || linkDrive !== (item.linkDrive||'');
@@ -717,7 +719,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const save = async () => {
     if (!nome.trim() || saving) return;
     setSaving(true);
-    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
+    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, plataforma: plataforma||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
@@ -790,6 +792,28 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
                 className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
                 style={{ background:active?`${fc}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${fc}40`:'rgba(255,255,255,0.08)'}`, color:active?fc:'rgba(255,255,255,0.35)' }}>
                 {f}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Plataforma */}
+      <div>
+        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Plataforma</label>
+        <div className="flex flex-wrap gap-1.5">
+          {['Instagram','TikTok','YouTube','WhatsApp','Facebook','LinkedIn','Pinterest'].map(p => {
+            const PLAT_COLORS = {
+              Instagram:'#e1306c', TikTok:'#69c9d0', YouTube:'#ff0000',
+              WhatsApp:'#25d366', Facebook:'#1877f2', LinkedIn:'#0a66c2', Pinterest:'#e60023',
+            };
+            const pc = PLAT_COLORS[p] || '#a78bfa';
+            const active = nrm(plataforma) === nrm(p);
+            return (
+              <button key={p} type="button" onClick={() => setPlataforma(active ? '' : p)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+                style={{ background:active?`${pc}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${pc}45`:'rgba(255,255,255,0.08)'}`, color:active?pc:'rgba(255,255,255,0.35)' }}>
+                {p}
               </button>
             );
           })}

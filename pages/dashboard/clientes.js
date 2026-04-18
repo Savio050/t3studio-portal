@@ -4,7 +4,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
-  Loader2, Plus, X,
+  Loader2, Plus, X, Trash2,
 } from 'lucide-react';
 
 // ── Client colors ─────────────────────────────────────────────────────────────
@@ -68,9 +68,21 @@ function ProgressBar({ approved, awaiting, inProd, total }) {
 }
 
 // ── Client Card ───────────────────────────────────────────────────────────────
-function ClientCard({ client }) {
-  const palette = getPalette(client.nome);
-  const total   = client.totalContent;
+function ClientCard({ client, onDelete }) {
+  const palette    = getPalette(client.nome);
+  const total      = client.totalContent;
+  const [confirm,  setConfirm]  = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (!confirm) { setConfirm(true); setTimeout(() => setConfirm(false), 3000); return; }
+    setDeleting(true);
+    await onDelete(client.id);
+  };
+
+  // Only allow delete if the client has a real Notion page ID (UUID format)
+  const canDelete = /^[0-9a-f-]{36}$/.test(client.id);
 
   return (
     <article className="rounded-2xl overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-card-hover"
@@ -143,19 +155,36 @@ function ClientCard({ client }) {
           <MiniStat icon={CheckCircle2}  value={client.approved + client.done} label="Prontos" color="#10b981" />
         </div>
 
-        {/* CTA */}
-        <Link href={`/dashboard/conteudo?cliente=${encodeURIComponent(client.nome)}`}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-            text-xs font-semibold cursor-pointer transition-all duration-150
-            hover:brightness-110 active:scale-[0.98]"
-          style={{
-            background: `${palette.glow}`,
-            border: `1px solid ${palette.border}`,
-            color: palette.accent,
-          }}>
-          Ver conteúdo
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
+        {/* CTA row */}
+        <div className="mt-4 flex gap-2">
+          <Link href={`/dashboard/conteudo?cliente=${encodeURIComponent(client.nome)}`}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl
+              text-xs font-semibold cursor-pointer transition-all duration-150
+              hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: `${palette.glow}`,
+              border: `1px solid ${palette.border}`,
+              color: palette.accent,
+            }}>
+            Ver conteúdo
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+          {canDelete && (
+            <button onClick={handleDelete} disabled={deleting}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-40"
+              style={{
+                background: confirm ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${confirm ? 'rgba(244,63,94,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                color: confirm ? '#fb7185' : 'rgba(255,255,255,0.3)',
+              }}>
+              {deleting
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
+                : <Trash2 className="w-3.5 h-3.5"/>
+              }
+              {confirm && !deleting && <span>Confirmar</span>}
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
@@ -196,10 +225,11 @@ function NewClientModal({ onClose, onCreate }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome, categoria }),
       });
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
       onCreate(); onClose();
-    } catch {
-      setError('Erro ao criar cliente. Tente novamente.');
+    } catch (e) {
+      setError(e.message || 'Erro ao criar cliente. Tente novamente.');
       setSaving(false);
     }
   };
@@ -295,6 +325,15 @@ export default function Clientes() {
 
   useEffect(() => { loadClients(); }, []);
 
+  const deleteClient = async (id) => {
+    await fetch('/api/crm/clients', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setClients(prev => prev.filter(c => c.id !== id));
+  };
+
   const totalContent   = clients.reduce((s, c) => s + c.totalContent, 0);
   const totalAwaiting  = clients.reduce((s, c) => s + c.awaitingApproval, 0);
   const totalApproved  = clients.reduce((s, c) => s + c.approved + c.done, 0);
@@ -342,7 +381,7 @@ export default function Clientes() {
         ) : clients.length > 0 ? (
           <div className="grid sm:grid-cols-2 gap-5">
             {clients.map(client => (
-              <ClientCard key={client.id} client={client} />
+              <ClientCard key={client.id} client={client} onDelete={deleteClient} />
             ))}
           </div>
         ) : (
