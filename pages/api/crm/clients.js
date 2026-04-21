@@ -1,7 +1,8 @@
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const SECTORS_DB = process.env.NOTION_SECTORS_DB_ID  || '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
+// Hardcoded correct IDs — env vars kept as overrides only if explicitly needed
+const SECTORS_DB = '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID  || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
 
 function getProp(prop) {
@@ -48,9 +49,8 @@ export default async function handler(req, res) {
       const page = await notion.pages.create({ parent: { database_id: SECTORS_DB }, properties });
       return res.status(201).json({ ok: true, id: page.id, nome: nome.trim() });
     } catch (err) {
-      console.error('Client POST error:', err);
-      const msg = err?.body ? JSON.parse(err.body)?.message : err?.message || 'Erro desconhecido';
-      return res.status(500).json({ error: msg });
+      console.error('Client POST error:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Erro ao criar cliente' });
     }
   }
 
@@ -62,9 +62,8 @@ export default async function handler(req, res) {
       await notion.pages.update({ page_id: id, archived: true });
       return res.status(200).json({ ok: true });
     } catch (err) {
-      console.error('Client DELETE error:', err);
-      const msg = err?.body ? JSON.parse(err.body)?.message : err?.message || 'Erro ao excluir';
-      return res.status(500).json({ error: msg });
+      console.error('Client DELETE error:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Erro ao excluir' });
     }
   }
 

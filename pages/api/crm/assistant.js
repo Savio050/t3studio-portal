@@ -28,6 +28,7 @@ function mapContent(p) {
     nome:          getProp(pr['Nome'])            || 'Sem título',
     cliente:       getProp(pr['Cliente'])          || '',
     formato:       getProp(pr['Formato'])          || '',
+    plataforma:    getProp(pr['plataforma'])        || getProp(pr['Plataforma']) || '',
     responsavel:   getProp(pr['responsável'])      || '',
     estado:        getProp(pr['Estado'])           || '',
     estadoRoteiro: getProp(pr['EstadoRoteiro'])    || '',
@@ -66,11 +67,12 @@ async function toolListContent({ cliente, mes } = {}) {
   }
 }
 
-async function toolCreateContent({ nome, cliente, formato, responsavel, postagem, dataGravacao }) {
+async function toolCreateContent({ nome, cliente, formato, plataforma, responsavel, postagem, dataGravacao }) {
   try {
     const props = { 'Nome': { title: [{ text: { content: nome } }] } };
     if (cliente)       props['Cliente']          = { select: { name: cliente } };
     if (formato)       props['Formato']          = { select: { name: formato } };
+    if (plataforma)    props['plataforma']        = { select: { name: plataforma } };
     if (responsavel)   props['responsável']      = { select: { name: responsavel } };
     if (postagem)      props['Postagem']         = { date: { start: postagem } };
     if (dataGravacao)  props['Data de Gravação'] = { date: { start: dataGravacao } };
@@ -172,8 +174,9 @@ const FUNCTION_DECLARATIONS = [
       type: 'object',
       properties: {
         nome:         { type: 'string', description: 'Nome do conteúdo (obrigatório)' },
-        cliente:      { type: 'string', description: 'fastimoveis ou mafro' },
-        formato:      { type: 'string', description: 'Reels, Carrossel, Stories, Post, Vídeo, TikTok, YouTube' },
+        cliente:      { type: 'string', description: 'Nome do cliente (ex: fastimoveis, mafro)' },
+        formato:      { type: 'string', description: 'Carrossel, Stories, Post, Vídeo curto, Estático' },
+        plataforma:   { type: 'string', description: 'Instagram, TikTok, YouTube, WhatsApp, Facebook, LinkedIn, Pinterest' },
         responsavel:  { type: 'string', description: 'Matheus ou Sávio' },
         postagem:     { type: 'string', description: 'Data de postagem YYYY-MM-DD' },
         dataGravacao: { type: 'string', description: 'Data de gravação YYYY-MM-DD' },
@@ -257,8 +260,9 @@ Suas capacidades:
 
 Contexto:
 - Membros da equipe: Matheus, Sávio
-- Clientes: fastimoveis, mafro
-- Formatos de conteúdo: Reels, Carrossel, Stories, Post, Vídeo, TikTok, YouTube
+- Clientes ativos: verifique via list_content se necessário (ex: fastimoveis, mafro)
+- Formatos de conteúdo: Carrossel, Stories, Post, Vídeo curto, Estático
+- Plataformas de veiculação: Instagram, TikTok, YouTube, WhatsApp, Facebook, LinkedIn, Pinterest
 - Estados de conteúdo: não iniciado, Em Produção, Aguardando Aprovação, Ajuste Solicitado, Aprovado, Concluido
 - Estados de roteiro: Não iniciada, Em Produção, Aguardando Aprovação, Ajuste Solicitado, Aprovado, Concluido
 
