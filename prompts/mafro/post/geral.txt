@@ -1,0 +1,48 @@
+CLIENTE: Mafro
+FORMATO: Post (imagem estática com legenda)
+TEMA: Geral
+
+---
+IDENTIDADE DA MARCA
+Posts gerais da Mafro devem reforçar posicionamento, valores ou conquistas. Tom: profissional, direto, inspirador.
+
+---
+ESTRUTURA DA LEGENDA
+
+LINHA DE ABERTURA (gancho):
+Primeira linha visível antes do "ver mais". Deve parar o scroll.
+- Pergunta, dado ou afirmação forte
+- Max 1–2 linhas
+
+CORPO (desenvolvimento):
+- 3–6 linhas curtas
+- Expanda o gancho com contexto, benefício ou história
+- Use quebras de linha para facilitar leitura no mobile
+
+CALL TO ACTION:
+- "Fale com a gente pelo link na bio"
+- "Comente sua opinião"
+- "Marque alguém que precisa ver isso"
+
+HASHTAGS (ao final, separadas):
+Use 5–10 hashtags relevantes ao setor e ao tema
+
+---
+REGRAS DE TOM
+- Evite emojis em excesso (máximo 3 por post)
+- Não use maiúsculas para gritar
+- Seja específico — generalizações enfraquecem a mensagem
+- Prefira parágrafos de 1–2 linhas no mobile
+
+---
+EXEMPLO DE LEGENDA
+
+Segurança no trabalho não é custo. É investimento.
+
+Empresas que priorizam a segurança de suas equipes reduzem afastamentos, aumentam produtividade e constroem uma cultura que atrai talentos.
+
+Na Mafro, isso não é discurso. É prática diária.
+
+Quer saber como implementamos isso nos nossos projetos? Fala com a gente. 👇
+
+#segurancadotrabalho #mafro #gestaodeseguranca #NR #EPI

@@ -1,0 +1,49 @@
+CLIENTE: Mafro
+FORMATO: Carrossel (5–10 slides)
+TEMA: Dicas de Segurança
+
+---
+IDENTIDADE DA MARCA
+Tom educativo e prático. O carrossel de dicas deve ser direto, escaneável e compartilhável. Cada slide deve ter uma única ideia central.
+
+---
+ESTRUTURA DO CARROSSEL
+
+SLIDE 1 — CAPA:
+Título impactante que prometa valor. Exemplos:
+- "5 erros de segurança que sua equipe pode estar cometendo agora"
+- "Checklist de segurança: o que verificar antes de começar o trabalho"
+
+SLIDES 2 a N-1 — DICAS:
+Cada slide = 1 dica. Estrutura:
+- Número da dica (ex: "Dica 01")
+- Título curto da dica (max 8 palavras)
+- Explicação em 1–3 frases curtas
+- Ícone ou visual sugerido (opcional, descrever)
+
+SLIDE FINAL — CTA:
+- Reforce a autoridade da Mafro no tema
+- CTA: "Siga para mais conteúdo sobre segurança" ou "Fale com a Mafro"
+
+---
+REGRAS DE TOM
+- Use linguagem simples, sem jargão desnecessário
+- Seja específico: "sempre use capacete em áreas com risco de queda" é melhor que "use EPIs"
+- Numere claramente as dicas para facilitar o acompanhamento
+- Termine cada dica com a consequência positiva de segui-la ou negativa de ignorá-la
+
+---
+EXEMPLO DE ESTRUTURA
+
+[SLIDE 1] "7 práticas de segurança que todo operador precisa conhecer"
+
+[SLIDE 2] Dica 01 — Use sempre o EPI adequado para cada atividade
+"O capacete protege de impacto, mas não substitui o protetor auricular. Cada risco exige o equipamento certo."
+
+[SLIDE 3] Dica 02 — Inspecione o equipamento antes de usar
+"Ferramentas com defeito são responsáveis por [X]% dos acidentes. 2 minutos de inspeção evitam dias de afastamento."
+
+[...continua...]
+
+[SLIDE FINAL] "A Mafro acredita que segurança é responsabilidade de todos.
+Siga para mais dicas e boas práticas do setor."

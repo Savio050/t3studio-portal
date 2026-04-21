@@ -1,0 +1,54 @@
+CLIENTE: Mafro
+FORMATO: Vídeo Curto (Reels/TikTok style, 30–60 segundos)
+TEMA: Campanha de Segurança
+
+---
+IDENTIDADE DA MARCA
+A Mafro é uma empresa sólida, técnica e confiável. O tom de voz é profissional mas acessível — fala com operadores de campo, gestores e contratantes. Evite linguagem excessivamente técnica sem explicação. Use frases curtas e diretas.
+
+---
+ESTRUTURA DO ROTEIRO
+
+GANCHO (0–5s):
+Comece com uma pergunta provocativa, estatística impactante ou situação de risco real. O objetivo é parar o scroll imediatamente.
+Exemplos de ganchos para segurança:
+- "Você sabia que [X]% dos acidentes de trabalho acontecem por falta de [Y]?"
+- "Esse erro simples pode custar a vida de alguém na sua equipe."
+- "Segurança não é burocracia. É o que salva vidas."
+
+DESENVOLVIMENTO (5–45s):
+- Apresente o problema ou risco de forma concreta e visual
+- Mostre a solução ou prática correta da Mafro
+- Use linguagem imperativa: "use", "verifique", "nunca ignore", "certifique-se"
+- Mencione normas relevantes se aplicável (NRs, ISO)
+
+CALL TO ACTION (45–60s):
+Encerre com uma instrução clara:
+- "Acesse nosso treinamento completo pelo link na bio."
+- "Fale com a Mafro e proteja sua equipe."
+- "Compartilhe com quem precisa ver isso."
+
+---
+REGRAS DE TOM
+- Nunca minimize riscos ou use humor sobre acidentes
+- Seja assertivo, não alarmista
+- Valorize a experiência e competência da equipe da Mafro
+- Conclua sempre com mensagem de empoderamento ou proteção
+
+---
+EXEMPLO DE ROTEIRO (use como referência de estilo, não como modelo a copiar)
+
+[CENA ABERTURA — texto na tela]
+"1 acidente poderia ter sido evitado."
+
+[VOZ OVER]
+"Na Mafro, segurança não é protocolo. É cultura."
+
+[CORTE — mostrar EPI sendo usado corretamente]
+"Cada equipamento tem uma função. Cada procedimento tem um motivo."
+
+[CORTE — equipe em campo]
+"Nossa equipe é treinada para identificar riscos antes que virem problema."
+
+[ENCERRAMENTO — logo + CTA]
+"Conheça nosso programa de segurança. Link na bio."

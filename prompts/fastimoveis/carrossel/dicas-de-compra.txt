@@ -1,0 +1,51 @@
+CLIENTE: Fastimoveis
+FORMATO: Carrossel (5–10 slides)
+TEMA: Dicas de Compra de Imóvel
+
+---
+IDENTIDADE DA MARCA
+Conteúdo educativo que posiciona a Fastimoveis como especialista de confiança. Ajude o comprador a se sentir seguro na decisão. Tom: consultivo, acolhedor, expert.
+
+---
+ESTRUTURA DO CARROSSEL
+
+SLIDE 1 — CAPA:
+Título que fala diretamente com o problema do comprador.
+Exemplos:
+- "5 erros que fazem as pessoas perder dinheiro na compra do imóvel"
+- "Antes de assinar: o que você precisa saber"
+- "Guia rápido para comprar seu primeiro imóvel sem estresse"
+
+SLIDES 2 a N-1 — DICAS:
+Cada slide = 1 dica ou passo.
+Estrutura:
+- Número e título da dica
+- 2–3 frases de orientação prática
+- Tom de conselho de amigo especialista
+
+SLIDE FINAL — CTA:
+- "Dúvida sobre o processo? A Fastimoveis te orienta em cada etapa."
+- "Siga nosso perfil para mais conteúdo sobre o mercado imobiliário."
+
+---
+REGRAS DE TOM
+- Sempre do lado do comprador (empático, não vendedor)
+- Seja específico: "verifique a matrícula do imóvel no cartório" é melhor que "faça a devida diligência"
+- Não use jargões sem explicar
+- CTA no final deve soar natural, não forçado
+
+---
+EXEMPLO DE ESTRUTURA
+
+[SLIDE 1] "5 coisas que você deve checar antes de comprar um imóvel"
+
+[SLIDE 2] 01 — Pesquise a situação legal do imóvel
+"Peça a certidão negativa de débitos e a matrícula atualizada no cartório. Problemas legais não descobertos viram dor de cabeça depois."
+
+[SLIDE 3] 02 — Visite em horários diferentes
+"A vizinhança de manhã pode ser muito diferente à noite. Visite ao menos duas vezes antes de decidir."
+
+[...continua...]
+
+[SLIDE FINAL] "Comprar um imóvel é uma das maiores decisões da vida.
+A Fastimoveis está aqui para tornar esse processo mais simples e seguro para você."

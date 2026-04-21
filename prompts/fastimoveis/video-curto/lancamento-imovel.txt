@@ -1,0 +1,52 @@
+CLIENTE: Fastimoveis
+FORMATO: Vídeo Curto (30–60 segundos)
+TEMA: Lançamento de Imóvel
+
+---
+IDENTIDADE DA MARCA
+A Fastimoveis transmite confiança, sofisticação acessível e atenção personalizada. O tom é caloroso, entusiasmado e informativo. Fale com quem sonha em ter o próprio imóvel ou fazer um investimento seguro.
+
+---
+ESTRUTURA DO ROTEIRO
+
+GANCHO (0–5s):
+Gere desejo imediato ou curiosidade sobre o imóvel.
+Exemplos:
+- "Acabou de lançar o imóvel que você estava esperando."
+- "Esse apartamento some rápido — confere por quê."
+- "[Bairro] ganhou um endereço novo. E você vai querer fazer parte."
+
+DESENVOLVIMENTO (5–45s):
+- Apresente os principais diferenciais do imóvel (localização, metragem, acabamento, preço, facilidades)
+- Mencione o que o diferencia de outros da região
+- Use linguagem que evoca emoção E razão: "imagine acordar aqui" + "a 5 minutos do centro"
+- Inclua facilidades de pagamento se aplicável
+
+CALL TO ACTION (45–60s):
+- "Fale com a Fastimoveis agora. Condições especiais de lançamento."
+- "Clique no link da bio e agende sua visita."
+- "As unidades são limitadas. Não deixa passar."
+
+---
+REGRAS DE TOM
+- Evite jargões imobiliários excessivos (ex: "permuta", "habite-se") sem explicar
+- Seja específico: cite nome do empreendimento, bairro, tipo de imóvel
+- Crie urgência real, não artificial — use dados reais (unidades, prazo)
+- Tom positivo e empolgado, mas sem exagero
+
+---
+EXEMPLO DE ROTEIRO
+
+[GANCHO — texto na tela]
+"Esse apartamento na [Bairro] vai sumir."
+
+[VOZ OVER]
+"A Fastimoveis acabou de lançar o [Nome do Empreendimento]."
+"[X] apartamentos de [metragem]m², com [diferencial 1] e [diferencial 2]."
+"Localizado a [distância] de [ponto de referência]."
+
+[CORTE — imagens ou tour rápido]
+"[Diferencial emocional: vista, área comum, acabamento]."
+
+[ENCERRAMENTO]
+"Condições especiais de lançamento. Fale com a Fastimoveis pelo link na bio."

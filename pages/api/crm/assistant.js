@@ -1,11 +1,31 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Client } from '@notionhq/client';
+import path from 'path';
+import fs from 'fs';
 
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };
 
 const notion    = new Client({ auth: process.env.NOTION_TOKEN });
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
 const TASKS_DB   = process.env.NOTION_TASKS_DB_ID   || '343f7ecb-bb9b-802c-b08a-daf9cff75672';
+const PROMPTS_DIR = path.join(process.cwd(), 'prompts');
+
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+function readFileIfExists(filePath) {
+  try { return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : null; } catch { return null; }
+}
+
+function listDir(dirPath) {
+  try { return fs.readdirSync(dirPath); } catch { return []; }
+}
 
 // ── Notion helpers ────────────────────────────────────────────────────────────
 function getProp(prop) {
@@ -142,14 +162,67 @@ async function toolCreateTask({ nome, responsavel, cliente, dataEntrega, status 
   }
 }
 
+function toolListScriptPrompts({ cliente, formato } = {}) {
+  const result = {};
+  const clients = listDir(PROMPTS_DIR).filter(f => !f.startsWith('.'));
+  for (const c of clients) {
+    if (cliente && !c.includes(slugify(cliente))) continue;
+    const clientPath = path.join(PROMPTS_DIR, c);
+    try { if (!fs.statSync(clientPath).isDirectory()) continue; } catch { continue; }
+    result[c] = {};
+    const formats = listDir(clientPath).filter(f => !f.startsWith('_') && !f.startsWith('.'));
+    for (const f of formats) {
+      if (formato && !f.includes(slugify(formato))) continue;
+      const formatPath = path.join(clientPath, f);
+      try { if (!fs.statSync(formatPath).isDirectory()) continue; } catch { continue; }
+      const files = listDir(formatPath).filter(f => f.endsWith('.txt'));
+      result[c][f] = files.map(f => f.replace('.txt', ''));
+    }
+  }
+  return { success: true, available: result };
+}
+
+function toolReadScriptPrompt({ cliente, formato, tema }) {
+  if (!cliente || !formato) return { success: false, error: 'cliente e formato são obrigatórios' };
+  const cSlug = slugify(cliente);
+  const fSlug = slugify(formato);
+  const tSlug = tema ? slugify(tema) : null;
+
+  const tryPaths = [
+    tSlug ? path.join(PROMPTS_DIR, cSlug, fSlug, `${tSlug}.txt`) : null,
+    path.join(PROMPTS_DIR, cSlug, fSlug, 'geral.txt'),
+    path.join(PROMPTS_DIR, cSlug, '_instrucoes-gerais.txt'),
+  ].filter(Boolean);
+
+  for (const filePath of tryPaths) {
+    const content = readFileIfExists(filePath);
+    if (content) {
+      return {
+        success: true,
+        content,
+        path: filePath.replace(PROMPTS_DIR, ''),
+        instructions: `Use este conteúdo como guia de estilo, estrutura e tom para gerar o roteiro. Adapte ao tema específico solicitado: "${tema || 'geral'}". Não copie literalmente os exemplos — use-os como referência.`,
+      };
+    }
+  }
+
+  return {
+    success: false,
+    error: `Nenhum arquivo de instrução encontrado para cliente="${cSlug}", formato="${fSlug}", tema="${tSlug}"`,
+    tip: 'Use list_script_prompts para ver o que está disponível, ou gere o roteiro com instruções gerais de qualidade.',
+  };
+}
+
 async function executeTool(name, args) {
   switch (name) {
-    case 'list_content':   return toolListContent(args);
-    case 'create_content': return toolCreateContent(args);
-    case 'update_content': return toolUpdateContent(args);
-    case 'delete_content': return toolDeleteContent(args);
-    case 'list_tasks':     return toolListTasks(args);
-    case 'create_task':    return toolCreateTask(args);
+    case 'list_content':         return toolListContent(args);
+    case 'create_content':       return toolCreateContent(args);
+    case 'update_content':       return toolUpdateContent(args);
+    case 'delete_content':       return toolDeleteContent(args);
+    case 'list_tasks':           return toolListTasks(args);
+    case 'create_task':          return toolCreateTask(args);
+    case 'list_script_prompts':  return toolListScriptPrompts(args);
+    case 'read_script_prompt':   return toolReadScriptPrompt(args);
     default: return { success: false, error: `Ferramenta desconhecida: ${name}` };
   }
 }
@@ -225,6 +298,30 @@ const FUNCTION_DECLARATIONS = [
     },
   },
   {
+    name: 'list_script_prompts',
+    description: 'Lista os arquivos de instrução de roteiro disponíveis, organizados por cliente e formato. Use para descobrir quais temas têm instruções específicas antes de ler.',
+    parameters: {
+      type: 'object',
+      properties: {
+        cliente: { type: 'string', description: 'Filtrar por cliente (opcional)' },
+        formato: { type: 'string', description: 'Filtrar por formato (opcional)' },
+      },
+    },
+  },
+  {
+    name: 'read_script_prompt',
+    description: 'Lê o arquivo de instrução de roteiro para um cliente, formato e tema específicos. SEMPRE use esta ferramenta antes de gerar qualquer roteiro. Se não encontrar o arquivo exato, retorna o mais próximo disponível.',
+    parameters: {
+      type: 'object',
+      properties: {
+        cliente:  { type: 'string', description: 'Nome do cliente (ex: mafro, fastimoveis)' },
+        formato:  { type: 'string', description: 'Formato do conteúdo (ex: video curto, carrossel, stories, post, estatico)' },
+        tema:     { type: 'string', description: 'Tema ou assunto do roteiro (ex: campanha de segurança, lançamento de imóvel, dicas)' },
+      },
+      required: ['cliente', 'formato'],
+    },
+  },
+  {
     name: 'create_task',
     description: 'Cria uma nova tarefa para a equipe.',
     parameters: {
@@ -257,6 +354,7 @@ Suas capacidades:
 - Consultar, criar, editar e remover conteúdos da esteira de produção
 - Consultar e criar tarefas para a equipe
 - Responder perguntas sobre o estado atual dos projetos
+- Gerar roteiros profissionais e personalizados por cliente, formato e tema
 
 Contexto:
 - Membros da equipe: Matheus, Sávio
@@ -273,6 +371,22 @@ Regras:
 4. Se precisar do ID de um item, use list_content ou list_tasks para encontrá-lo
 5. Se um pedido for ambíguo (ex: "atualize o vídeo do mafro"), busque primeiro para saber qual item
 6. Ao listar itens, seja organizado e legível
+
+REGRAS PARA GERAÇÃO DE ROTEIRO:
+7. Quando o usuário pedir para gerar ou escrever um roteiro, SEMPRE:
+   a) Chame read_script_prompt com o cliente, formato e tema identificados no pedido
+   b) Use o conteúdo retornado como guia de estilo, estrutura e tom
+   c) Gere um roteiro completo, profissional e no formato adequado
+   d) Se não encontrar arquivo específico, use o mais próximo disponível e mencione isso
+8. Identifique automaticamente cliente, formato e tema a partir do pedido — o usuário não precisa ser técnico
+   Exemplos de mapeamento:
+   - "vídeo curto" → formato: video-curto
+   - "reels" → formato: video-curto
+   - "carrossel" → formato: carrossel
+   - "stories" → formato: stories
+   - "post" → formato: post
+9. O roteiro gerado deve ser pronto para uso — com ganchos, desenvolvimento e CTA claramente marcados
+10. Ao apresentar o roteiro, estruture com marcações visuais: [GANCHO], [DESENVOLVIMENTO], [CTA], etc.
 
 Data atual: ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
 
