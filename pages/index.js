@@ -375,43 +375,46 @@ function SmartMedia({ item, showDownload }) {
 
     return (
       <div className="px-4 pb-4 space-y-3">
-        <div className={hasCovers ? 'flex gap-3 items-start' : undefined}>
-          {/* Video column */}
-          <div className={`flex flex-col gap-2 ${hasCovers ? 'flex-[2] min-w-0' : 'w-full'}`}>
-            {item.linkFicheiro
-              ? <VideoPlayer src={item.linkFicheiro} poster={coverUrl || undefined} />
-              : coverUrl
-                ? <img src={coverUrl} alt={item.nome}
-                    className="w-full rounded-xl object-cover max-h-64" />
-                : (
-                  <div className="w-full aspect-video rounded-xl bg-gray-100
-                    flex flex-col items-center justify-center gap-2">
-                    <Film className="w-10 h-10 text-gray-300" />
-                    <span className="text-xs text-gray-400 font-medium">Vídeo em produção</span>
-                  </div>
-                )
-            }
-            {showDownload && item.linkDrive && (
-              <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
-                  bg-green-500 hover:bg-green-600 text-white
-                  text-sm font-black uppercase tracking-widest
-                  active:scale-[0.98] transition-all duration-150
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
-                <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
-              </a>
-            )}
-          </div>
+        {/* Player */}
+        {item.linkFicheiro
+          ? <VideoPlayer src={item.linkFicheiro} poster={coverUrl || undefined} />
+          : coverUrl
+            ? <img src={coverUrl} alt={item.nome}
+                className="w-full rounded-xl object-cover max-h-64" />
+            : (
+              <div className="w-full aspect-video rounded-xl bg-gray-100
+                flex flex-col items-center justify-center gap-2">
+                <Film className="w-10 h-10 text-gray-300" />
+                <span className="text-xs text-gray-400 font-medium">Vídeo em produção</span>
+              </div>
+            )
+        }
 
-          {/* Covers column — shown when at least one cover exists */}
-          {hasCovers && (
-            <div className="flex-1 flex flex-col gap-2 min-w-0">
+        {/* Download do vídeo */}
+        {showDownload && item.linkDrive && (
+          <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+              bg-green-500 hover:bg-green-600 text-white
+              text-sm font-black uppercase tracking-widest
+              active:scale-[0.98] transition-all duration-150
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
+            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+          </a>
+        )}
+
+        {/* Capas — exibidas lado a lado abaixo do vídeo */}
+        {hasCovers && (
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              {covers.length === 1 ? 'Capa disponível' : 'Capas disponíveis'}
+            </p>
+            <div className="flex gap-2">
               {covers.map((url, i) => (
                 <CapaThumb key={i} url={url} label={`CAPA ${i + 1}`} showDownload={showDownload} />
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -548,9 +551,9 @@ function MediaGrid({ item, showDownload = false }) {
   const hasCovers = covers.length > 0;
 
   return (
-    <div className="px-4 pb-4 flex gap-3">
+    <div className="px-4 pb-4 space-y-3">
       {/* Vídeo */}
-      <div className={`flex flex-col gap-2 ${hasCovers ? 'flex-[2]' : 'w-full'}`}>
+      <div className="flex flex-col gap-2">
         {embedUrl ? (
           <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-900">
             <iframe src={embedUrl} className="w-full h-full border-0"
@@ -575,12 +578,17 @@ function MediaGrid({ item, showDownload = false }) {
         )}
       </div>
 
-      {/* Capas */}
+      {/* Capas lado a lado */}
       {hasCovers && (
-        <div className="flex-1 flex flex-col gap-2">
-          {covers.map((url, i) => (
-            <CapaThumb key={i} url={url} label={`CAPA ${i + 1}`} showDownload={showDownload} />
-          ))}
+        <div>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+            {covers.length === 1 ? 'Capa disponível' : 'Capas disponíveis'}
+          </p>
+          <div className="flex gap-2">
+            {covers.map((url, i) => (
+              <CapaThumb key={i} url={url} label={`CAPA ${i + 1}`} showDownload={showDownload} />
+            ))}
+          </div>
         </div>
       )}
     </div>
