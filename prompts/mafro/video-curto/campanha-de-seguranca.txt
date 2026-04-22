@@ -1,10 +1,10 @@
-CLIENTE: Mafro
+CLIENTE: Mafro Transportes
 FORMATO: Vídeo Curto (Reels/TikTok style, 30–60 segundos)
 TEMA: Campanha de Segurança
 
 ---
 IDENTIDADE DA MARCA
-A Mafro é uma empresa sólida, técnica e confiável. O tom de voz é profissional mas acessível — fala com operadores de campo, gestores e contratantes. Evite linguagem excessivamente técnica sem explicação. Use frases curtas e diretas.
+A Mafro Transportes é uma transportadora sólida, técnica e confiável, e seu maior zelo é pela segurança dos colaboradores. O tom de voz é profissional mas acessível — fala com motoristas, gestores e contratantes. Evite linguagem excessivamente técnica sem explicação. Use frases curtas e diretas.
 
 ---
 ESTRUTURA DO ROTEIRO
@@ -50,5 +50,8 @@ EXEMPLO DE ROTEIRO (use como referência de estilo, não como modelo a copiar)
 [CORTE — equipe em campo]
 "Nossa equipe é treinada para identificar riscos antes que virem problema."
 
-[ENCERRAMENTO — logo + CTA]
-"Conheça nosso programa de segurança. Link na bio."
+[ENCERRAMENTO ]
+"Segurança não é opção. 
+É responsabilidade de todos."
+
+regras: não use emojis, não use negrito. não coloque nenhum texto de instrução de gravação ou sugestão de cena. Apenas entregue o texto do roteiro com a divisão entre gancho, desenvolvimento e cta.
