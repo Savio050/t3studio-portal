@@ -747,10 +747,59 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const [galeriaList, setGaleriaList] = useState(() =>
     item.galeria ? item.galeria.split(',').map(u => u.trim()).filter(Boolean) : []
   );
-  const [saving,     setSaving]     = useState(false);
-  const [saved,      setSaved]      = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-  const [deleting,   setDeleting]   = useState(false);
+  const [saving,            setSaving]           = useState(false);
+  const [saved,             setSaved]            = useState(false);
+  const [confirmDel,        setConfirmDel]       = useState(false);
+  const [deleting,          setDeleting]         = useState(false);
+  const [generatingScript,  setGeneratingScript] = useState(false);
+  const [scriptError,       setScriptError]      = useState('');
+
+  const generateScript = async () => {
+    if (generatingScript) return;
+    setGeneratingScript(true);
+    setScriptError('');
+    try {
+      // 1. Fetch instruction file from prompts folder
+      const clienteVal  = (cliente || item.cliente || '').trim();
+      const formatoVal  = (formato || item.formato || '').trim();
+      const temaVal     = (nome    || item.nome    || '').trim();
+      const qs = new URLSearchParams({ cliente: clienteVal, formato: formatoVal, tema: temaVal });
+      const promptRes = await fetch(`/api/crm/prompts?${qs}`);
+      const promptData = await promptRes.json();
+
+      // Build the generation message — include instructions if found
+      let userMessage = `Gere um roteiro profissional com base nos seguintes dados:\n\n`;
+      userMessage += `- Cliente: ${clienteVal || '(não definido)'}\n`;
+      userMessage += `- Formato: ${formatoVal || '(não definido)'}\n`;
+      userMessage += `- Tema: ${temaVal}\n`;
+      if (plataforma || item.plataforma) userMessage += `- Plataforma: ${plataforma || item.plataforma}\n`;
+      if (conteudo?.trim()) userMessage += `\nRasunho existente (expanda ou melhore):\n${conteudo.trim()}\n`;
+
+      if (promptData.content) {
+        userMessage += `\nInstruções de estilo e estrutura para este cliente/formato/tema:\n\n${promptData.content}`;
+        if (promptData.type && promptData.type !== 'exact') {
+          userMessage += `\n\n(Arquivo mais próximo encontrado: ${promptData.path}. Adapte ao tema específico acima.)`;
+        }
+      } else {
+        userMessage += `\n\nGere um roteiro profissional, bem estruturado, com gancho, desenvolvimento e call to action claro.`;
+      }
+
+      // 2. Send to AI assistant
+      const aiRes = await fetch('/api/crm/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: userMessage }] }),
+      });
+      const aiData = await aiRes.json();
+      if (!aiRes.ok || aiData.error) throw new Error(aiData.error || 'Erro ao gerar roteiro');
+
+      setConteudo(aiData.reply || '');
+    } catch (e) {
+      setScriptError(e.message || 'Erro ao gerar roteiro com IA');
+    } finally {
+      setGeneratingScript(false);
+    }
+  };
 
   useEffect(() => {
     setNome(item.nome); setFormato(item.formato||''); setCliente(item.cliente||'');
@@ -922,11 +971,49 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
         </div>
       </div>
       <div className="flex-1 flex flex-col">
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Roteiro</label>
+        {/* Roteiro header + AI button */}
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="t-eyebrow text-ink-muted">Roteiro</label>
+          <button
+            type="button"
+            onClick={generateScript}
+            disabled={generatingScript}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-[12px] font-semibold
+              transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              background: generatingScript ? 'rgba(175,82,222,0.08)' : 'rgba(175,82,222,0.10)',
+              border: '1px solid rgba(175,82,222,0.28)',
+              color: '#7c3aed',
+            }}>
+            {generatingScript ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin"/>
+                Gerando…
+              </>
+            ) : (
+              <>
+                {/* sparkle icon inline */}
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                </svg>
+                Gerar com IA
+              </>
+            )}
+          </button>
+        </div>
         <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={11}
-          placeholder="Escreva o conteúdo ou roteiro aqui..."
+          placeholder="Escreva o conteúdo ou roteiro aqui… ou clique em &quot;Gerar com IA&quot; ✨"
           className="input leading-relaxed resize-none"/>
-        <p className="text-[10px] text-ink-faint mt-1 text-right">{conteudo.length} chars</p>
+        <div className="flex items-center justify-between mt-1">
+          {scriptError ? (
+            <p className="text-[10px] text-err font-medium">{scriptError}</p>
+          ) : (
+            <p className="text-[10px] text-ink-faint">
+              {generatingScript ? 'A IA está lendo as instruções e gerando o roteiro…' : ''}
+            </p>
+          )}
+          <p className="text-[10px] text-ink-faint ml-auto">{conteudo.length} chars</p>
+        </div>
       </div>
       {item.feedbackRoteiro && (
         <div className="px-3 py-2.5 rounded-apple bg-warn-soft border border-warn/20">
