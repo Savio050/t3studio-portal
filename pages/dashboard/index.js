@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import CRMLayout from '../../components/crm/Layout';
 import {
-  CheckSquare, Film, Users, TrendingUp, Clock, AlertCircle,
-  ChevronRight, Loader2, ArrowUpRight, CheckCircle2,
-  Zap, Calendar,
+  CheckSquare, Film, Users, TrendingUp, AlertCircle,
+  ChevronRight, ArrowUpRight, CheckCircle2, Calendar,
 } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -19,7 +18,7 @@ const relativeDate = (d) => {
   const today = new Date(); today.setHours(0,0,0,0);
   const date  = new Date(d); date.setHours(0,0,0,0);
   const diff  = Math.round((date - today) / 86400000);
-  if (diff < 0)  return `${Math.abs(diff)}d atraso`;
+  if (diff < 0)   return `${Math.abs(diff)}d atraso`;
   if (diff === 0) return 'Hoje';
   if (diff === 1) return 'Amanhã';
   if (diff <= 7)  return `${diff}d`;
@@ -38,7 +37,7 @@ const statusLabel = (s) => {
     'pendente': 'Pendente',
     'aguardando aprovação': 'Aguardando',
     'ajuste solicitado': 'Ajuste',
-    'em produção': 'Em produção',
+    'em produção': 'Produção',
     'aprovado': 'Aprovado',
     'concluído': 'Concluído',
     'concluido': 'Concluído',
@@ -52,79 +51,80 @@ const statusLabel = (s) => {
   return s || '';
 };
 
+const badgeClassFor = (s) => {
+  const raw = (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (raw.includes('aguardando')) return 'badge badge-orange';
+  if (raw === 'aprovado')         return 'badge badge-green';
+  if (raw.includes('producao'))   return 'badge badge-blue';
+  if (raw.includes('ajuste'))     return 'badge badge-orange';
+  if (raw.includes('concluido'))  return 'badge badge-neutral';
+  return 'badge badge-neutral';
+};
+
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function StatCard({ icon: Icon, label, value, sub, color, href, loading }) {
   const card = (
-    <div className="relative overflow-hidden rounded-2xl p-5 group cursor-pointer transition-all duration-200"
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.07)',
-      }}>
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-        style={{ background: 'rgba(255,255,255,0.03)' }} />
-
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: `${color}20`, border: `1px solid ${color}30` }}>
-          <Icon className="w-4 h-4" style={{ color }} />
+    <div className="card card-interactive p-5 group h-full">
+      <div className="flex items-start justify-between mb-5">
+        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
+          style={{ background: `${color}14`, color }}>
+          <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
         </div>
-        <ArrowUpRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/50 transition-colors duration-150" />
+        <ArrowUpRight className="w-4 h-4 text-muted-300 group-hover:text-ink-muted transition-colors" />
       </div>
 
       {loading ? (
         <div className="space-y-2">
-          <div className="h-7 w-16 bg-white/10 rounded-lg animate-pulse" />
-          <div className="h-3.5 w-24 bg-white/5 rounded animate-pulse" />
+          <div className="h-7 w-16 bg-elevated rounded-lg animate-pulse" />
+          <div className="h-3.5 w-24 bg-elevated rounded animate-pulse" />
         </div>
       ) : (
         <>
-          <p className="text-2xl font-bold text-white font-display tabular-nums">{value ?? '—'}</p>
-          <p className="text-xs text-white/50 font-medium mt-1">{label}</p>
-          {sub && <p className="text-[11px] mt-1" style={{ color: `${color}bb` }}>{sub}</p>}
+          <p className="text-[30px] font-semibold text-ink tabular tracking-apple-tight leading-none">
+            {value ?? '—'}
+          </p>
+          <p className="text-[13px] text-ink-muted font-medium mt-2">{label}</p>
+          {sub && <p className="text-[12px] mt-1 font-medium" style={{ color }}>{sub}</p>}
         </>
       )}
     </div>
   );
 
-  return href ? <Link href={href}>{card}</Link> : card;
+  return href ? <Link href={href} className="block h-full">{card}</Link> : card;
 }
 
 function TaskRow({ task }) {
   const today = new Date(); today.setHours(0,0,0,0);
   const due   = task.dataEntrega ? new Date(task.dataEntrega) : null;
   if (due) due.setHours(0,0,0,0);
-  const overdue = due && due < today;
+  const overdue    = due && due < today;
   const urgentSoon = due && !overdue && (due - today) / 86400000 <= 2;
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b last:border-0"
-      style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-      <div className={`w-2 h-2 rounded-full shrink-0 ${
-        overdue ? 'bg-rose-500' : urgentSoon ? 'bg-amber-500' : 'bg-violet-500'
-      }`} />
+    <div className="flex items-center gap-3 py-3 border-b border-[rgba(0,0,0,0.06)] last:border-0 group">
+      <div className={`dot shrink-0 ${overdue ? 'dot-red' : urgentSoon ? 'dot-orange' : 'dot-blue'}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white/90 truncate">{task.nome}</p>
+        <p className="text-[14px] font-medium text-ink truncate leading-snug">{task.nome}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {task.cliente && (
-            <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-ink-faint uppercase tracking-wide">
               {task.cliente}
             </span>
           )}
           {task.responsavel?.length > 0 && (
-            <span className="text-[10px] text-white/30">
-              {Array.isArray(task.responsavel) ? task.responsavel.join(', ') : task.responsavel}
-            </span>
+            <>
+              <span className="text-[11px] text-ink-faint">·</span>
+              <span className="text-[11px] text-ink-muted">
+                {Array.isArray(task.responsavel) ? task.responsavel.join(', ') : task.responsavel}
+              </span>
+            </>
           )}
         </div>
       </div>
       {task.dataEntrega && (
-        <span className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${
-          overdue
-            ? 'bg-rose-500/15 text-rose-400'
-            : urgentSoon
-              ? 'bg-amber-500/15 text-amber-400'
-              : 'bg-white/5 text-white/40'
+        <span className={`shrink-0 ${
+          overdue ? 'badge badge-red' : urgentSoon ? 'badge badge-orange' : 'badge badge-neutral'
         }`}>
           {relativeDate(task.dataEntrega)}
         </span>
@@ -134,44 +134,57 @@ function TaskRow({ task }) {
 }
 
 function ContentRow({ item }) {
-  const statusColors = {
-    'aguardando': { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', dot: '#f59e0b' },
-    'aprovado':   { bg: 'rgba(16,185,129,0.12)', text: '#34d399', dot: '#10b981' },
-    'producao':   { bg: 'rgba(14,165,233,0.12)', text: '#38bdf8', dot: '#0ea5e9' },
-    'ajuste':     { bg: 'rgba(251,146,60,0.12)', text: '#fb923c', dot: '#f97316' },
-    'concluido':  { bg: 'rgba(148,163,184,0.10)', text: '#94a3b8', dot: '#64748b' },
-  };
-
-  const raw = (item.estado || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  let colorKey = 'concluido';
-  if (raw.includes('aguardando')) colorKey = 'aguardando';
-  else if (raw === 'aprovado')    colorKey = 'aprovado';
-  else if (raw.includes('producao') || raw.includes('produção')) colorKey = 'producao';
-  else if (raw.includes('ajuste')) colorKey = 'ajuste';
-  const c = statusColors[colorKey];
-
   return (
-    <div className="flex items-center gap-3 py-3 border-b last:border-0"
-      style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c.dot }} />
+    <div className="flex items-center gap-3 py-3 border-b border-[rgba(0,0,0,0.06)] last:border-0">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white/90 truncate">{item.nome}</p>
+        <p className="text-[14px] font-medium text-ink truncate leading-snug">{item.nome}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {item.cliente && (
-            <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-ink-faint uppercase tracking-wide">
               {item.cliente}
             </span>
           )}
           {item.formato && (
-            <span className="text-[10px] text-white/25">{item.formato}</span>
+            <>
+              <span className="text-[11px] text-ink-faint">·</span>
+              <span className="text-[11px] text-ink-muted">{item.formato}</span>
+            </>
           )}
         </div>
       </div>
-      <span className="text-[11px] font-semibold shrink-0 px-2 py-0.5 rounded-full"
-        style={{ background: c.bg, color: c.text }}>
+      <span className={`${badgeClassFor(item.estado)} shrink-0`}>
         {statusLabel(item.estado)}
       </span>
     </div>
+  );
+}
+
+function SectionCard({ title, icon: Icon, iconColor, count, href, hrefLabel = 'Ver', children }) {
+  return (
+    <section className="card p-6">
+      <header className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <div className="w-7 h-7 rounded-[8px] flex items-center justify-center"
+              style={{ background: `${iconColor}14`, color: iconColor }}>
+              <Icon className="w-4 h-4" strokeWidth={2} />
+            </div>
+          )}
+          <h2 className="text-[16px] font-semibold text-ink tracking-apple-snug">{title}</h2>
+          {count != null && count > 0 && (
+            <span className="badge badge-neutral tabular">{count}</span>
+          )}
+        </div>
+        {href && (
+          <Link href={href}
+            className="flex items-center gap-0.5 text-[13px] text-accent hover:text-accent-hover font-medium transition-colors">
+            {hrefLabel}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
+      </header>
+      {children}
+    </section>
   );
 }
 
@@ -195,8 +208,6 @@ export default function Dashboard() {
     }).catch(() => setLoading(false));
   }, []);
 
-  // Pending / upcoming tasks sorted by deadline
-  const today = new Date(); today.setHours(0,0,0,0);
   const pendingTasks = tasks
     .filter(t => t.status !== 'Concluído')
     .sort((a, b) => {
@@ -206,7 +217,6 @@ export default function Dashboard() {
     })
     .slice(0, 5);
 
-  // Content awaiting approval
   const awaitingContent = content
     .filter(c => {
       const s = (c.estado || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -227,7 +237,7 @@ export default function Dashboard() {
       label: 'Tarefas pendentes',
       value: stats?.tasks?.pending,
       sub: stats?.tasks?.overdue > 0 ? `${stats.tasks.overdue} atrasada${stats.tasks.overdue > 1 ? 's' : ''}` : null,
-      color: '#7c3aed',
+      color: '#0071e3',
       href: '/dashboard/tarefas',
     },
     {
@@ -235,7 +245,7 @@ export default function Dashboard() {
       label: 'Aguardando aprovação',
       value: stats?.content?.awaitingApproval,
       sub: stats?.content?.awaitingScript > 0 ? `+${stats.content.awaitingScript} roteiros` : null,
-      color: '#f59e0b',
+      color: '#ff9500',
       href: '/dashboard/conteudo',
     },
     {
@@ -243,7 +253,7 @@ export default function Dashboard() {
       label: 'Conteúdos este mês',
       value: stats?.content?.thisMonth,
       sub: `${stats?.content?.approved ?? '—'} aprovados`,
-      color: '#06b6d4',
+      color: '#af52de',
       href: '/dashboard/conteudo',
     },
     {
@@ -251,31 +261,28 @@ export default function Dashboard() {
       label: 'Clientes ativos',
       value: stats?.clients?.total,
       sub: `${stats?.content?.total ?? '—'} conteúdos totais`,
-      color: '#10b981',
+      color: '#28cd41',
       href: '/dashboard/clientes',
     },
   ];
 
   return (
-    <CRMLayout title="Dashboard — T3 Studio CRM">
-      <div className="px-5 lg:px-8 py-6 max-w-6xl mx-auto">
+    <CRMLayout title="Dashboard — T3 Studio">
+      <div className="px-5 lg:px-10 py-8 lg:py-10 max-w-[1200px] mx-auto">
 
         {/* ── Header ── */}
-        <div className="mb-8 animate-slide-up">
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-violet-400" />
-            <span className="text-xs text-violet-400 font-semibold tracking-wider uppercase">CRM Interno</span>
-          </div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white font-display">
+        <div className="mb-10 animate-slide-up">
+          <p className="t-eyebrow mb-2 text-accent">CRM Interno</p>
+          <h1 className="t-hero">
             {greeting()}, T3 Studio
           </h1>
-          <p className="text-sm text-white/40 mt-1">
+          <p className="text-[15px] text-ink-muted mt-2">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
 
         {/* ── Stats Grid ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {statCards.map((card, i) => (
             <StatCard key={i} {...card} loading={loading} />
           ))}
@@ -284,66 +291,51 @@ export default function Dashboard() {
         {/* ── Main content grid ── */}
         <div className="grid lg:grid-cols-5 gap-5">
 
-          {/* ── Pending Tasks ── */}
-          <div className="lg:col-span-3 rounded-2xl p-5"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-violet-400" />
-                <h2 className="text-sm font-semibold text-white font-display">Tarefas em aberto</h2>
-                {stats?.tasks?.pending > 0 && (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-bold">
-                    {stats.tasks.pending}
-                  </span>
-                )}
-              </div>
-              <Link href="/dashboard/tarefas"
-                className="flex items-center gap-1 text-xs text-white/30 hover:text-violet-400
-                  transition-colors duration-150 cursor-pointer">
-                Ver todas <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
+          {/* Pending Tasks */}
+          <div className="lg:col-span-3">
+            <SectionCard
+              title="Tarefas em aberto"
+              icon={CheckSquare}
+              iconColor="#0071e3"
+              count={stats?.tasks?.pending}
+              href="/dashboard/tarefas"
+              hrefLabel="Ver todas">
 
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_,i) => (
-                  <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />
-                ))}
-              </div>
-            ) : pendingTasks.length > 0 ? (
-              <div>
-                {pendingTasks.map(task => <TaskRow key={task.id} task={task} />)}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mb-2" />
-                <p className="text-sm font-medium text-white/40">Todas as tarefas concluídas!</p>
-                <p className="text-xs text-white/20 mt-1">Nenhuma tarefa pendente.</p>
-              </div>
-            )}
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_,i) => (
+                    <div key={i} className="h-12 bg-elevated rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : pendingTasks.length > 0 ? (
+                <div>
+                  {pendingTasks.map(task => <TaskRow key={task.id} task={task} />)}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-12 h-12 rounded-full bg-ok-soft flex items-center justify-center mb-3">
+                    <CheckCircle2 className="w-6 h-6 text-ok" />
+                  </div>
+                  <p className="text-[14px] font-medium text-ink">Tudo em dia!</p>
+                  <p className="text-[13px] text-ink-faint mt-0.5">Nenhuma tarefa pendente.</p>
+                </div>
+              )}
+            </SectionCard>
           </div>
 
-          {/* ── Right Column ── */}
+          {/* Right Column */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Awaiting Approval */}
-            <div className="rounded-2xl p-5"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <h2 className="text-sm font-semibold text-white font-display">Aguardando aprovação</h2>
-                </div>
-                <Link href="/dashboard/conteudo"
-                  className="text-xs text-white/30 hover:text-amber-400 transition-colors duration-150 cursor-pointer flex items-center gap-1">
-                  Ver <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
+            <SectionCard
+              title="Aguardando aprovação"
+              icon={AlertCircle}
+              iconColor="#ff9500"
+              href="/dashboard/conteudo">
 
               {loading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_,i) => (
-                    <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />
+                    <div key={i} className="h-10 bg-elevated rounded-xl animate-pulse" />
                   ))}
                 </div>
               ) : awaitingContent.length > 0 ? (
@@ -351,31 +343,23 @@ export default function Dashboard() {
                   {awaitingContent.map(item => <ContentRow key={item.id} item={item} />)}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500/40 mb-1.5" />
-                  <p className="text-xs text-white/40">Nenhuma pendência</p>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CheckCircle2 className="w-5 h-5 text-ok mb-1.5" />
+                  <p className="text-[13px] text-ink-muted">Nenhuma pendência</p>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
-            {/* Recent activity */}
-            <div className="rounded-2xl p-5"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-cyan-400" />
-                  <h2 className="text-sm font-semibold text-white font-display">Conteúdo recente</h2>
-                </div>
-                <Link href="/dashboard/conteudo"
-                  className="text-xs text-white/30 hover:text-cyan-400 transition-colors duration-150 cursor-pointer flex items-center gap-1">
-                  Ver <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
+            <SectionCard
+              title="Conteúdo recente"
+              icon={TrendingUp}
+              iconColor="#af52de"
+              href="/dashboard/conteudo">
 
               {loading ? (
                 <div className="space-y-2">
-                  {[...Array(4)].map((_,i) => (
-                    <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />
+                  {[...Array(3)].map((_,i) => (
+                    <div key={i} className="h-10 bg-elevated rounded-xl animate-pulse" />
                   ))}
                 </div>
               ) : recentContent.length > 0 ? (
@@ -383,31 +367,33 @@ export default function Dashboard() {
                   {recentContent.map(item => <ContentRow key={item.id} item={item} />)}
                 </div>
               ) : (
-                <p className="text-xs text-white/30 text-center py-6">Sem conteúdo recente</p>
+                <p className="text-[13px] text-ink-faint text-center py-6">Sem conteúdo recente</p>
               )}
-            </div>
+            </SectionCard>
           </div>
         </div>
 
         {/* ── Quick Actions ── */}
-        <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { label: 'Nova Tarefa',      href: '/dashboard/tarefas',    color: '#7c3aed', icon: CheckSquare },
-            { label: 'Ver Conteúdo',     href: '/dashboard/conteudo',   color: '#f59e0b', icon: Film        },
-            { label: 'Clientes',         href: '/dashboard/clientes',   color: '#10b981', icon: Users       },
-            { label: 'Calendário',       href: '/dashboard/calendario', color: '#06b6d4', icon: Calendar    },
-          ].map(({ label, href, color, icon: Icon }) => (
-            <Link key={href} href={href}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                text-white/60 hover:text-white transition-all duration-150 cursor-pointer group"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <Icon className="w-4 h-4 shrink-0 transition-colors duration-150"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
-              />
-              {label}
-              <ChevronRight className="w-3 h-3 ml-auto text-white/15 group-hover:text-white/40 transition-colors duration-150" />
-            </Link>
-          ))}
+        <div className="mt-8">
+          <p className="t-eyebrow mb-3">Atalhos</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Nova Tarefa',     href: '/dashboard/tarefas',    color: '#0071e3', icon: CheckSquare },
+              { label: 'Ver Conteúdo',    href: '/dashboard/conteudo',   color: '#ff9500', icon: Film        },
+              { label: 'Clientes',        href: '/dashboard/clientes',   color: '#28cd41', icon: Users       },
+              { label: 'Calendário',      href: '/dashboard/calendario', color: '#af52de', icon: Calendar    },
+            ].map(({ label, href, color, icon: Icon }) => (
+              <Link key={href} href={href}
+                className="card card-interactive flex items-center gap-3 px-4 py-3.5 group">
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                  style={{ background: `${color}14`, color }}>
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
+                </div>
+                <span className="text-[14px] font-medium text-ink flex-1">{label}</span>
+                <ChevronRight className="w-4 h-4 text-muted-300 group-hover:text-ink-muted transition-colors" />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </CRMLayout>

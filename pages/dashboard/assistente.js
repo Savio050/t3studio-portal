@@ -9,12 +9,12 @@ import {
 
 // ── Action label helpers ──────────────────────────────────────────────────────
 const ACTION_META = {
-  list_content:   { icon: Search,   label: 'Consultou a esteira',       color: '#38bdf8' },
-  create_content: { icon: FilePlus, label: 'Criou conteúdo',            color: '#34d399' },
-  update_content: { icon: PenLine,  label: 'Atualizou conteúdo',        color: '#a78bfa' },
-  delete_content: { icon: Trash2,   label: 'Removeu conteúdo',          color: '#f87171' },
-  list_tasks:     { icon: ListTodo, label: 'Consultou tarefas',         color: '#38bdf8' },
-  create_task:    { icon: CheckSquare, label: 'Criou tarefa',           color: '#34d399' },
+  list_content:   { icon: Search,      label: 'Consultou a esteira',  tone: 'blue'   },
+  create_content: { icon: FilePlus,    label: 'Criou conteúdo',       tone: 'green'  },
+  update_content: { icon: PenLine,     label: 'Atualizou conteúdo',   tone: 'purple' },
+  delete_content: { icon: Trash2,      label: 'Removeu conteúdo',     tone: 'red'    },
+  list_tasks:     { icon: ListTodo,    label: 'Consultou tarefas',    tone: 'blue'   },
+  create_task:    { icon: CheckSquare, label: 'Criou tarefa',         tone: 'green'  },
 };
 
 // ── Quick suggestions ─────────────────────────────────────────────────────────
@@ -36,14 +36,13 @@ function RenderMarkdown({ text }) {
         // Bold: **text**
         const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
           if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={j} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+            return <strong key={j} className="font-semibold text-ink">{part.slice(2, -2)}</strong>;
           }
           // Inline code: `code`
           return part.split(/(`[^`]+`)/g).map((chunk, k) => {
             if (chunk.startsWith('`') && chunk.endsWith('`')) {
               return (
-                <code key={k} className="px-1 py-0.5 rounded text-[11px] font-mono text-cyan-300"
-                  style={{background:'rgba(6,182,212,0.15)'}}>
+                <code key={k} className="px-1.5 py-0.5 rounded-md text-[12px] font-mono bg-elevated text-accent border border-hairline">
                   {chunk.slice(1,-1)}
                 </code>
               );
@@ -56,7 +55,7 @@ function RenderMarkdown({ text }) {
         if (/^[\-\*•]\s/.test(line)) {
           return (
             <div key={i} className="flex gap-2">
-              <span className="text-violet-400 mt-0.5 shrink-0">·</span>
+              <span className="text-ink-muted mt-0.5 shrink-0">·</span>
               <span>{parts}</span>
             </div>
           );
@@ -66,12 +65,12 @@ function RenderMarkdown({ text }) {
           const [num, ...rest] = line.split(/\.\s(.+)/);
           const restParts = rest.join('. ').split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
             part.startsWith('**') && part.endsWith('**')
-              ? <strong key={j} className="font-semibold text-white">{part.slice(2,-2)}</strong>
+              ? <strong key={j} className="font-semibold text-ink">{part.slice(2,-2)}</strong>
               : part
           );
           return (
             <div key={i} className="flex gap-2">
-              <span className="text-violet-400/60 shrink-0 tabular-nums">{num}.</span>
+              <span className="text-ink-muted shrink-0 tabular-nums">{num}.</span>
               <span>{restParts}</span>
             </div>
           );
@@ -79,7 +78,7 @@ function RenderMarkdown({ text }) {
         // Heading (## or ###)
         if (/^#{2,3}\s/.test(line)) {
           const headText = line.replace(/^#{2,3}\s/, '');
-          return <p key={i} className="font-bold text-white mt-2">{headText}</p>;
+          return <p key={i} className="font-semibold text-ink mt-2">{headText}</p>;
         }
         // Empty line
         if (!line.trim()) return <div key={i} className="h-1"/>;
@@ -91,18 +90,28 @@ function RenderMarkdown({ text }) {
 
 // ── Action pill ───────────────────────────────────────────────────────────────
 function ActionPill({ action }) {
-  const meta = ACTION_META[action.type] || { icon: Zap, label: action.type, color: '#a78bfa' };
+  const meta = ACTION_META[action.type] || { icon: Zap, label: action.type, tone: 'neutral' };
   const Icon = meta.icon;
   const label = action.message ? `${meta.label}: ${action.message}` : meta.label;
+  const toneClass = !action.success
+    ? 'badge badge-red'
+    : `badge badge-${meta.tone}`;
+
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold"
-      style={{
-        background: action.success ? `${meta.color}12` : 'rgba(248,113,113,0.12)',
-        border: `1px solid ${action.success ? `${meta.color}25` : 'rgba(248,113,113,0.25)'}`,
-        color: action.success ? meta.color : '#f87171',
-      }}>
+    <div className={`${toneClass} inline-flex items-center gap-1.5`}>
       <Icon className="w-3 h-3 shrink-0"/>
-      {label.length > 60 ? label.slice(0, 57) + '…' : label}
+      <span>{label.length > 60 ? label.slice(0, 57) + '…' : label}</span>
+    </div>
+  );
+}
+
+// ── Assistant avatar ──────────────────────────────────────────────────────────
+function AssistantAvatar({ size = 'md' }) {
+  const dims = size === 'sm' ? 'w-7 h-7' : size === 'lg' ? 'w-14 h-14' : 'w-8 h-8';
+  const iconSize = size === 'sm' ? 'w-3.5 h-3.5' : size === 'lg' ? 'w-7 h-7' : 'w-4 h-4';
+  return (
+    <div className={`${dims} brand-gradient rounded-full flex items-center justify-center shrink-0 shadow-apple-sm`}>
+      <Bot className={`${iconSize} text-white`}/>
     </div>
   );
 }
@@ -122,21 +131,19 @@ function MessageBubble({ msg, onRetry }) {
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} group`}>
       {/* Avatar */}
-      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5
-        ${isUser
-          ? 'bg-white/[0.08] border border-white/[0.08]'
-          : isError
-            ? 'bg-red-500/20 border border-red-500/30'
-            : 'border border-violet-500/30'
-        }`}
-        style={!isUser && !isError ? { background: 'linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)' } : {}}>
-        {isUser
-          ? <User className="w-4 h-4 text-white/60"/>
-          : isError
-            ? <AlertCircle className="w-4 h-4 text-red-400"/>
-            : <Bot className="w-4 h-4 text-white"/>
-        }
-      </div>
+      {isUser ? (
+        <div className="w-8 h-8 rounded-full bg-elevated border border-hairline flex items-center justify-center shrink-0 mt-0.5">
+          <User className="w-4 h-4 text-ink-muted"/>
+        </div>
+      ) : isError ? (
+        <div className="w-8 h-8 rounded-full bg-err-soft border border-hairline flex items-center justify-center shrink-0 mt-0.5">
+          <AlertCircle className="w-4 h-4 text-err-ink"/>
+        </div>
+      ) : (
+        <div className="mt-0.5">
+          <AssistantAvatar/>
+        </div>
+      )}
 
       <div className={`flex flex-col gap-1.5 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
         {/* Action pills */}
@@ -147,25 +154,15 @@ function MessageBubble({ msg, onRetry }) {
         )}
 
         {/* Bubble */}
-        <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed
-          ${isUser
-            ? 'rounded-tr-sm text-white/90'
-            : isError
-              ? 'rounded-tl-sm text-red-300'
-              : 'rounded-tl-sm text-white/85'
-          }`}
-          style={{
-            background: isUser
-              ? 'linear-gradient(135deg, rgba(124,58,237,0.35), rgba(14,116,144,0.25))'
+        <div
+          className={
+            isUser
+              ? 'px-4 py-2.5 rounded-apple-lg text-[15px] leading-relaxed bg-accent-soft text-accent-ink'
               : isError
-                ? 'rgba(248,113,113,0.1)'
-                : 'rgba(255,255,255,0.06)',
-            border: isUser
-              ? '1px solid rgba(124,58,237,0.3)'
-              : isError
-                ? '1px solid rgba(248,113,113,0.2)'
-                : '1px solid rgba(255,255,255,0.08)',
-          }}>
+                ? 'px-4 py-3 rounded-apple-lg text-[15px] leading-relaxed bg-err-soft text-err-ink border border-hairline'
+                : 'px-4 py-3 rounded-apple-lg text-[15px] leading-relaxed bg-white text-ink border border-hairline shadow-apple-sm'
+          }
+        >
           {isUser || isError
             ? <p className="whitespace-pre-wrap">{msg.content}</p>
             : <RenderMarkdown text={msg.content}/>
@@ -176,15 +173,15 @@ function MessageBubble({ msg, onRetry }) {
         {!isUser && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <button onClick={copy}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium cursor-pointer
-                text-white/25 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-150">
-              {copied ? <Check className="w-3 h-3 text-green-400"/> : <Copy className="w-3 h-3"/>}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer
+                text-ink-muted hover:text-ink hover:bg-elevated transition-all duration-150">
+              {copied ? <Check className="w-3 h-3 text-ok-ink"/> : <Copy className="w-3 h-3"/>}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
             {isError && onRetry && (
               <button onClick={onRetry}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium cursor-pointer
-                  text-white/25 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-150">
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer
+                  text-ink-muted hover:text-ink hover:bg-elevated transition-all duration-150">
                 <RotateCcw className="w-3 h-3"/> Tentar novamente
               </button>
             )}
@@ -199,18 +196,16 @@ function MessageBubble({ msg, onRetry }) {
 function TypingIndicator({ thinkingLabel }) {
   return (
     <div className="flex gap-3 items-start">
-      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)', border: '1px solid rgba(124,58,237,0.3)' }}>
-        <Bot className="w-4 h-4 text-white"/>
+      <div className="mt-0.5">
+        <AssistantAvatar/>
       </div>
-      <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex flex-col gap-2"
-        style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)'}}>
+      <div className="px-4 py-3 rounded-apple-lg bg-white border border-hairline shadow-apple-sm flex flex-col gap-2">
         {thinkingLabel && (
-          <p className="text-[10px] font-medium text-violet-400/70">{thinkingLabel}</p>
+          <p className="text-[11px] font-medium text-ink-muted">{thinkingLabel}</p>
         )}
         <div className="flex items-center gap-1.5">
           {[0,1,2].map(i => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/30 animate-bounce"
+            <div key={i} className="w-1.5 h-1.5 rounded-full bg-ink-faint animate-bounce"
               style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}/>
           ))}
         </div>
@@ -225,18 +220,14 @@ function EmptyState({ onSelect }) {
     <div className="flex flex-col items-center justify-center h-full px-6 py-12">
       {/* Icon */}
       <div className="relative mb-6">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)' }}>
-          <Bot className="w-8 h-8 text-white"/>
-        </div>
-        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #34d399, #06b6d4)' }}>
-          <Sparkles className="w-2.5 h-2.5 text-white"/>
+        <AssistantAvatar size="lg"/>
+        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center bg-white border border-hairline shadow-apple-sm">
+          <Sparkles className="w-2.5 h-2.5 text-accent"/>
         </div>
       </div>
 
-      <h2 className="text-lg font-bold text-white font-display mb-1">Assistente T3 Studio</h2>
-      <p className="text-sm text-white/40 text-center max-w-xs mb-8 leading-relaxed">
+      <h2 className="t-title text-ink mb-1.5">Assistente T3 Studio</h2>
+      <p className="t-body text-ink-soft text-center max-w-md mb-8 leading-relaxed">
         Gerencio sua esteira de conteúdo e tarefas com linguagem natural. Pergunte qualquer coisa ou use uma sugestão abaixo.
       </p>
 
@@ -248,28 +239,23 @@ function EmptyState({ onSelect }) {
           { icon: Search,     label: 'Consultar esteira'   },
           { icon: PenLine,    label: 'Editar em massa'     },
         ].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white/50"
-            style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
-            <Icon className="w-3 h-3 text-violet-400"/>
+          <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium text-ink-soft bg-elevated border border-hairline">
+            <Icon className="w-3.5 h-3.5 text-accent"/>
             {label}
           </div>
         ))}
       </div>
 
       {/* Suggestions grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl">
         {SUGGESTIONS.map(({ icon: Icon, label, prompt }) => (
           <button key={label} onClick={() => onSelect(prompt)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-medium
-              cursor-pointer transition-all duration-150 hover:brightness-125 group/sug"
-            style={{
-              background:'rgba(255,255,255,0.04)',
-              border:'1px solid rgba(255,255,255,0.07)',
-              color:'rgba(255,255,255,0.55)',
-            }}>
-            <Icon className="w-4 h-4 text-violet-400 shrink-0"/>
-            <span className="flex-1">{label}</span>
-            <ChevronRight className="w-3 h-3 text-white/20 opacity-0 group-hover/sug:opacity-100 transition-opacity"/>
+            className="card-interactive flex items-center gap-3 px-4 py-3 text-left group/sug">
+            <div className="w-8 h-8 rounded-apple bg-accent-soft flex items-center justify-center shrink-0">
+              <Icon className="w-4 h-4 text-accent"/>
+            </div>
+            <span className="flex-1 text-sm font-medium text-ink">{label}</span>
+            <ChevronRight className="w-4 h-4 text-ink-faint opacity-0 group-hover/sug:opacity-100 transition-opacity"/>
           </button>
         ))}
       </div>
@@ -351,36 +337,28 @@ export default function Assistente() {
 
   return (
     <CRMLayout title="Assistente — T3 Studio CRM">
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 0px)', maxHeight: '100dvh' }}>
+      <div className="flex flex-col bg-canvas" style={{ height: 'calc(100vh - 0px)', maxHeight: '100dvh' }}>
 
         {/* ── Header ── */}
-        <div className="shrink-0 px-5 lg:px-8 pt-5 pb-4 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center justify-between">
+        <div className="shrink-0 px-5 lg:px-8 pt-5 pb-4 border-b border-hairline bg-surface/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)' }}>
-                <Bot className="w-5 h-5 text-white"/>
-              </div>
+              <AssistantAvatar/>
               <div>
-                <h1 className="text-base font-bold text-white font-display flex items-center gap-2">
+                <h1 className="text-[15px] font-semibold text-ink flex items-center gap-2">
                   Assistente Virtual
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{background:'rgba(52,211,153,0.15)',border:'1px solid rgba(52,211,153,0.3)',color:'#34d399'}}>
-                    Gemini 2.5 Flash
+                  <span className="badge badge-green">
+                    <span className="dot dot-green"/> Gemini 2.5 Flash
                   </span>
                 </h1>
-                <p className="text-[11px] text-white/30 mt-0.5">
+                <p className="t-small text-ink-muted mt-0.5">
                   Gerencia sua esteira com linguagem natural
                 </p>
               </div>
             </div>
             {messages.length > 0 && (
-              <button onClick={clearChat}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer
-                  text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-all duration-150"
-                style={{border:'1px solid rgba(255,255,255,0.07)'}}>
-                <RotateCcw className="w-3 h-3"/>
+              <button onClick={clearChat} className="btn btn-ghost">
+                <RotateCcw className="w-3.5 h-3.5"/>
                 Nova conversa
               </button>
             )}
@@ -407,8 +385,7 @@ export default function Assistente() {
         </div>
 
         {/* ── Input bar ── */}
-        <div className="shrink-0 px-5 lg:px-8 py-4 border-t"
-          style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="shrink-0 px-5 lg:px-8 py-4 border-t border-hairline bg-surface/80 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto">
             {/* Quick chips when there are messages */}
             {messages.length > 0 && (
@@ -416,10 +393,9 @@ export default function Assistente() {
                 {SUGGESTIONS.slice(0, 4).map(({ label, prompt }) => (
                   <button key={label} onClick={() => sendMessage(prompt)}
                     disabled={loading}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium cursor-pointer
+                    className="shrink-0 px-3 py-1.5 rounded-pill text-[12px] font-medium cursor-pointer
                       transition-all duration-150 disabled:opacity-40
-                      text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
-                    style={{border:'1px solid rgba(255,255,255,0.07)'}}>
+                      text-ink-soft hover:text-ink bg-elevated hover:bg-white border border-hairline">
                     {label}
                   </button>
                 ))}
@@ -427,7 +403,7 @@ export default function Assistente() {
             )}
 
             {/* Text input */}
-            <div className="flex items-end gap-3">
+            <div className="flex items-end gap-2.5">
               <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}
@@ -437,12 +413,12 @@ export default function Assistente() {
                   disabled={loading}
                   rows={1}
                   placeholder="Pergunte qualquer coisa… ex: Crie um Reels para mafro esta semana"
-                  className="w-full px-4 py-3 pr-12 rounded-2xl text-sm font-medium text-white
-                    placeholder-white/20 resize-none outline-none transition-all duration-150
-                    focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50 leading-relaxed"
+                  className="w-full px-4 py-3 pr-4 rounded-apple-lg text-[15px] text-ink
+                    placeholder:text-ink-faint resize-none outline-none transition-all duration-150
+                    bg-white border border-hairline
+                    focus:border-accent focus:ring-2 focus:ring-accent/20
+                    disabled:opacity-50 leading-relaxed shadow-apple-sm"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
                     maxHeight: '160px',
                     overflowY: 'auto',
                     scrollbarWidth: 'none',
@@ -457,10 +433,10 @@ export default function Assistente() {
               <button
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || loading}
-                className="w-11 h-11 flex items-center justify-center rounded-2xl
-                  text-white cursor-pointer transition-all duration-200 shrink-0
-                  disabled:opacity-30 disabled:cursor-not-allowed hover:brightness-110 active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #0891b2)' }}>
+                className="w-11 h-11 flex items-center justify-center rounded-full
+                  bg-accent hover:bg-accent-hover text-white cursor-pointer
+                  transition-all duration-200 shrink-0 shadow-apple
+                  disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
                 {loading
                   ? <Loader2 className="w-4 h-4 animate-spin"/>
                   : <Send className="w-4 h-4"/>
@@ -468,7 +444,7 @@ export default function Assistente() {
               </button>
             </div>
 
-            <p className="text-[10px] text-white/15 mt-2 text-center">
+            <p className="text-[11px] text-ink-faint mt-2.5 text-center">
               Enter para enviar · Shift+Enter para nova linha · Powered by Gemini 2.5 Flash
             </p>
           </div>

@@ -17,46 +17,51 @@ const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
 const WEEKDAYS_PT = ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
 
 const ESTADO_OPTIONS = [
-  { value: 'não iniciado',         label: 'Não iniciado',      color: '#64748b' },
-  { value: 'Em Produção',          label: 'Em Produção',       color: '#0ea5e9' },
-  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#f59e0b' },
-  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#f97316' },
-  { value: 'Aprovado',             label: 'Aprovado',          color: '#10b981' },
-  { value: 'Concluido',            label: 'Concluído',         color: '#64748b' },
+  { value: 'não iniciado',         label: 'Não iniciado',      color: '#8e8e93' },
+  { value: 'Em Produção',          label: 'Em Produção',       color: '#0071e3' },
+  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#ff9500' },
+  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#ff9500' },
+  { value: 'Aprovado',             label: 'Aprovado',          color: '#34c759' },
+  { value: 'Concluido',            label: 'Concluído',         color: '#8e8e93' },
 ];
 
 const CONTEUDO_STATES = [
-  { value: 'Não iniciada',         label: 'Não iniciada',      color: '#64748b' },
-  { value: 'Em Produção',          label: 'Em criação',        color: '#a78bfa' },
-  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#f59e0b' },
-  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#f97316' },
-  { value: 'Aprovado',             label: 'Aprovado',          color: '#10b981' },
-  { value: 'Concluido',            label: 'Concluído',         color: '#64748b' },
+  { value: 'Não iniciada',         label: 'Não iniciada',      color: '#8e8e93' },
+  { value: 'Em Produção',          label: 'Em criação',        color: '#0071e3' },
+  { value: 'Aguardando Aprovação', label: 'Aguard. aprovação', color: '#ff9500' },
+  { value: 'Ajuste Solicitado',    label: 'Ajuste solicitado', color: '#ff9500' },
+  { value: 'Aprovado',             label: 'Aprovado',          color: '#34c759' },
+  { value: 'Concluido',            label: 'Concluído',         color: '#8e8e93' },
 ];
 
 const CLIENT_COLORS = {
-  fastimoveis: { bg: 'rgba(244,63,94,0.15)',  text: '#fb7185', border: 'rgba(244,63,94,0.3)'  },
-  mafro:       { bg: 'rgba(6,182,212,0.15)',  text: '#22d3ee', border: 'rgba(6,182,212,0.3)'  },
+  fastimoveis: { bg: 'rgba(244,63,94,0.12)',  text: '#e11d48', border: 'rgba(244,63,94,0.28)' },
+  mafro:       { bg: 'rgba(14,165,233,0.12)', text: '#0284c7', border: 'rgba(14,165,233,0.28)' },
 };
 
 const FORMAT_COLORS = {
-  Reels:     '#a78bfa', Carrossel: '#38bdf8', Stories: '#f472b6',
-  Post:      '#34d399', Vídeo:     '#fb923c', TikTok:  '#f9a8d4',
-  YouTube:   '#f87171',
+  Reels:     '#8b5cf6', Carrossel: '#0ea5e9', Stories: '#ec4899',
+  Post:      '#10b981', Vídeo:     '#f97316', TikTok:  '#f472b6',
+  YouTube:   '#ef4444',
+};
+
+const PLAT_COLORS = {
+  Instagram:'#e1306c', TikTok:'#69c9d0', YouTube:'#ff0000',
+  WhatsApp:'#25d366', Facebook:'#1877f2', LinkedIn:'#0a66c2', Pinterest:'#e60023',
 };
 
 const SECTION_STATUS = {
-  aprovado:     { label: 'Aprovado',      color: '#10b981', bg: 'rgba(16,185,129,0.15)',  border: 'rgba(16,185,129,0.3)'  },
-  'em-aprovacao':{ label: 'Em Aprovação', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.3)'  },
-  'em-producao': { label: 'Em Produção',  color: '#0ea5e9', bg: 'rgba(14,165,233,0.15)',  border: 'rgba(14,165,233,0.3)'  },
-  'em-criacao':  { label: 'Em Criação',   color: '#a78bfa', bg: 'rgba(124,58,237,0.15)',  border: 'rgba(124,58,237,0.3)'  },
-  pendente:     { label: 'Pendente',      color: '#64748b', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.2)' },
+  aprovado:      { label: 'Aprovado',     color: '#34c759', bg: 'rgba(52,199,89,0.10)',   border: 'rgba(52,199,89,0.28)'  },
+  'em-aprovacao':{ label: 'Em Aprovação', color: '#ff9500', bg: 'rgba(255,149,0,0.10)',   border: 'rgba(255,149,0,0.28)'  },
+  'em-producao': { label: 'Em Produção',  color: '#0071e3', bg: 'rgba(0,113,227,0.10)',   border: 'rgba(0,113,227,0.26)'  },
+  'em-criacao':  { label: 'Em Criação',   color: '#8b5cf6', bg: 'rgba(139,92,246,0.10)',  border: 'rgba(139,92,246,0.26)' },
+  pendente:      { label: 'Pendente',     color: '#8e8e93', bg: 'rgba(142,142,147,0.08)', border: 'rgba(142,142,147,0.22)' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const nrm       = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 const clientColor = n => CLIENT_COLORS[nrm(n).replace(/\s/g,'')] ||
-  { bg:'rgba(255,255,255,0.06)', text:'rgba(255,255,255,0.45)', border:'rgba(255,255,255,0.1)' };
+  { bg:'rgba(0,0,0,0.04)', text:'#6b7280', border:'rgba(0,0,0,0.08)' };
 const fmtShort  = d => { if (!d) return null; const [,m,day] = d.split('-'); return `${day}/${m}`; };
 const fmtFull   = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
 const isoDate   = d => d.toISOString().slice(0, 10);
@@ -139,29 +144,29 @@ function SectionBadge({ status }) {
 
 // ── Mini card (Monthly & Weekly) ──────────────────────────────────────────────
 function MiniCard({ item, onClick }) {
-  const fmtColor  = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const fmtColor  = FORMAT_COLORS[item.formato] || '#8b5cf6';
   const st        = sectionStatus(item, 'tema');
   const stMeta    = SECTION_STATUS[st];
   const previewImg = item.linkCapa || (item.galeria ? item.galeria.split(',')[0]?.trim() : null);
 
   return (
     <button onClick={() => onClick(item)}
-      className="w-full text-left rounded-lg p-1.5 transition-all duration-200 hover:brightness-125 cursor-pointer group overflow-hidden"
-      style={{ background: `${fmtColor}10`, border: `1px solid ${fmtColor}20` }}>
+      className="w-full text-left rounded-apple-lg p-1.5 transition-all duration-200 cursor-pointer group overflow-hidden bg-white hover:shadow-apple-sm hover:-translate-y-[1px]"
+      style={{ border: `1px solid ${fmtColor}22` }}>
       {/* Hover image preview — expands inline */}
       {previewImg && (
         <div className="max-h-0 group-hover:max-h-20 overflow-hidden transition-all duration-300 ease-out">
           <img src={previewImg} alt="" className="w-full aspect-video object-cover rounded-md mb-1 block"
-            style={{ border: `1px solid ${fmtColor}25` }}/>
+            style={{ border: `1px solid ${fmtColor}20` }}/>
         </div>
       )}
       <div className="flex items-center gap-1 mb-0.5">
         {item.formato && (
-          <span className="text-[9px] font-bold truncate" style={{ color: fmtColor }}>{item.formato}</span>
+          <span className="text-[9px] font-semibold truncate tracking-apple-snug" style={{ color: fmtColor }}>{item.formato}</span>
         )}
-        <div className="w-1.5 h-1.5 rounded-full ml-auto shrink-0" style={{ background: stMeta?.color || '#64748b' }}/>
+        <div className="w-1.5 h-1.5 rounded-full ml-auto shrink-0" style={{ background: stMeta?.color || '#8e8e93' }}/>
       </div>
-      <p className="text-[10px] text-white/70 leading-tight line-clamp-2">{item.nome}</p>
+      <p className="text-[10px] text-ink-soft leading-tight line-clamp-2 font-medium">{item.nome}</p>
     </button>
   );
 }
@@ -173,12 +178,11 @@ function CardCarousel({ images, fmtColor, formato, postagem }) {
   const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
 
   if (!images.length) return (
-    <div className="w-full aspect-square flex items-center justify-center relative"
-      style={{ background: `${fmtColor}0d` }}>
-      <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
+    <div className="w-full aspect-square flex items-center justify-center relative bg-elevated">
+      <Film className="w-10 h-10 opacity-30" style={{ color: fmtColor }}/>
       {formato && (
-        <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+        <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill"
+          style={{ background:'rgba(255,255,255,0.9)', color:fmtColor, border:`1px solid ${fmtColor}30`, backdropFilter:'blur(8px)' }}>
           {formato}
         </span>
       )}
@@ -186,21 +190,20 @@ function CardCarousel({ images, fmtColor, formato, postagem }) {
   );
 
   return (
-    <div className="relative w-full aspect-square overflow-hidden group/car select-none"
-      style={{ background: `${fmtColor}0d` }}>
+    <div className="relative w-full aspect-square overflow-hidden group/car select-none bg-elevated">
       {/* Image */}
       <img src={images[idx]} alt="" className="w-full h-full object-cover transition-opacity duration-200"/>
 
       {/* Format badge */}
       {formato && (
-        <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
-          style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+        <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill z-10"
+          style={{ background:'rgba(255,255,255,0.92)', color:fmtColor, border:`1px solid ${fmtColor}30`, backdropFilter:'blur(8px)' }}>
           {formato}
         </span>
       )}
-      {postagem && (
-        <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md z-10"
-          style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}>
+      {postagem && images.length <= 1 && (
+        <span className="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md z-10"
+          style={{ background:'rgba(255,255,255,0.92)', color:'#1d1d1f', backdropFilter:'blur(8px)' }}>
           {fmtShort(postagem)}
         </span>
       )}
@@ -209,16 +212,14 @@ function CardCarousel({ images, fmtColor, formato, postagem }) {
       {images.length > 1 && (
         <>
           <button onClick={prev}
-            className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10
-              opacity-0 group-hover/car:opacity-100 transition-opacity duration-150 cursor-pointer hover:scale-110"
-            style={{ background:'rgba(0,0,0,0.65)', border:'1px solid rgba(255,255,255,0.15)' }}>
-            <ChevronLeft className="w-4 h-4 text-white"/>
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10
+              opacity-0 group-hover/car:opacity-100 transition-all duration-150 cursor-pointer hover:scale-110 bg-white/90 backdrop-blur shadow-apple-sm hover:shadow-apple">
+            <ChevronLeft className="w-4 h-4 text-ink"/>
           </button>
           <button onClick={next}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10
-              opacity-0 group-hover/car:opacity-100 transition-opacity duration-150 cursor-pointer hover:scale-110"
-            style={{ background:'rgba(0,0,0,0.65)', border:'1px solid rgba(255,255,255,0.15)' }}>
-            <ChevronRight className="w-4 h-4 text-white"/>
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10
+              opacity-0 group-hover/car:opacity-100 transition-all duration-150 cursor-pointer hover:scale-110 bg-white/90 backdrop-blur shadow-apple-sm hover:shadow-apple">
+            <ChevronRight className="w-4 h-4 text-ink"/>
           </button>
 
           {/* Dot indicators */}
@@ -226,13 +227,13 @@ function CardCarousel({ images, fmtColor, formato, postagem }) {
             {images.map((_, i) => (
               <button key={i} onClick={e => { e.stopPropagation(); setIdx(i); }}
                 className="rounded-full transition-all duration-200 cursor-pointer"
-                style={{ width: i===idx?16:6, height:6, background: i===idx?'white':'rgba(255,255,255,0.45)' }}/>
+                style={{ width: i===idx?16:6, height:6, background: i===idx?'white':'rgba(255,255,255,0.5)', boxShadow: i===idx?'0 1px 2px rgba(0,0,0,0.2)':'none' }}/>
             ))}
           </div>
 
           {/* Counter */}
-          <div className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md z-10"
-            style={{ background:'rgba(0,0,0,0.55)', color:'rgba(255,255,255,0.7)' }}>
+          <div className="absolute top-2 right-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-md z-10"
+            style={{ background:'rgba(255,255,255,0.92)', color:'#1d1d1f', backdropFilter:'blur(8px)' }}>
             {idx+1}/{images.length}
           </div>
         </>
@@ -244,7 +245,7 @@ function CardCarousel({ images, fmtColor, formato, postagem }) {
 // ── Feed card ─────────────────────────────────────────────────────────────────
 function FeedCard({ item, onClick }) {
   const cl        = clientColor(item.cliente);
-  const fmtColor  = FORMAT_COLORS[item.formato] || '#a78bfa';
+  const fmtColor  = FORMAT_COLORS[item.formato] || '#8b5cf6';
   const tabs      = ['tema', 'conteudo', 'midia'];
   const isCar     = isCarouselFmt(item.formato);
   const carImages = isCar && item.galeria
@@ -253,28 +254,26 @@ function FeedCard({ item, onClick }) {
 
   return (
     <button onClick={() => onClick(item)}
-      className="text-left rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:shadow-lg cursor-pointer group"
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      className="text-left rounded-apple-xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group bg-surface border border-hairline shadow-apple-sm hover:shadow-apple-md">
 
       {/* Cover / carousel */}
       {isCar ? (
         <CardCarousel images={carImages} fmtColor={fmtColor} formato={item.formato} postagem={item.postagem}/>
       ) : (
-        <div className="w-full aspect-video flex items-center justify-center relative overflow-hidden"
-          style={{ background: `${fmtColor}0d` }}>
+        <div className="w-full aspect-video flex items-center justify-center relative overflow-hidden bg-elevated">
           {item.linkCapa
             ? <img src={item.linkCapa} alt="" className="w-full h-full object-cover"/>
-            : <Film className="w-10 h-10 opacity-20" style={{ color: fmtColor }}/>
+            : <Film className="w-10 h-10 opacity-30" style={{ color: fmtColor }}/>
           }
           {item.formato && (
-            <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background:`${fmtColor}25`, color:fmtColor, border:`1px solid ${fmtColor}40`, backdropFilter:'blur(4px)' }}>
+            <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill"
+              style={{ background:'rgba(255,255,255,0.92)', color:fmtColor, border:`1px solid ${fmtColor}30`, backdropFilter:'blur(8px)' }}>
               {item.formato}
             </span>
           )}
           {item.postagem && (
-            <span className="absolute top-2 right-2 text-[10px] text-white/50 font-medium px-1.5 py-0.5 rounded-md"
-              style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}>
+            <span className="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+              style={{ background:'rgba(255,255,255,0.92)', color:'#1d1d1f', backdropFilter:'blur(8px)' }}>
               {fmtShort(item.postagem)}
             </span>
           )}
@@ -284,12 +283,12 @@ function FeedCard({ item, onClick }) {
       <div className="p-3">
         {/* Client + title */}
         {item.cliente && (
-          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1.5 inline-block"
+          <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1.5 inline-block"
             style={{ background: cl.bg, color: cl.text, border: `1px solid ${cl.border}` }}>
             {item.cliente}
           </span>
         )}
-        <p className="text-xs font-semibold text-white/85 leading-snug line-clamp-2 mb-3">{item.nome}</p>
+        <p className="text-[13px] font-semibold text-ink leading-snug line-clamp-2 mb-3 tracking-apple-snug">{item.nome}</p>
 
         {/* Section status row */}
         <div className="grid grid-cols-3 gap-1">
@@ -298,9 +297,9 @@ function FeedCard({ item, onClick }) {
             const meta = SECTION_STATUS[st];
             const labels = { tema: 'Tema', conteudo: 'Conteúdo', midia: 'Mídia' };
             return (
-              <div key={s} className="flex flex-col items-center gap-0.5 py-1.5 rounded-lg"
-                style={{ background: `${meta.color}0d` }}>
-                <span className="text-[8px] font-bold text-white/30 uppercase tracking-wider">{labels[s]}</span>
+              <div key={s} className="flex flex-col items-center gap-0.5 py-1.5 rounded-apple"
+                style={{ background: meta.bg }}>
+                <span className="text-[8px] font-semibold text-ink-faint uppercase tracking-wider">{labels[s]}</span>
                 <span className="text-[9px] font-semibold" style={{ color: meta.color }}>{meta.label}</span>
               </div>
             );
@@ -316,19 +315,17 @@ function DayItemsModal({ date, items, onSelect, onClose }) {
   const label = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative w-full max-w-sm rounded-2xl overflow-hidden"
-        style={{ background:'rgba(9,16,30,0.99)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 32px 64px rgba(0,0,0,0.7)' }}>
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}/>
+      <div className="relative w-full max-w-sm rounded-apple-2xl overflow-hidden bg-surface border border-hairline shadow-apple-xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
           <div>
-            <p className="text-[10px] text-white/35 font-bold uppercase tracking-wider">{items.length} conteúdos</p>
-            <h3 className="text-sm font-bold text-white capitalize mt-0.5">{label}</h3>
+            <p className="t-eyebrow text-ink-muted">{items.length} conteúdos</p>
+            <h3 className="text-[15px] font-semibold text-ink capitalize mt-0.5 tracking-apple-tight">{label}</h3>
           </div>
           <button onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer">
+            className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer">
             <X className="w-4 h-4"/>
           </button>
         </div>
@@ -337,24 +334,23 @@ function DayItemsModal({ date, items, onSelect, onClose }) {
         <div className="p-3 space-y-1.5 max-h-[70vh] overflow-y-auto">
           {items.map(item => (
             <button key={item.id} onClick={() => { onClose(); onSelect(item); }}
-              className="w-full text-left rounded-xl p-3 cursor-pointer transition-all hover:brightness-125"
-              style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)' }}>
+              className="w-full text-left rounded-apple-lg p-3 cursor-pointer transition-all bg-surface border border-hairline hover:bg-elevated hover:shadow-apple-sm">
               <div className="flex items-center gap-2 mb-1">
                 {item.formato && (
-                  <span className="text-[9px] font-bold" style={{ color: FORMAT_COLORS[item.formato]||'#a78bfa' }}>
+                  <span className="text-[9px] font-semibold" style={{ color: FORMAT_COLORS[item.formato]||'#8b5cf6' }}>
                     {item.formato}
                   </span>
                 )}
                 {item.cliente && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider ml-auto"
+                  <span className="text-[9px] font-semibold uppercase tracking-wider ml-auto"
                     style={{ color: clientColor(item.cliente).text }}>
                     {item.cliente}
                   </span>
                 )}
               </div>
-              <p className="text-xs font-semibold text-white/85 leading-snug">{item.nome}</p>
+              <p className="text-[13px] font-semibold text-ink leading-snug">{item.nome}</p>
               {item.responsavel && (
-                <p className="text-[10px] text-white/30 mt-1">{item.responsavel}</p>
+                <p className="text-[11px] text-ink-muted mt-1">{item.responsavel}</p>
               )}
             </button>
           ))}
@@ -379,10 +375,10 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
     <div>
       {/* Nav */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={onPrev} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronLeft className="w-4 h-4"/></button>
-        <span className="text-base font-bold text-white font-display min-w-[160px]">{MONTHS_PT[month]} {year}</span>
-        <button onClick={onNext} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronRight className="w-4 h-4"/></button>
-        <span className="text-[11px] text-white/30 ml-1">
+        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="t-title text-ink min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="t-small text-ink-muted ml-1">
           {items.filter(i => i.postagem || i.dataGravacao).length} postagens
         </span>
       </div>
@@ -390,7 +386,7 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {WEEKDAYS_PT.map(d => (
-          <div key={d} className="text-center text-[10px] font-bold text-white/20 uppercase tracking-wider py-1.5">{d}</div>
+          <div key={d} className="text-center text-[10px] font-semibold text-ink-faint uppercase tracking-wider py-1.5">{d}</div>
         ))}
       </div>
 
@@ -402,28 +398,27 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           const isToday  = ds === todayStr;
           const PREVIEW  = 2; // cards shown before "ver todos"
           return (
-            <div key={i} className="min-h-[90px] p-1.5 rounded-xl transition-all duration-150"
+            <div key={i} className="min-h-[96px] p-1.5 rounded-apple-lg transition-all duration-150"
               style={{
-                background: isToday ? 'rgba(124,58,237,0.07)' : current ? 'rgba(255,255,255,0.025)' : 'transparent',
-                border: isToday ? '1px solid rgba(124,58,237,0.25)' : '1px solid rgba(255,255,255,0.04)',
-                opacity: current ? 1 : 0.4,
+                background: isToday ? 'rgba(0,113,227,0.06)' : current ? '#ffffff' : 'transparent',
+                border: isToday ? '1px solid rgba(0,113,227,0.28)' : `1px solid ${current ? 'rgba(0,0,0,0.05)' : 'transparent'}`,
+                opacity: current ? 1 : 0.5,
               }}>
-              <div className={`text-[11px] font-bold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
-                ${isToday ? 'bg-violet-600 text-white text-[10px]' : 'text-white/35'}`}>
+              <div className={`text-[11px] font-semibold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
+                ${isToday ? 'bg-accent text-white text-[10px]' : 'text-ink-muted'}`}>
                 {date.getDate()}
               </div>
               {loading
-                ? i < 7 && <div className="h-8 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }}/>
+                ? i < 7 && <div className="h-8 rounded-md animate-pulse bg-elevated"/>
                 : (
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {dayItems.slice(0, PREVIEW).map(item => (
                       <MiniCard key={item.id} item={item} onClick={onSelect}/>
                     ))}
                     {dayItems.length > PREVIEW && (
                       <button
                         onClick={() => setDayModal({ date, items: dayItems })}
-                        className="text-[9px] font-bold w-full text-center py-1 rounded-lg cursor-pointer transition-all hover:text-white/70"
-                        style={{ background:'rgba(124,58,237,0.1)', color:'rgba(167,139,250,0.7)', border:'1px solid rgba(124,58,237,0.2)' }}>
+                        className="text-[10px] font-semibold w-full text-center py-1 rounded-pill cursor-pointer transition-all bg-accent-soft text-accent-ink hover:bg-accent hover:text-white">
                         +{dayItems.length - PREVIEW} mais
                       </button>
                     )}
@@ -459,24 +454,24 @@ function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={onPrev} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronLeft className="w-4 h-4"/></button>
-        <span className="text-base font-bold text-white font-display min-w-[160px]">{MONTHS_PT[month]} {year}</span>
-        <button onClick={onNext} className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"><ChevronRight className="w-4 h-4"/></button>
-        <span className="text-[11px] text-white/30">{items.length} conteúdos</span>
+        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="t-title text-ink min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="t-small text-ink-muted">{items.length} conteúdos</span>
       </div>
 
       {loading ? (
         <div className="flex gap-4">
           {[...Array(3)].map((_,i) => (
-            <div key={i} className="min-w-[260px] flex-1 h-48 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }}/>
+            <div key={i} className="min-w-[260px] flex-1 h-48 rounded-apple-xl animate-pulse bg-elevated"/>
           ))}
         </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {monthWeeks.length === 0 && noDate.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 w-full">
-              <CalendarDays className="w-10 h-10 text-white/10 mb-3"/>
-              <p className="text-sm text-white/30">Nenhum conteúdo em {MONTHS_PT[month]}</p>
+              <CalendarDays className="w-10 h-10 text-ink-faint mb-3"/>
+              <p className="t-body text-ink-muted">Nenhum conteúdo em {MONTHS_PT[month]}</p>
             </div>
           )}
           {monthWeeks.map(({ monday, items: wi }) => {
@@ -486,16 +481,16 @@ function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
               <div key={isoDate(monday)} className="flex flex-col min-w-[240px] max-w-[280px] flex-1">
                 <div className="flex items-center justify-between mb-2 px-1">
                   <div className="flex items-center gap-2">
-                    {isCurrent && <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"/>}
-                    <p className={`text-xs font-bold ${isCurrent ? 'text-violet-300' : 'text-white/55'}`}>{weekLabel(monday)}</p>
+                    {isCurrent && <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"/>}
+                    <p className={`text-[12px] font-semibold ${isCurrent ? 'text-accent' : 'text-ink-soft'}`}>{weekLabel(monday)}</p>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: isCurrent ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.05)', color: isCurrent ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-pill"
+                    style={{ background: isCurrent ? 'rgba(0,113,227,0.12)' : 'rgba(0,0,0,0.04)', color: isCurrent ? '#0071e3' : '#6b7280' }}>
                     {wi.length}
                   </span>
                 </div>
-                <div className="flex-1 rounded-xl p-2 space-y-1.5 min-h-[80px]"
-                  style={{ background: isCurrent ? 'rgba(124,58,237,0.06)' : 'rgba(255,255,255,0.025)', border: isCurrent ? '1px solid rgba(124,58,237,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="flex-1 rounded-apple-lg p-2 space-y-1.5 min-h-[80px]"
+                  style={{ background: isCurrent ? 'rgba(0,113,227,0.04)' : '#f5f5f7', border: isCurrent ? '1px solid rgba(0,113,227,0.22)' : '1px solid rgba(0,0,0,0.05)' }}>
                   {wi.sort((a,b) => (a.postagem||a.dataGravacao||'') > (b.postagem||b.dataGravacao||'') ? 1 : -1)
                      .map(item => <MiniCard key={item.id} item={item} onClick={onSelect}/>)}
                 </div>
@@ -505,11 +500,10 @@ function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
           {noDate.length > 0 && (
             <div className="flex flex-col min-w-[220px] max-w-[260px]">
               <div className="flex items-center justify-between mb-2 px-1">
-                <p className="text-xs font-bold text-white/30">Sem data</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 text-white/25">{noDate.length}</span>
+                <p className="text-[12px] font-semibold text-ink-muted">Sem data</p>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-elevated text-ink-muted">{noDate.length}</span>
               </div>
-              <div className="flex-1 rounded-xl p-2 space-y-1.5 min-h-[80px]"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.06)' }}>
+              <div className="flex-1 rounded-apple-lg p-2 space-y-1.5 min-h-[80px] bg-elevated border border-dashed border-hairline">
                 {noDate.map(item => <MiniCard key={item.id} item={item} onClick={onSelect}/>)}
               </div>
             </div>
@@ -525,12 +519,12 @@ function FeedView({ items, onSelect, loading }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {loading
-        ? [...Array(8)].map((_,i) => <div key={i} className="h-52 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }}/>)
+        ? [...Array(8)].map((_,i) => <div key={i} className="h-52 rounded-apple-xl animate-pulse bg-elevated"/>)
         : items.length === 0
           ? (
             <div className="col-span-full flex flex-col items-center py-24">
-              <Film className="w-10 h-10 text-white/10 mb-3"/>
-              <p className="text-sm text-white/30">Nenhum conteúdo encontrado</p>
+              <Film className="w-10 h-10 text-ink-faint mb-3"/>
+              <p className="t-body text-ink-muted">Nenhum conteúdo encontrado</p>
             </div>
           )
           : items.map(item => <FeedCard key={item.id} item={item} onClick={onSelect}/>)
@@ -551,8 +545,8 @@ function NewContentModal({ onClose, onCreate }) {
   const [error,        setError]        = useState('');
 
   const memberColors = {
-    Matheus: { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
-    Sávio:   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+    Matheus: { bg:'rgba(139,92,246,0.12)', text:'#7c3aed', border:'rgba(139,92,246,0.3)' },
+    Sávio:   { bg:'rgba(52,199,89,0.12)',  text:'#15803d', border:'rgba(52,199,89,0.3)' },
   };
 
   const submit = async () => {
@@ -572,55 +566,53 @@ function NewContentModal({ onClose, onCreate }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative w-full max-w-lg rounded-2xl flex flex-col overflow-hidden"
-        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 40px 80px rgba(0,0,0,0.6)', maxHeight:'90vh' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
-          <p className="text-base font-bold text-white font-display">Novo conteúdo</p>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"><X className="w-4 h-4"/></button>
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}/>
+      <div className="relative w-full max-w-lg rounded-apple-2xl flex flex-col overflow-hidden bg-surface border border-hairline shadow-apple-xl" style={{ maxHeight:'90vh' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
+          <p className="t-title text-ink">Novo conteúdo</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer"><X className="w-4 h-4"/></button>
         </div>
         <div className="overflow-y-auto px-6 py-5 space-y-5">
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Nome <span className="text-rose-400">*</span></label>
+            <label className="block t-eyebrow text-ink-muted mb-2">Nome <span className="text-err">*</span></label>
             <input autoFocus type="text" value={nome} onChange={e => setNome(e.target.value)} onKeyDown={e => e.key==='Enter' && submit()}
               placeholder="Ex: Reels lançamento novembro"
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/40"
-              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+              className="input"/>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Cliente</label>
+            <label className="block t-eyebrow text-ink-muted mb-2">Cliente</label>
             <div className="flex gap-2">
               {CLIENTS.map(c => {
                 const cc = CLIENT_COLORS[c] || {}; const active = cliente === c;
                 return <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
-                  style={{ background: active ? cc.bg : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? cc.border : 'rgba(255,255,255,0.08)'}`, color: active ? cc.text : 'rgba(255,255,255,0.35)' }}>
+                  className="flex-1 py-2.5 rounded-apple text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all"
+                  style={{ background: active ? cc.bg : '#f5f5f7', border: `1px solid ${active ? cc.border : 'rgba(0,0,0,0.06)'}`, color: active ? cc.text : '#6b7280' }}>
                   {c}
                 </button>;
               })}
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Formato</label>
+            <label className="block t-eyebrow text-ink-muted mb-2">Formato</label>
             <div className="flex flex-wrap gap-2">
               {FORMATOS.map(f => {
-                const active = formato === f; const fc = FORMAT_COLORS[f] || '#a78bfa';
+                const active = formato === f; const fc = FORMAT_COLORS[f] || '#8b5cf6';
                 return <button key={f} type="button" onClick={() => setFormato(active ? '' : f)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-                  style={{ background: active ? `${fc}20` : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? `${fc}40` : 'rgba(255,255,255,0.08)'}`, color: active ? fc : 'rgba(255,255,255,0.35)' }}>
+                  className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
+                  style={{ background: active ? `${fc}18` : '#f5f5f7', border: `1px solid ${active ? `${fc}40` : 'rgba(0,0,0,0.06)'}`, color: active ? fc : '#6b7280' }}>
                   {f}
                 </button>;
               })}
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Responsável</label>
+            <label className="block t-eyebrow text-ink-muted mb-2">Responsável</label>
             <div className="flex gap-2">
               {MEMBERS.map(m => {
                 const c = memberColors[m] || {}; const active = responsavel === m;
                 return <button key={m} type="button" onClick={() => setResponsavel(active ? '' : m)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all"
-                  style={{ background: active ? c.bg : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.08)'}`, color: active ? c.text : 'rgba(255,255,255,0.35)' }}>
+                  className="flex-1 py-2.5 rounded-apple text-sm font-semibold cursor-pointer transition-all"
+                  style={{ background: active ? c.bg : '#f5f5f7', border: `1px solid ${active ? c.border : 'rgba(0,0,0,0.06)'}`, color: active ? c.text : '#6b7280' }}>
                   {m}
                 </button>;
               })}
@@ -629,20 +621,16 @@ function NewContentModal({ onClose, onCreate }) {
           <div className="grid grid-cols-2 gap-3">
             {[['Gravação', dataGravacao, setDataGravacao], ['Postagem', postagem, setPostagem]].map(([lbl, val, set]) => (
               <div key={lbl}>
-                <label className="block text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">{lbl}</label>
-                <input type="date" value={val} onChange={e => set(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 outline-none focus:ring-2 focus:ring-violet-500/30"
-                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', colorScheme:'dark' }}/>
+                <label className="block t-eyebrow text-ink-muted mb-2">{lbl}</label>
+                <input type="date" value={val} onChange={e => set(e.target.value)} className="input"/>
               </div>
             ))}
           </div>
-          {error && <p className="text-xs text-rose-400 px-3 py-2 rounded-xl" style={{ background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.2)' }}>{error}</p>}
+          {error && <p className="text-xs text-err px-3 py-2 rounded-apple bg-err-soft border border-err/20">{error}</p>}
         </div>
-        <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor:'rgba(255,255,255,0.07)' }}>
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-bold cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all" style={{ border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
-          <button onClick={submit} disabled={!nome.trim()||saving}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 hover:brightness-110"
-            style={{ background:'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+        <div className="px-6 py-4 border-t border-hairline flex gap-3">
+          <button onClick={onClose} className="btn btn-secondary flex-1">Cancelar</button>
+          <button onClick={submit} disabled={!nome.trim()||saving} className="btn btn-primary flex-1">
             {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
             {saving ? 'Criando…' : 'Criar conteúdo'}
           </button>
@@ -718,13 +706,11 @@ function UploadZone({ label, accept, multiple = false, onUpload }) {
       <input ref={inputRef} type="file" accept={accept} multiple={multiple} className="hidden"
         onChange={e => handleFiles([...e.target.files])} />
       <button onClick={() => inputRef.current?.click()} disabled={busy}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50 hover:brightness-125 active:scale-[0.98]"
-        style={{ background:'rgba(255,255,255,0.05)', border:'1px dashed rgba(255,255,255,0.15)', color:'rgba(255,255,255,0.4)' }}>
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-apple text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 bg-elevated hover:bg-muted-200 text-ink-soft border border-dashed border-hairline hover:border-accent/30">
         {busy ? <><Loader2 className="w-3.5 h-3.5 animate-spin"/> {prog || 'Enviando…'}</> : <><Upload className="w-3.5 h-3.5"/> {label}</>}
       </button>
       {err && (
-        <p className="text-[11px] text-rose-400 mt-1.5 px-2 py-1.5 rounded-lg leading-snug"
-          style={{ background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.2)' }}>
+        <p className="text-[11px] text-err mt-1.5 px-2 py-1.5 rounded-apple leading-snug bg-err-soft border border-err/20">
           {err}
         </p>
       )}
@@ -811,8 +797,8 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
   const cl = clientColor(cliente || item.cliente);
   const memberColors = {
-    Matheus: { bg:'rgba(124,58,237,0.2)', text:'#a78bfa', border:'rgba(124,58,237,0.4)' },
-    Sávio:   { bg:'rgba(16,185,129,0.2)', text:'#6ee7b7', border:'rgba(16,185,129,0.4)' },
+    Matheus: { bg:'rgba(139,92,246,0.12)', text:'#7c3aed', border:'rgba(139,92,246,0.3)' },
+    Sávio:   { bg:'rgba(52,199,89,0.12)',  text:'#15803d', border:'rgba(52,199,89,0.3)' },
   };
 
   const TABS = [
@@ -825,22 +811,20 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const renderTema = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Título</label>
-        <input type="text" value={nome} onChange={e => setNome(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white outline-none focus:ring-2 focus:ring-violet-500/40"
-          style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Título</label>
+        <input type="text" value={nome} onChange={e => setNome(e.target.value)} className="input"/>
       </div>
 
       {/* Cliente */}
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Cliente</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Cliente</label>
         <div className="flex flex-wrap gap-1.5">
           {availableClients.map(c => {
             const cc = CLIENT_COLORS[c] || {}; const active = nrm(cliente) === nrm(c);
             return (
               <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
-                style={{ background:active?cc.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?cc.border:'rgba(255,255,255,0.08)'}`, color:active?cc.text:'rgba(255,255,255,0.35)' }}>
+                className="px-3 py-1.5 rounded-apple text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all"
+                style={{ background:active?cc.bg:'#f5f5f7', border:`1px solid ${active?cc.border:'rgba(0,0,0,0.06)'}`, color:active?cc.text:'#6b7280' }}>
                 {c}
               </button>
             );
@@ -850,14 +834,14 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
       {/* Formato */}
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Formato</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Formato</label>
         <div className="flex flex-wrap gap-1.5">
           {FORMATOS.map(f => {
-            const fc = FORMAT_COLORS[f] || '#a78bfa'; const active = nrm(formato) === nrm(f);
+            const fc = FORMAT_COLORS[f] || '#8b5cf6'; const active = nrm(formato) === nrm(f);
             return (
               <button key={f} type="button" onClick={() => setFormato(active ? '' : f)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
-                style={{ background:active?`${fc}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${fc}40`:'rgba(255,255,255,0.08)'}`, color:active?fc:'rgba(255,255,255,0.35)' }}>
+                className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
+                style={{ background:active?`${fc}18`:'#f5f5f7', border:`1px solid ${active?`${fc}40`:'rgba(0,0,0,0.06)'}`, color:active?fc:'#6b7280' }}>
                 {f}
               </button>
             );
@@ -867,19 +851,15 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
       {/* Plataforma */}
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Plataforma</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Plataforma</label>
         <div className="flex flex-wrap gap-1.5">
           {['Instagram','TikTok','YouTube','WhatsApp','Facebook','LinkedIn','Pinterest'].map(p => {
-            const PLAT_COLORS = {
-              Instagram:'#e1306c', TikTok:'#69c9d0', YouTube:'#ff0000',
-              WhatsApp:'#25d366', Facebook:'#1877f2', LinkedIn:'#0a66c2', Pinterest:'#e60023',
-            };
-            const pc = PLAT_COLORS[p] || '#a78bfa';
+            const pc = PLAT_COLORS[p] || '#8b5cf6';
             const active = nrm(plataforma) === nrm(p);
             return (
               <button key={p} type="button" onClick={() => setPlataforma(active ? '' : p)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
-                style={{ background:active?`${pc}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${pc}45`:'rgba(255,255,255,0.08)'}`, color:active?pc:'rgba(255,255,255,0.35)' }}>
+                className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
+                style={{ background:active?`${pc}18`:'#f5f5f7', border:`1px solid ${active?`${pc}45`:'rgba(0,0,0,0.06)'}`, color:active?pc:'#6b7280' }}>
                 {p}
               </button>
             );
@@ -888,27 +868,27 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
       </div>
 
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Responsável</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Responsável</label>
         <div className="flex gap-2">
           {MEMBERS.map(m => {
             const c = memberColors[m]||{}; const active = nrm(responsavel)===nrm(m);
             return <button key={m} type="button" onClick={() => setResponsavel(active?'':m)}
-              className="flex-1 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all"
-              style={{ background: active?c.bg:'rgba(255,255,255,0.04)', border:`1px solid ${active?c.border:'rgba(255,255,255,0.08)'}`, color: active?c.text:'rgba(255,255,255,0.35)' }}>
+              className="flex-1 py-2 rounded-apple text-xs font-semibold cursor-pointer transition-all"
+              style={{ background: active?c.bg:'#f5f5f7', border:`1px solid ${active?c.border:'rgba(0,0,0,0.06)'}`, color: active?c.text:'#6b7280' }}>
               {m}
             </button>;
           })}
         </div>
       </div>
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Estado</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Estado</label>
         <div className="grid grid-cols-2 gap-1.5">
           {ESTADO_OPTIONS.map(s => {
             const active = nrm(estado)===nrm(s.value);
             return <button key={s.value} type="button" onClick={() => setEstado(s.value)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold cursor-pointer transition-all text-left"
-              style={{ background: active?`${s.color}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${s.color}40`:'rgba(255,255,255,0.07)'}`, color: active?s.color:'rgba(255,255,255,0.35)' }}>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(255,255,255,0.15)' }}/>
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-apple text-[11px] font-semibold cursor-pointer transition-all text-left"
+              style={{ background: active?`${s.color}14`:'#f5f5f7', border:`1px solid ${active?`${s.color}40`:'rgba(0,0,0,0.06)'}`, color: active?s.color:'#6b7280' }}>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(0,0,0,0.2)' }}/>
               {s.label}
             </button>;
           })}
@@ -917,10 +897,8 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
       <div className="grid grid-cols-2 gap-2">
         {[['Gravação', gravacao, setGravacao], ['Postagem', postagem, setPostagem]].map(([lbl,val,set]) => (
           <div key={lbl}>
-            <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">{lbl}</label>
-            <input type="date" value={val} onChange={e => set(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl text-xs text-white/80 outline-none focus:ring-2 focus:ring-violet-500/30"
-              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', colorScheme:'dark' }}/>
+            <label className="block t-eyebrow text-ink-muted mb-1.5">{lbl}</label>
+            <input type="date" value={val} onChange={e => set(e.target.value)} className="input"/>
           </div>
         ))}
       </div>
@@ -930,31 +908,30 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const renderConteudo = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Estado</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Estado</label>
         <div className="grid grid-cols-2 gap-1.5">
           {CONTEUDO_STATES.map(s => {
             const active = nrm(estadoR)===nrm(s.value);
             return <button key={s.value} type="button" onClick={() => setEstadoR(s.value)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold cursor-pointer transition-all text-left"
-              style={{ background: active?`${s.color}20`:'rgba(255,255,255,0.04)', border:`1px solid ${active?`${s.color}40`:'rgba(255,255,255,0.07)'}`, color: active?s.color:'rgba(255,255,255,0.35)' }}>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(255,255,255,0.15)' }}/>
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-apple text-[11px] font-semibold cursor-pointer transition-all text-left"
+              style={{ background: active?`${s.color}14`:'#f5f5f7', border:`1px solid ${active?`${s.color}40`:'rgba(0,0,0,0.06)'}`, color: active?s.color:'#6b7280' }}>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(0,0,0,0.2)' }}/>
               {s.label}
             </button>;
           })}
         </div>
       </div>
       <div className="flex-1 flex flex-col">
-        <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Roteiro</label>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Roteiro</label>
         <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={11}
           placeholder="Escreva o conteúdo ou roteiro aqui..."
-          className="w-full px-3 py-2.5 rounded-xl text-sm text-white/85 placeholder-white/20 font-medium resize-none outline-none focus:ring-2 focus:ring-violet-500/40 leading-relaxed"
-          style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
-        <p className="text-[10px] text-white/20 mt-1 text-right">{conteudo.length} chars</p>
+          className="input leading-relaxed resize-none"/>
+        <p className="text-[10px] text-ink-faint mt-1 text-right">{conteudo.length} chars</p>
       </div>
       {item.feedbackRoteiro && (
-        <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)' }}>
-          <p className="text-[10px] text-amber-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
-          <p className="text-xs text-amber-300/80 leading-relaxed">{item.feedbackRoteiro}</p>
+        <div className="px-3 py-2.5 rounded-apple bg-warn-soft border border-warn/20">
+          <p className="text-[10px] text-warn-ink font-semibold uppercase tracking-wider mb-1">Feedback</p>
+          <p className="text-xs text-warn-ink leading-relaxed">{item.feedbackRoteiro}</p>
         </div>
       )}
     </div>
@@ -968,28 +945,25 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
       <div className="space-y-3">
         {/* Preview vídeo */}
         {item.linkFicheiro ? (
-          <div className="rounded-xl overflow-hidden aspect-video bg-black"
-            style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-apple-lg overflow-hidden aspect-video bg-black border border-hairline">
             {item.linkFicheiro.includes('drive.google.com')
               ? <iframe src={item.linkFicheiro.replace(/\/view.*$/,'/preview')} className="w-full h-full border-0" allow="autoplay; fullscreen"/>
               : <video src={item.linkFicheiro} controls playsInline className="w-full h-full object-contain"/>
             }
           </div>
         ) : (
-          <div className="rounded-xl aspect-video flex flex-col items-center justify-center gap-2"
-            style={{ background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.08)' }}>
-            <Video className="w-8 h-8 text-white/15"/>
-            <p className="text-xs text-white/25">Nenhum vídeo enviado</p>
+          <div className="rounded-apple-lg aspect-video flex flex-col items-center justify-center gap-2 bg-elevated border border-dashed border-hairline">
+            <Video className="w-8 h-8 text-ink-faint"/>
+            <p className="text-xs text-ink-muted">Nenhum vídeo enviado</p>
           </div>
         )}
         <UploadZone label="Upload vídeo" accept="video/*"
           onUpload={url => saveMedia({ linkFicheiro: url })}/>
         {/* Capa */}
         <div className="pt-1">
-          <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Capa / Thumbnail</label>
+          <label className="block t-eyebrow text-ink-muted mb-1.5">Capa / Thumbnail</label>
           {item.linkCapa && (
-            <div className="mb-2 rounded-xl overflow-hidden aspect-video"
-              style={{ border:'1px solid rgba(255,255,255,0.08)' }}>
+            <div className="mb-2 rounded-apple-lg overflow-hidden aspect-video border border-hairline">
               <img src={item.linkCapa} alt="Capa" className="w-full h-full object-cover"
                 onError={e => { e.target.style.display='none'; }}/>
             </div>
@@ -999,16 +973,14 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
         </div>
         {/* Drive */}
         <div>
-          <label className="block text-[11px] font-bold text-white/35 uppercase tracking-wider mb-1.5">Link Drive (download alta)</label>
+          <label className="block t-eyebrow text-ink-muted mb-1.5">Link Drive (download alta)</label>
           <input type="url" value={linkDrive} onChange={e => setLinkDrive(e.target.value)}
-            placeholder="https://drive.google.com/…"
-            className="w-full px-3 py-2 rounded-xl text-xs text-white/70 placeholder-white/20 outline-none focus:ring-2 focus:ring-violet-500/30"
-            style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}/>
+            placeholder="https://drive.google.com/…" className="input"/>
         </div>
         {item.feedbackCliente && (
-          <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
-            <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
-            <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+          <div className="px-3 py-2.5 rounded-apple bg-warn-soft border border-warn/20">
+            <p className="text-[10px] text-warn-ink font-semibold uppercase tracking-wider mb-1">Feedback</p>
+            <p className="text-xs text-warn-ink leading-relaxed">{item.feedbackCliente}</p>
           </div>
         )}
       </div>
@@ -1017,41 +989,38 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
     if (isCar) return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-bold text-white/35 uppercase tracking-wider">
+          <label className="t-eyebrow text-ink-muted">
             Imagens do Carrossel
           </label>
-          <span className="text-[10px] text-white/25">{galeriaList.length} imagens</span>
+          <span className="text-[10px] text-ink-faint">{galeriaList.length} imagens</span>
         </div>
         {galeriaList.length > 0 ? (
           <div className="grid grid-cols-3 gap-1.5">
             {galeriaList.map((url, i) => (
-              <div key={i} className="relative aspect-square rounded-lg overflow-hidden group"
-                style={{ border:'1px solid rgba(255,255,255,0.07)' }}>
+              <div key={i} className="relative aspect-square rounded-apple overflow-hidden group border border-hairline">
                 <img src={url} alt={`Slide ${i+1}`} className="w-full h-full object-cover"/>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-all flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
                   <button onClick={() => removeGalleryImage(i)}
-                    className="w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    style={{ background:'rgba(244,63,94,0.9)' }}>
+                    className="w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-err">
                     <X className="w-3 h-3 text-white"/>
                   </button>
                 </div>
-                <span className="absolute bottom-0.5 left-1 text-[8px] font-bold text-white/70">{i+1}</span>
+                <span className="absolute bottom-0.5 left-1 text-[8px] font-bold text-white drop-shadow">{i+1}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl aspect-square flex flex-col items-center justify-center gap-2"
-            style={{ background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.08)' }}>
-            <Image className="w-8 h-8 text-white/15"/>
-            <p className="text-xs text-white/25">Nenhuma imagem adicionada</p>
+          <div className="rounded-apple-lg aspect-square flex flex-col items-center justify-center gap-2 bg-elevated border border-dashed border-hairline">
+            <Image className="w-8 h-8 text-ink-faint"/>
+            <p className="text-xs text-ink-muted">Nenhuma imagem adicionada</p>
           </div>
         )}
         <UploadZone label="Adicionar imagens" accept="image/*" multiple
           onUpload={urls => addGalleryImages(Array.isArray(urls) ? urls : [urls])}/>
         {item.feedbackCliente && (
-          <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
-            <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
-            <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+          <div className="px-3 py-2.5 rounded-apple bg-warn-soft border border-warn/20">
+            <p className="text-[10px] text-warn-ink font-semibold uppercase tracking-wider mb-1">Feedback</p>
+            <p className="text-xs text-warn-ink leading-relaxed">{item.feedbackCliente}</p>
           </div>
         )}
       </div>
@@ -1061,26 +1030,24 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
     return (
       <div className="space-y-3">
         {item.linkCapa ? (
-          <div className="rounded-xl overflow-hidden flex items-center justify-center"
-            style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', minHeight:'180px' }}>
+          <div className="rounded-apple-lg overflow-hidden flex items-center justify-center bg-elevated border border-hairline" style={{ minHeight:'180px' }}>
             <img src={item.linkCapa} alt="Imagem"
-              className="w-full object-contain rounded-xl"
+              className="w-full object-contain rounded-apple-lg"
               style={{ maxHeight:'360px' }}
               onError={e => { e.target.style.display='none'; }}/>
           </div>
         ) : (
-          <div className="rounded-xl flex flex-col items-center justify-center gap-2"
-            style={{ background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.08)', minHeight:'180px' }}>
-            <Image className="w-8 h-8 text-white/15"/>
-            <p className="text-xs text-white/25">Nenhuma imagem enviada</p>
+          <div className="rounded-apple-lg flex flex-col items-center justify-center gap-2 bg-elevated border border-dashed border-hairline" style={{ minHeight:'180px' }}>
+            <Image className="w-8 h-8 text-ink-faint"/>
+            <p className="text-xs text-ink-muted">Nenhuma imagem enviada</p>
           </div>
         )}
         <UploadZone label="Upload imagem" accept="image/*"
           onUpload={url => saveMedia({ linkCapa: url })}/>
         {item.feedbackCliente && (
-          <div className="px-3 py-2.5 rounded-xl" style={{ background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.2)' }}>
-            <p className="text-[10px] text-orange-400/60 font-bold uppercase tracking-wider mb-1">Feedback</p>
-            <p className="text-xs text-orange-300/80 leading-relaxed">{item.feedbackCliente}</p>
+          <div className="px-3 py-2.5 rounded-apple bg-warn-soft border border-warn/20">
+            <p className="text-[10px] text-warn-ink font-semibold uppercase tracking-wider mb-1">Feedback</p>
+            <p className="text-xs text-warn-ink leading-relaxed">{item.feedbackCliente}</p>
           </div>
         )}
       </div>
@@ -1089,44 +1056,50 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative w-full flex flex-col rounded-2xl overflow-hidden"
-        style={{ background:'rgba(9,16,30,0.98)', backdropFilter:'blur(32px)', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 40px 80px rgba(0,0,0,0.7)', maxHeight:'92vh', maxWidth:'560px' }}>
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}/>
+      <div className="relative w-full flex flex-col rounded-apple-2xl overflow-hidden bg-surface border border-hairline shadow-apple-xl"
+        style={{ maxHeight:'92vh', maxWidth:'580px' }}>
 
         {/* ── Header ── */}
-        <div className="px-5 pt-4 pb-3 shrink-0">
+        <div className="px-5 pt-4 pb-3 shrink-0 relative">
           {/* Badges row */}
-          <div className="flex items-center gap-2 mb-2 pr-8">
+          <div className="flex items-center gap-2 mb-2 pr-8 flex-wrap">
             {(cliente || item.cliente) && (
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-pill"
                 style={{ background:cl.bg, color:cl.text, border:`1px solid ${cl.border}` }}>
                 {cliente || item.cliente}
               </span>
             )}
             {(formato || item.formato) && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ color: FORMAT_COLORS[formato||item.formato]||'#a78bfa', background: `${FORMAT_COLORS[formato||item.formato]||'#a78bfa'}15`, border:`1px solid ${FORMAT_COLORS[formato||item.formato]||'#a78bfa'}25` }}>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-pill"
+                style={{ color: FORMAT_COLORS[formato||item.formato]||'#8b5cf6', background: `${FORMAT_COLORS[formato||item.formato]||'#8b5cf6'}14`, border:`1px solid ${FORMAT_COLORS[formato||item.formato]||'#8b5cf6'}30` }}>
                 {formato || item.formato}
               </span>
             )}
+            {plataforma && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-pill"
+                style={{ color: PLAT_COLORS[plataforma]||'#8b5cf6', background: `${PLAT_COLORS[plataforma]||'#8b5cf6'}14`, border:`1px solid ${PLAT_COLORS[plataforma]||'#8b5cf6'}30` }}>
+                {plataforma}
+              </span>
+            )}
             {responsavel && (
-              <span className="text-[10px] text-white/40 flex items-center gap-1 ml-1">
+              <span className="text-[11px] text-ink-muted flex items-center gap-1 ml-1">
                 <User className="w-3 h-3"/> {responsavel}
               </span>
             )}
           </div>
           {/* Title */}
-          <h3 className="text-sm font-bold text-white leading-snug mb-1.5 pr-8">{item.nome}</h3>
+          <h3 className="t-title text-ink leading-snug mb-1.5 pr-8">{item.nome}</h3>
           {/* Date */}
           {(item.postagem || item.dataGravacao) && (
             <div className="flex items-center gap-3">
               {item.postagem && (
-                <span className="flex items-center gap-1 text-[11px] text-white/30">
+                <span className="flex items-center gap-1 text-[11px] text-ink-muted">
                   <Clock className="w-3 h-3"/> {fmtFull(item.postagem)}
                 </span>
               )}
               {item.dataGravacao && (
-                <span className="flex items-center gap-1 text-[11px] text-white/30">
+                <span className="flex items-center gap-1 text-[11px] text-ink-muted">
                   <Camera className="w-3 h-3"/> {fmtFull(item.dataGravacao)}
                 </span>
               )}
@@ -1134,36 +1107,36 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
           )}
           {/* Close button */}
           <button onClick={onClose}
-            className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer">
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer">
             <X className="w-4 h-4"/>
           </button>
         </div>
 
         {/* ── Body: left tabs + right content ── */}
-        <div className="flex flex-1 overflow-hidden" style={{ borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-1 overflow-hidden border-t border-hairline">
 
           {/* Left: vertical tab list */}
-          <div className="flex flex-col gap-1.5 p-3 shrink-0 w-[130px]"
-            style={{ borderRight:'1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex flex-col gap-1.5 p-3 shrink-0 w-[130px] border-r border-hairline bg-elevated/50">
             {TABS.map(t => {
               const st      = sectionStatus(item, t.section);
               const meta    = SECTION_STATUS[st];
               const isActive = tab === t.id;
               return (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl cursor-pointer transition-all duration-150 w-full"
+                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-apple-lg cursor-pointer transition-all duration-150 w-full"
                   style={{
-                    background: isActive ? meta.bg : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? meta.border : 'rgba(255,255,255,0.05)'}`,
+                    background: isActive ? '#ffffff' : 'transparent',
+                    border: `1px solid ${isActive ? meta.border : 'transparent'}`,
+                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                   }}>
                   <t.icon className="w-4 h-4"
-                    style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.25)' }}/>
-                  <span className="text-[11px] font-bold leading-none"
-                    style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.45)' }}>
+                    style={{ color: isActive ? meta.color : '#6b7280' }}/>
+                  <span className="text-[11px] font-semibold leading-none"
+                    style={{ color: isActive ? meta.color : '#374151' }}>
                     {t.label}
                   </span>
-                  <span className="text-[9px] font-semibold leading-none"
-                    style={{ color: isActive ? meta.color : 'rgba(255,255,255,0.2)' }}>
+                  <span className="text-[9px] font-medium leading-none"
+                    style={{ color: isActive ? meta.color : '#9ca3af' }}>
                     {meta.label}
                   </span>
                 </button>
@@ -1172,7 +1145,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
           </div>
 
           {/* Right: scrollable content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 bg-surface">
             {tab === 'tema'     && renderTema()}
             {tab === 'conteudo' && renderConteudo()}
             {tab === 'midia'    && renderMidia()}
@@ -1180,18 +1153,16 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex gap-2.5 px-4 py-3 shrink-0"
-          style={{ borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex gap-2.5 px-4 py-3 shrink-0 border-t border-hairline bg-elevated/50">
           <button onClick={handleDelete} disabled={deleting}
             onBlur={() => setTimeout(() => setConfirmDel(false), 200)}
-            className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all disabled:opacity-40"
-            style={{ background: confirmDel?'rgba(244,63,94,0.15)':'rgba(255,255,255,0.05)', border:`1px solid ${confirmDel?'rgba(244,63,94,0.35)':'rgba(255,255,255,0.1)'}`, color: confirmDel?'#fb7185':'rgba(255,255,255,0.5)' }}>
+            className={`btn ${confirmDel ? 'btn-danger' : 'btn-secondary'}`}>
             {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Trash2 className="w-3.5 h-3.5"/>}
             {deleting ? 'Removendo…' : confirmDel ? 'confirmar' : 'excluir'}
           </button>
           <button onClick={save} disabled={!dirty||saving||!nome.trim()}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98]"
-            style={{ background: saved ? 'rgba(16,185,129,0.85)' : 'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+            className={`btn flex-1 ${saved ? 'btn-primary' : 'btn-primary'}`}
+            style={saved ? { background:'#34c759' } : undefined}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : saved ? <CheckCircle2 className="w-4 h-4"/> : <Save className="w-4 h-4"/>}
             {saving ? 'Salvando…' : saved ? 'Salvo!' : 'salvar'}
           </button>
@@ -1293,76 +1264,78 @@ export default function Conteudo() {
 
   return (
     <CRMLayout title="Conteúdo — T3 Studio CRM">
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-canvas">
 
         {/* Top bar */}
-        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b" style={{ borderColor:'rgba(255,255,255,0.05)' }}>
-          <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
+          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
-              <h1 className="text-xl font-bold text-white font-display flex items-center gap-2">
-                <Film className="w-5 h-5 text-cyan-400"/> Esteira de Conteúdo
+              <h1 className="t-title-lg text-ink flex items-center gap-2">
+                <Film className="w-5 h-5 text-accent"/> Esteira de Conteúdo
               </h1>
-              <p className="text-xs text-white/35 mt-0.5">
+              <p className="t-small text-ink-muted mt-0.5">
                 {loading ? '…' : `${content.length} conteúdos`}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {/* New */}
-              <button onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:brightness-110 active:scale-[0.97]"
-                style={{ background:'linear-gradient(135deg,#7c3aed,#0e7490)', border:'1px solid rgba(124,58,237,0.4)' }}>
+              <button onClick={() => setShowNew(true)} className="btn btn-primary btn-sm">
                 <Plus className="w-3.5 h-3.5"/>
                 <span className="hidden sm:inline">Novo</span>
               </button>
 
-              {/* Member toggle */}
-              <div className="flex items-center rounded-xl p-1" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                {[{key:'geral',label:'Geral',icon:LayoutGrid},{key:'minhas',label:'Minhas',icon:User2}].map(({key,label,icon:Icon}) => (
-                  <button key={key} onClick={() => setMemberView(key)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-                    style={{ background: memberView===key?'rgba(124,58,237,0.25)':'transparent', color: memberView===key?'#a78bfa':'rgba(255,255,255,0.35)', border: memberView===key?'1px solid rgba(124,58,237,0.35)':'1px solid transparent' }}>
-                    <Icon className="w-3 h-3"/>
-                    <span className="hidden sm:inline">{label}</span>
-                  </button>
-                ))}
+              {/* Member toggle — segmented control */}
+              <div className="flex items-center bg-elevated rounded-pill p-1">
+                {[{key:'geral',label:'Geral',icon:LayoutGrid},{key:'minhas',label:'Minhas',icon:User2}].map(({key,label,icon:Icon}) => {
+                  const active = memberView===key;
+                  return (
+                    <button key={key} onClick={() => setMemberView(key)}
+                      className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-medium transition-all cursor-pointer
+                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-ink-muted hover:text-ink'}`}>
+                      <Icon className="w-3 h-3"/>
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* View toggle */}
-              <div className="flex items-center rounded-xl p-1" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                {VIEWS.map(({key,label,icon:Icon}) => (
-                  <button key={key} onClick={() => setView(key)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-                    style={{ background: view===key?'rgba(14,165,233,0.2)':'transparent', color: view===key?'#38bdf8':'rgba(255,255,255,0.35)', border: view===key?'1px solid rgba(14,165,233,0.3)':'1px solid transparent' }}>
-                    <Icon className="w-3 h-3"/>
-                    <span className="hidden sm:inline">{label}</span>
-                  </button>
-                ))}
+              {/* View toggle — segmented control */}
+              <div className="flex items-center bg-elevated rounded-pill p-1">
+                {VIEWS.map(({key,label,icon:Icon}) => {
+                  const active = view===key;
+                  return (
+                    <button key={key} onClick={() => setView(key)}
+                      className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-medium transition-all cursor-pointer
+                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-ink-muted hover:text-ink'}`}>
+                      <Icon className="w-3 h-3"/>
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* ── Alternating filter list ── */}
-          <div className="rounded-xl overflow-hidden" style={{ border:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
+          <div className="rounded-apple-xl overflow-hidden border border-hairline bg-surface">
 
             {/* Row 1 — Cliente */}
-            <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none"
-                style={{ borderRight:'1px solid rgba(255,255,255,0.06)', minWidth:100 }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'rgba(167,139,250,0.6)' }}/>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Cliente</span>
+            <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
+                <div className="w-1.5 h-1.5 rounded-full bg-accent"/>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Cliente</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
                 {[{ key:'', label:'Todos', cc:{} }, ...availableClients.map(c => ({ key:c, label:c, cc: CLIENT_COLORS[c]||{} }))].map(({ key, label, cc }) => {
                   const active = nrm(filterCliente).replace(/\s/g,'') === nrm(key).replace(/\s/g,'');
                   return (
                     <button key={key||'todos'} onClick={() => setFilterCliente(active && key ? '' : key)}
-                      className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all duration-150 active:scale-95"
+                      className="shrink-0 px-3 py-1 rounded-pill text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-all duration-150 active:scale-95"
                       style={{
-                        background: active ? (key ? cc.bg : 'rgba(255,255,255,0.14)') : 'transparent',
-                        border: `1px solid ${active ? (key ? cc.border : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.08)'}`,
-                        color: active ? (key ? cc.text : 'white') : 'rgba(255,255,255,0.35)',
-                        boxShadow: active && key ? `0 0 12px ${cc.border}` : 'none',
+                        background: active ? (key ? `${cc.text}14` : '#1d1d1f') : '#f5f5f7',
+                        border: `1px solid ${active ? (key ? `${cc.text}40` : '#1d1d1f') : 'rgba(0,0,0,0.06)'}`,
+                        color: active ? (key ? cc.text : 'white') : '#6b7280',
                       }}>
                       {label}
                     </button>
@@ -1371,34 +1344,32 @@ export default function Conteudo() {
               </div>
               {filterCliente && (
                 <button onClick={() => setFilterCliente('')}
-                  className="shrink-0 mr-3 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer text-white/30 hover:text-white transition-colors"
-                  style={{ background:'rgba(255,255,255,0.06)' }}>
+                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
                   <X className="w-3 h-3"/>
                 </button>
               )}
             </div>
 
-            {/* Row 2 — Plataforma (always visible; shows placeholder if no data) */}
+            {/* Row 2 — Plataforma */}
             <div className="flex items-center">
-              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none"
-                style={{ borderRight:'1px solid rgba(255,255,255,0.06)', minWidth:100 }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'rgba(34,211,238,0.5)' }}/>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Plataforma</span>
+              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'#8b5cf6' }}/>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Plataforma</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
                 {availablePlatforms.length === 0 ? (
-                  <span className="text-[10px] text-white/18 italic">Nenhuma plataforma cadastrada no Notion</span>
+                  <span className="text-[11px] text-ink-faint italic">Nenhuma plataforma cadastrada no Notion</span>
                 ) : (
                   [{ key:'', label:'Todas' }, ...availablePlatforms.map(p => ({ key:p, label:p }))].map(({ key, label }) => {
                     const active = nrm(filterPlataforma) === nrm(key);
+                    const pc = PLAT_COLORS[label] || '#8b5cf6';
                     return (
                       <button key={key||'todas'} onClick={() => setFilterPlataforma(active && key ? '' : key)}
-                        className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-semibold cursor-pointer transition-all duration-150 active:scale-95"
+                        className="shrink-0 px-3 py-1 rounded-pill text-[11px] font-semibold cursor-pointer transition-all duration-150 active:scale-95"
                         style={{
-                          background: active ? (key ? 'rgba(34,211,238,0.15)' : 'rgba(255,255,255,0.12)') : 'transparent',
-                          border: `1px solid ${active ? (key ? 'rgba(34,211,238,0.35)' : 'rgba(255,255,255,0.22)') : 'rgba(255,255,255,0.08)'}`,
-                          color: active ? (key ? '#22d3ee' : 'white') : 'rgba(255,255,255,0.35)',
-                          boxShadow: active && key ? '0 0 10px rgba(34,211,238,0.15)' : 'none',
+                          background: active ? (key ? `${pc}14` : '#1d1d1f') : '#f5f5f7',
+                          border: `1px solid ${active ? (key ? `${pc}40` : '#1d1d1f') : 'rgba(0,0,0,0.06)'}`,
+                          color: active ? (key ? pc : 'white') : '#6b7280',
                         }}>
                         {label}
                       </button>
@@ -1408,8 +1379,7 @@ export default function Conteudo() {
               </div>
               {filterPlataforma && (
                 <button onClick={() => setFilterPlataforma('')}
-                  className="shrink-0 mr-3 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer text-white/30 hover:text-white transition-colors"
-                  style={{ background:'rgba(255,255,255,0.06)' }}>
+                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
                   <X className="w-3 h-3"/>
                 </button>
               )}
