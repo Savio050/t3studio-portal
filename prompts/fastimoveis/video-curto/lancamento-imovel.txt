@@ -50,3 +50,5 @@ EXEMPLO DE ROTEIRO
 
 [ENCERRAMENTO]
 "Condições especiais de lançamento. Fale com a Fastimoveis pelo link na bio."
+
+regras: não use emojis, não use negrito. não coloque nenhum texto de instrução de gravação ou sugestão de cena. Apenas entregue o texto do roteiro com a divisão entre gancho, desenvolvimento e cta.
