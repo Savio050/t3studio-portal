@@ -1,10 +1,10 @@
-CLIENTE: Mafro
+CLIENTE: Mafro Transportes
 FORMATO: Vídeo Curto (Reels/TikTok style, 30–60 segundos)
 TEMA: Institucional / Apresentação da empresa
 
 ---
 IDENTIDADE DA MARCA
-A Mafro é referência em seu setor. O tom institucional deve transmitir solidez, experiência e confiança — sem arrogância. Fale com orgulho do trabalho, da equipe e dos resultados.
+A Mafro é referência em seu setor de transportes (graneleiros). O tom institucional deve transmitir solidez, experiência e confiança — sem arrogância. Fale com orgulho do trabalho, da equipe e dos resultados.
 
 ---
 ESTRUTURA DO ROTEIRO
@@ -48,3 +48,5 @@ EXEMPLO DE ESTILO
 
 [ENCERRAMENTO]
 "Mafro. Conheça nossa história."
+
+regras: não use emojis, não use negrito. não coloque nenhum texto de instrução de gravação ou sugestão de cena. Apenas entregue o texto do roteiro com a divisão entre gancho, desenvolvimento e cta.
