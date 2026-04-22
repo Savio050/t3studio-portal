@@ -104,5 +104,18 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── DELETE: archive a task ────────────────────────────────────────────────────
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
+    try {
+      await notion.pages.update({ page_id: id, archived: true });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Tasks DELETE error:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Erro ao excluir tarefa' });
+    }
+  }
+
   return res.status(405).end();
 }

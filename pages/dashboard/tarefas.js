@@ -307,8 +307,14 @@ export default function Tarefas() {
   };
 
   const deleteTask = async (id) => {
-    // Archive (Notion doesn't hard-delete, so we just remove from local state)
+    // Optimistic removal from UI
     setTasks(prev => prev.filter(t => t.id !== id));
+    // Archive in Notion
+    await fetch('/api/crm/tasks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
   };
 
   const createTask = async (data) => {
