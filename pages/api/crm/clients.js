@@ -76,41 +76,58 @@ export default async function handler(req, res) {
       queryAll(CONTENT_DB),
     ]);
 
-    // Build content stats per client
-    const contentByClient = {};
+    // Normalize helper: lowercase + remove accents + remove spaces → used as dedup key
+    const normalize = s => (s || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '');
+
+    // Build content stats keyed by NORMALIZED client name
+    const contentByKey = {};
     allContent.forEach(page => {
-      const cliente = getProp(page.properties['Cliente']) || '';
+      const cliente   = getProp(page.properties['Cliente']) || '';
       const idCliente = getProp(page.properties['ID do Cliente']) || '';
-      const estado  = getProp(page.properties['Estado']) || '';
+      const estado    = getProp(page.properties['Estado']) || '';
       if (!cliente) return;
-      if (!contentByClient[cliente]) {
-        contentByClient[cliente] = {
-          id: idCliente,
-          total: 0,
-          approved: 0,
-          awaitingApproval: 0,
-          inProduction: 0,
-          done: 0,
-        };
+
+      const key = normalize(cliente);
+      if (!contentByKey[key]) {
+        contentByKey[key] = { id: idCliente, total: 0, approved: 0, awaitingApproval: 0, inProduction: 0, done: 0 };
       }
-      contentByClient[cliente].total++;
-      const s = estado.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      if (s.includes('aguardando'))     contentByClient[cliente].awaitingApproval++;
-      else if (s === 'aprovado')        contentByClient[cliente].approved++;
-      else if (s.includes('producao') || s.includes('produção')) contentByClient[cliente].inProduction++;
-      else if (s === 'concluido' || s === 'concluído') contentByClient[cliente].done++;
+      contentByKey[key].total++;
+      const s = estado.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (s.includes('aguardando'))                                    contentByKey[key].awaitingApproval++;
+      else if (s === 'aprovado')                                       contentByKey[key].approved++;
+      else if (s.includes('producao') || s.includes('producao'))       contentByKey[key].inProduction++;
+      else if (s === 'concluido' || s === 'concluido')                 contentByKey[key].done++;
     });
 
-    // Also collect clients that appear in content but not in sectors
-    const allClientNames = new Set([
-      ...sectors.map(p => getProp(p.properties['Nome']) || '').filter(Boolean),
-      ...Object.keys(contentByClient),
-    ]);
+    // Build canonical client map keyed by normalized name.
+    // Sectors DB entries are authoritative — their name wins over content's client field.
+    const canonicalMap = {}; // key → { nome, sectorPage }
 
-    const clients = Array.from(allClientNames).map(nome => {
-      const sectorPage = sectors.find(p => (getProp(p.properties['Nome']) || '').toLowerCase() === nome.toLowerCase());
-      const stats = contentByClient[nome] || contentByClient[nome.toLowerCase()] || { total: 0, approved: 0, awaitingApproval: 0, inProduction: 0, done: 0, id: '' };
+    sectors.forEach(p => {
+      const nome = getProp(p.properties['Nome']) || '';
+      if (!nome) return;
+      const key = normalize(nome);
+      // Sectors DB may itself have duplicates — keep only the first occurrence
+      if (!canonicalMap[key]) canonicalMap[key] = { nome, sectorPage: p };
+    });
 
+    // Add any client names from content that don't already have a sectors record
+    Object.keys(contentByKey).forEach(key => {
+      if (!canonicalMap[key]) {
+        // Recover original display name from content (use first occurrence)
+        const original = allContent.find(page => {
+          const c = getProp(page.properties['Cliente']) || '';
+          return normalize(c) === key;
+        });
+        const rawName = getProp(original?.properties['Cliente']) || key;
+        canonicalMap[key] = { nome: rawName, sectorPage: null };
+      }
+    });
+
+    const clients = Object.entries(canonicalMap).map(([key, { nome, sectorPage }]) => {
+      const stats = contentByKey[key] || { total: 0, approved: 0, awaitingApproval: 0, inProduction: 0, done: 0, id: '' };
       return {
         id:               sectorPage?.id || nome,
         nome,
