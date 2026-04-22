@@ -370,31 +370,48 @@ function SmartMedia({ item, showDownload }) {
 
   // ── VIDEO (video curto, Reels, TikTok, YouTube) ──
   if (fmtIsVideo(item.formato)) {
+    const covers = [item.linkCapa, item.linkCapa2, item.linkCapa3].filter(Boolean);
+    const hasCovers = covers.length > 0;
+
     return (
       <div className="px-4 pb-4 space-y-3">
-        {item.linkFicheiro
-          ? <VideoPlayer src={item.linkFicheiro} poster={coverUrl || undefined} />
-          : coverUrl
-            ? <img src={coverUrl} alt={item.nome}
-                className="w-full rounded-xl object-cover max-h-64" />
-            : (
-              <div className="w-full aspect-video rounded-xl bg-gray-100
-                flex flex-col items-center justify-center gap-2">
-                <Film className="w-10 h-10 text-gray-300" />
-                <span className="text-xs text-gray-400 font-medium">Vídeo em produção</span>
-              </div>
-            )
-        }
-        {showDownload && item.linkDrive && (
-          <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
-              bg-green-500 hover:bg-green-600 text-white
-              text-sm font-black uppercase tracking-widest
-              active:scale-[0.98] transition-all duration-150
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
-            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
-          </a>
-        )}
+        <div className={hasCovers ? 'flex gap-3 items-start' : undefined}>
+          {/* Video column */}
+          <div className={`flex flex-col gap-2 ${hasCovers ? 'flex-[2] min-w-0' : 'w-full'}`}>
+            {item.linkFicheiro
+              ? <VideoPlayer src={item.linkFicheiro} poster={coverUrl || undefined} />
+              : coverUrl
+                ? <img src={coverUrl} alt={item.nome}
+                    className="w-full rounded-xl object-cover max-h-64" />
+                : (
+                  <div className="w-full aspect-video rounded-xl bg-gray-100
+                    flex flex-col items-center justify-center gap-2">
+                    <Film className="w-10 h-10 text-gray-300" />
+                    <span className="text-xs text-gray-400 font-medium">Vídeo em produção</span>
+                  </div>
+                )
+            }
+            {showDownload && item.linkDrive && (
+              <a href={item.linkDrive} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer
+                  bg-green-500 hover:bg-green-600 text-white
+                  text-sm font-black uppercase tracking-widest
+                  active:scale-[0.98] transition-all duration-150
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
+                <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+              </a>
+            )}
+          </div>
+
+          {/* Covers column — shown when at least one cover exists */}
+          {hasCovers && (
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              {covers.map((url, i) => (
+                <CapaThumb key={i} url={url} label={`CAPA ${i + 1}`} showDownload={showDownload} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -527,7 +544,8 @@ function CapaThumb({ url, label, showDownload }) {
 
 function MediaGrid({ item, showDownload = false }) {
   const embedUrl  = getEmbedUrl(item.linkFicheiro);
-  const hasCovers = item.linkCapa || item.linkCapa2;
+  const covers = [item.linkCapa, item.linkCapa2, item.linkCapa3].filter(Boolean);
+  const hasCovers = covers.length > 0;
 
   return (
     <div className="px-4 pb-4 flex gap-3">
@@ -559,9 +577,10 @@ function MediaGrid({ item, showDownload = false }) {
 
       {/* Capas */}
       {hasCovers && (
-        <div className="flex-1 flex gap-2">
-          {item.linkCapa  && <CapaThumb url={item.linkCapa}  label="CAPA 1" showDownload={showDownload} />}
-          {item.linkCapa2 && <CapaThumb url={item.linkCapa2} label="CAPA 2" showDownload={showDownload} />}
+        <div className="flex-1 flex flex-col gap-2">
+          {covers.map((url, i) => (
+            <CapaThumb key={i} url={url} label={`CAPA ${i + 1}`} showDownload={showDownload} />
+          ))}
         </div>
       )}
     </div>
@@ -963,13 +982,13 @@ export default function Home() {
   // REVISÃO: aceita variações de "aguardando/aguardado aprovação" + tem mídia
   const reviewItems = contents.filter(item =>
     isAwaitingApproval(item.estado) &&
-    (item.linkFicheiro || item.linkCapa || item.linkCapa2)
+    (item.linkFicheiro || item.linkCapa || item.linkCapa2 || item.linkCapa3)
   );
 
   // DOWNLOADS: aprovados/concluídos com mídia
   const allApproved = contents.filter(item =>
     isDone(item.estado) &&
-    (item.linkFicheiro || item.linkCapa || item.linkCapa2)
+    (item.linkFicheiro || item.linkCapa || item.linkCapa2 || item.linkCapa3)
   );
 
   // Parse mês/ano de cada item para os filtros

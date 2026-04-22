@@ -1046,17 +1046,45 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
         )}
         <UploadZone label="Upload vídeo" accept="video/*"
           onUpload={url => saveMedia({ linkFicheiro: url })}/>
-        {/* Capa */}
-        <div className="pt-1">
-          <label className="block t-eyebrow text-ink-muted mb-1.5">Capa / Thumbnail</label>
-          {item.linkCapa && (
-            <div className="mb-2 rounded-apple-lg overflow-hidden aspect-video border border-hairline">
-              <img src={item.linkCapa} alt="Capa" className="w-full h-full object-cover"
-                onError={e => { e.target.style.display='none'; }}/>
-            </div>
-          )}
-          <UploadZone label="Upload capa" accept="image/*"
-            onUpload={url => saveMedia({ linkCapa: url })}/>
+        {/* Capas */}
+        <div className="pt-1 space-y-2">
+          <label className="block t-eyebrow text-ink-muted">Capas / Thumbnails</label>
+          {/* Capa 1 */}
+          <div>
+            <p className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider mb-1">Capa 1</p>
+            {item.linkCapa && (
+              <div className="mb-1.5 rounded-apple overflow-hidden aspect-video border border-hairline">
+                <img src={item.linkCapa} alt="Capa 1" className="w-full h-full object-cover"
+                  onError={e => { e.target.style.display='none'; }}/>
+              </div>
+            )}
+            <UploadZone label="Upload capa 1" accept="image/*"
+              onUpload={url => saveMedia({ linkCapa: url })}/>
+          </div>
+          {/* Capa 2 */}
+          <div>
+            <p className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider mb-1">Capa 2</p>
+            {item.linkCapa2 && (
+              <div className="mb-1.5 rounded-apple overflow-hidden aspect-video border border-hairline">
+                <img src={item.linkCapa2} alt="Capa 2" className="w-full h-full object-cover"
+                  onError={e => { e.target.style.display='none'; }}/>
+              </div>
+            )}
+            <UploadZone label="Upload capa 2" accept="image/*"
+              onUpload={url => saveMedia({ linkCapa2: url })}/>
+          </div>
+          {/* Capa 3 */}
+          <div>
+            <p className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider mb-1">Capa 3</p>
+            {item.linkCapa3 && (
+              <div className="mb-1.5 rounded-apple overflow-hidden aspect-video border border-hairline">
+                <img src={item.linkCapa3} alt="Capa 3" className="w-full h-full object-cover"
+                  onError={e => { e.target.style.display='none'; }}/>
+              </div>
+            )}
+            <UploadZone label="Upload capa 3" accept="image/*"
+              onUpload={url => saveMedia({ linkCapa3: url })}/>
+          </div>
         </div>
         {/* Drive */}
         <div>

@@ -59,6 +59,7 @@ export default async function handler(req, res) {
         linkDrive: getPropertyValue(props['Link Drive']) || null,
         linkCapa: getPropertyValue(props['Link da Capa']) || null,
         linkCapa2: getPropertyValue(props['linkcapa2']) || null,
+        linkCapa3: getPropertyValue(props['linkcapa3']) || null,
         galeria: getPropertyValue(props['Galeria']) || '',
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
       };

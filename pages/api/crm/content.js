@@ -54,6 +54,7 @@ function mapContent(page) {
     linkFicheiro:     getProp(p['Link do Ficheiro'])    || null,
     linkCapa:         getProp(p['Link da Capa'])        || null,
     linkCapa2:        getProp(p['linkcapa2'])           || null,
+    linkCapa3:        getProp(p['linkcapa3'])           || null,
     galeria:          getProp(p['Galeria'])             || '',
     linkDrive:        getProp(p['Link Drive'])          || null,
     idCliente:        getProp(p['ID do Cliente'])       || '',
@@ -137,7 +138,7 @@ export default async function handler(req, res) {
     const {
       id, estado, estadoRoteiro, feedbackCliente, feedbackRoteiro,
       postagem, responsavel, nome, conteudo, galeria, linkDrive,
-      linkFicheiro, linkCapa, plataforma, formato, cliente,
+      linkFicheiro, linkCapa, linkCapa2, linkCapa3, plataforma, formato, cliente,
     } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
@@ -154,7 +155,9 @@ export default async function handler(req, res) {
       if (galeria !== undefined)     properties['Galeria']             = { rich_text: [{ text: { content: galeria } }] };
       if (linkDrive !== undefined)   properties['Link Drive']          = { url: linkDrive || null };
       if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
-      if (linkCapa !== undefined)     properties['Link da Capa']       = { url: linkCapa || null };
+      if (linkCapa  !== undefined)    properties['Link da Capa']       = { url: linkCapa  || null };
+      if (linkCapa2 !== undefined)    properties['linkcapa2']          = { url: linkCapa2 || null };
+      if (linkCapa3 !== undefined)    properties['linkcapa3']          = { url: linkCapa3 || null };
       if (plataforma !== undefined)   properties['plataforma']         = { select: plataforma ? { name: plataforma } : null };
       if (formato)                    properties['Formato']            = { select: { name: formato } };
       if (cliente)                    properties['Cliente']            = { select: { name: cliente } };
