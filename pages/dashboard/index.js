@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import CRMLayout from '../../components/crm/Layout';
 import {
   CheckSquare, Film, Users, TrendingUp, AlertCircle,
-  ChevronRight, ArrowUpRight, CheckCircle2, Calendar,
+  ChevronRight, ArrowUpRight, CheckCircle2, Calendar, Activity,
 } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -231,6 +231,37 @@ export default function Dashboard() {
     })
     .slice(0, 4);
 
+  // ── Team Capacity ────────────────────────────────────────────────────────
+  const MEMBERS = ['Matheus', 'Sávio'];
+  const CAPACITY_MAX = 30;
+
+  const MEMBER_COLORS = {
+    'Matheus': { bg: '#7c3aed', initials: 'MA' },
+    'Sávio':   { bg: '#0284c7', initials: 'SA' },
+  };
+
+  const isInProgress = (item) => {
+    const s = (item.estado || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    return !s.includes('concluido') && !s.includes('postado');
+  };
+
+  const zone = (pts) => {
+    if (pts >= 25) return { color: '#ff3b30', label: 'Sobrecarregado', bg: 'rgba(255,59,48,0.08)' };
+    if (pts >= 15) return { color: '#ff9500', label: 'Ocupado',        bg: 'rgba(255,149,0,0.08)' };
+    return           { color: '#34c759', label: 'Disponível',      bg: 'rgba(52,199,89,0.08)' };
+  };
+
+  const capacity = useMemo(() => {
+    const map = {};
+    MEMBERS.forEach(m => { map[m] = 0; });
+    content.filter(isInProgress).forEach(c => {
+      const pts = parseInt(c.pontos) || 1;
+      const resp = (c.responsavel || '').trim();
+      if (map[resp] !== undefined) map[resp] += pts;
+    });
+    return map;
+  }, [content]);
+
   const statCards = [
     {
       icon: CheckSquare,
@@ -393,6 +424,79 @@ export default function Dashboard() {
                 <ChevronRight className="w-4 h-4 text-muted-300 group-hover:text-ink-muted transition-colors" />
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* ── Capacidade da Equipe ── */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-4 h-4 text-accent" strokeWidth={2} />
+            <p className="t-eyebrow">Capacidade da Equipe</p>
+          </div>
+
+          <div className="card p-6">
+            {loading ? (
+              <div className="space-y-5">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-4 w-32 bg-elevated rounded animate-pulse" />
+                    <div className="h-3 w-full bg-elevated rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="space-y-5">
+                  {MEMBERS.map((member) => {
+                    const pts = capacity[member] ?? 0;
+                    const pct = Math.min(pts / CAPACITY_MAX, 1) * 100;
+                    const { color, label, bg } = zone(pts);
+                    const avatar = MEMBER_COLORS[member];
+
+                    return (
+                      <div key={member}>
+                        <div className="flex items-center gap-3 mb-2">
+                          {/* Avatar */}
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-[11px] font-bold tracking-wide"
+                            style={{ background: avatar?.bg ?? '#888' }}>
+                            {avatar?.initials ?? member.slice(0, 2).toUpperCase()}
+                          </div>
+
+                          {/* Name + pts */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[14px] font-medium text-ink">{member}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[13px] text-ink-muted tabular">{pts} pts</span>
+                                <span
+                                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                                  style={{ color, background: bg }}>
+                                  {label}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="h-2 w-full rounded-full bg-elevated overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, background: color }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <p className="text-[11px] text-ink-faint mt-5 pt-4 border-t border-[rgba(0,0,0,0.06)]">
+                  1pt = Post &nbsp;·&nbsp; 2pts = Carrossel &nbsp;·&nbsp; 3pts = Vídeo &nbsp;·&nbsp; 4pts = Edição &nbsp;·&nbsp; 5pts = Hero
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
