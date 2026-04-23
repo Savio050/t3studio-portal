@@ -66,6 +66,13 @@ const fmtShort  = d => { if (!d) return null; const [,m,day] = d.split('-'); ret
 const fmtFull   = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
 const isoDate   = d => d.toISOString().slice(0, 10);
 
+const isSlaBreached = (item) => {
+  if (!item.lastEditedTime) return false;
+  const n = (item.estado || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (n.includes('concluido') || n.includes('postado') || n === 'aprovado') return false;
+  return (Date.now() - new Date(item.lastEditedTime)) / 3_600_000 > 48;
+};
+
 function sectionStatus(item, section) {
   const e = nrm(item.estado);
   const r = nrm(item.estadoRoteiro);
@@ -165,6 +172,7 @@ function MiniCard({ item, onClick }) {
           <span className="text-[9px] font-semibold truncate tracking-apple-snug" style={{ color: fmtColor }}>{item.formato}</span>
         )}
         <div className="w-1.5 h-1.5 rounded-full ml-auto shrink-0" style={{ background: stMeta?.color || '#8e8e93' }}/>
+        {isSlaBreached(item) && <span title="Parado há +48h" className="text-[#ff9500]">⚠</span>}
       </div>
       <p className="text-[10px] text-ink-soft leading-tight line-clamp-2 font-medium">{item.nome}</p>
     </button>
@@ -289,6 +297,12 @@ function FeedCard({ item, onClick }) {
           </span>
         )}
         <p className="text-[13px] font-semibold text-ink leading-snug line-clamp-2 mb-3 tracking-apple-snug">{item.nome}</p>
+        {isSlaBreached(item) && (
+          <div className="flex items-center gap-1 mb-2">
+            <AlertTriangle className="w-3 h-3 text-[#ff9500]" />
+            <span className="text-[10px] font-semibold text-[#ff9500]">Parado há +48h</span>
+          </div>
+        )}
 
         {/* Section status row */}
         <div className="grid grid-cols-3 gap-1">
@@ -744,6 +758,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const [postagem,    setPostagem]    = useState(item.postagem || '');
   const [gravacao,    setGravacao]    = useState(item.dataGravacao || '');
   const [linkDrive,   setLinkDrive]   = useState(item.linkDrive || '');
+  const [pontos,      setPontos]      = useState(item.pontos || '');
   const [galeriaList, setGaleriaList] = useState(() =>
     item.galeria ? item.galeria.split(',').map(u => u.trim()).filter(Boolean) : []
   );
@@ -808,6 +823,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
     setConteudo(item.conteudo||''); setPostagem(item.postagem||'');
     setGravacao(item.dataGravacao||''); setLinkDrive(item.linkDrive||'');
     setGaleriaList(item.galeria ? item.galeria.split(',').map(u => u.trim()).filter(Boolean) : []);
+    setPontos(item.pontos||'');
     setTab('tema');
   }, [item.id]);
 
@@ -816,12 +832,12 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
     responsavel !== (item.responsavel||'') ||
     estado !== (item.estado||'') || estadoR !== (item.estadoRoteiro||'') ||
     conteudo !== (item.conteudo||'') || postagem !== (item.postagem||'') ||
-    gravacao !== (item.dataGravacao||'') || linkDrive !== (item.linkDrive||'');
+    gravacao !== (item.dataGravacao||'') || linkDrive !== (item.linkDrive||'') || pontos !== (item.pontos||'');
 
   const save = async () => {
     if (!nome.trim() || saving) return;
     setSaving(true);
-    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, plataforma: plataforma||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined });
+    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, plataforma: plataforma||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined, pontos: pontos||undefined });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
@@ -941,6 +957,30 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
               {s.label}
             </button>;
           })}
+        </div>
+      </div>
+      {/* Pontos de Esforço */}
+      <div>
+        <label className="block t-eyebrow text-ink-muted mb-1.5">Pontos de Esforço</label>
+        <div className="flex gap-1.5">
+          {[
+            { v:'1', label:'1', desc:'Post/Story' },
+            { v:'2', label:'2', desc:'Carrossel' },
+            { v:'3', label:'3', desc:'Vídeo' },
+            { v:'4', label:'4', desc:'Edição' },
+            { v:'5', label:'5', desc:'Hero' },
+          ].map(opt => (
+            <button key={opt.v} type="button"
+              onClick={() => setPontos(pontos === opt.v ? '' : opt.v)}
+              title={opt.desc}
+              className={`flex-1 py-1.5 rounded-apple text-[11px] font-bold cursor-pointer transition-all flex flex-col items-center gap-0.5
+                ${pontos === opt.v
+                  ? 'bg-accent text-white border border-accent'
+                  : 'bg-elevated text-ink-muted border border-hairline hover:bg-surface'}`}>
+              <span>{opt.label}</span>
+              <span className="text-[9px] font-normal opacity-70 leading-none">{opt.desc}</span>
+            </button>
+          ))}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
