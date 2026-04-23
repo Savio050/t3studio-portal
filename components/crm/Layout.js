@@ -4,13 +4,14 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
-  ExternalLink, Menu, X, Bot, Search, Bell,
+  ExternalLink, Menu, X, Bot, Search, Bell, Megaphone,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'  },
   { href: '/dashboard/tarefas',     icon: CheckSquare,     label: 'Tarefas'    },
   { href: '/dashboard/conteudo',    icon: Film,            label: 'Conteúdo'   },
+  { href: '/dashboard/campanhas',   icon: Megaphone,       label: 'Campanhas'  },
   { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
   { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
   { href: '/dashboard/assistente',  icon: Bot,             label: 'Assistente', highlight: true },
@@ -100,12 +101,12 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           {/* Nav */}
           <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
             <p className="px-3 pt-2 pb-1.5 t-eyebrow text-[10px]">Trabalho</p>
-            {NAV.slice(0, 5).map(item => (
+            {NAV.slice(0, 6).map(item => (
               <NavItem key={item.href} {...item} active={isActive(item.href)} />
             ))}
 
             <p className="px-3 pt-5 pb-1.5 t-eyebrow text-[10px]">Ferramentas</p>
-            {NAV.slice(5).map(item => (
+            {NAV.slice(6).map(item => (
               <NavItem key={item.href} {...item} active={isActive(item.href)} />
             ))}
           </nav>
@@ -180,13 +181,13 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
               <div className="mx-4 mb-3 hairline" />
               <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
                 <p className="px-3 pt-1 pb-1.5 t-eyebrow text-[10px]">Trabalho</p>
-                {NAV.slice(0, 5).map(item => (
+                {NAV.slice(0, 6).map(item => (
                   <NavItem key={item.href} {...item}
                     active={isActive(item.href)}
                     onClick={() => setSidebarOpen(false)} />
                 ))}
                 <p className="px-3 pt-4 pb-1.5 t-eyebrow text-[10px]">Ferramentas</p>
-                {NAV.slice(5).map(item => (
+                {NAV.slice(6).map(item => (
                   <NavItem key={item.href} {...item}
                     active={isActive(item.href)}
                     onClick={() => setSidebarOpen(false)} />

@@ -5,6 +5,7 @@ import {
   Plus, Film, CheckSquare, Search, Zap,
   Check, Copy, RotateCcw, ChevronRight,
   FilePlus, ListTodo, AlertCircle, Trash2, PenLine,
+  BarChart2,
 } from 'lucide-react';
 
 // ── Action label helpers ──────────────────────────────────────────────────────
@@ -19,11 +20,11 @@ const ACTION_META = {
 
 // ── Quick suggestions ─────────────────────────────────────────────────────────
 const SUGGESTIONS = [
+  { icon: BarChart2,  label: 'Briefing diário',                            prompt: 'Analise o estado atual de toda a esteira de conteúdo e das tarefas abertas. Identifique gargalos, conteúdos parados na mesma etapa por mais de 48h, e gere um resumo executivo com o que a equipe precisa priorizar hoje. Seja específico com nomes de clientes e conteúdos.' },
   { icon: Film,       label: 'Quais conteúdos estão pendentes?',           prompt: 'Quais conteúdos estão pendentes ou não iniciados?' },
   { icon: AlertCircle,label: 'O que está aguardando cliente?',              prompt: 'Liste os conteúdos que estão aguardando aprovação do cliente.' },
   { icon: CheckSquare,label: 'Resumo das tarefas abertas',                 prompt: 'Me dê um resumo das tarefas em aberto da equipe.' },
   { icon: Plus,       label: 'Criar um Reels para mafro',                  prompt: 'Crie um novo conteúdo Reels para o cliente mafro, responsável Sávio.' },
-  { icon: Search,     label: 'Conteúdos de fastimoveis este mês',          prompt: 'Listar os conteúdos de fastimoveis para este mês.' },
   { icon: Zap,        label: 'O que devo fazer hoje?',                     prompt: 'Com base na esteira e tarefas, o que a equipe deveria priorizar hoje?' },
 ];
 
