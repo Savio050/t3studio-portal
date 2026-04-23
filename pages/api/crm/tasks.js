@@ -42,6 +42,7 @@ function mapTask(page) {
     responsavel:  getProp(p['Responsável']) || [],
     dataEntrega:  getProp(p['Data de entrega']),
     cliente:      getProp(p['cliente']) || '',
+    notas:        getProp(p['Notas']) || '',
     criadoEm:     getProp(p['Criado em']) || page.created_time,
   };
 }
@@ -85,16 +86,17 @@ export default async function handler(req, res) {
 
   // ── PATCH: update a task ──────────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { id, status, responsavel, dataEntrega, cliente, nome } = req.body || {};
+    const { id, status, responsavel, dataEntrega, cliente, nome, notas } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório' });
 
     try {
       const properties = {};
-      if (status)      properties['Status'] = { status: { name: status } };
-      if (nome)        properties['Nome']   = { title: [{ text: { content: nome } }] };
-      if (responsavel) properties['Responsável'] = { multi_select: responsavel.map(r => ({ name: r })) };
-      if (dataEntrega) properties['Data de entrega'] = { date: { start: dataEntrega } };
-      if (cliente)     properties['cliente'] = { select: { name: cliente } };
+      if (status)            properties['Status']        = { status: { name: status } };
+      if (nome)              properties['Nome']          = { title: [{ text: { content: nome } }] };
+      if (responsavel)       properties['Responsável']   = { multi_select: responsavel.map(r => ({ name: r })) };
+      if (dataEntrega)       properties['Data de entrega'] = { date: { start: dataEntrega } };
+      if (cliente)           properties['cliente']       = { select: { name: cliente } };
+      if (notas !== undefined) properties['Notas']       = { rich_text: [{ text: { content: notas } }] };
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ task: mapTask(page) });

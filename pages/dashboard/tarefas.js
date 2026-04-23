@@ -3,6 +3,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Plus, CheckSquare, Circle, CheckCircle2, Clock, X,
   Loader2, User, Calendar, Tag, ChevronDown, Trash2,
+  StickyNote,
 } from 'lucide-react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -46,10 +47,28 @@ const relativeDate = (d) => {
 };
 
 // ── Task Card ────────────────────────────────────────────────────────────────
-function TaskCard({ task, onToggle, onDelete, toggling }) {
+function TaskCard({ task, onToggle, onDelete, onUpdateNote, toggling }) {
   const due      = task.dataEntrega ? relativeDate(task.dataEntrega) : null;
   const isDone   = task.status === 'Concluído';
   const members  = Array.isArray(task.responsavel) ? task.responsavel : (task.responsavel ? [task.responsavel] : []);
+
+  const [noteText,   setNoteText]   = useState(task.notas || '');
+  const [editing,    setEditing]    = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const textareaRef = useRef(null);
+
+  const openNote = () => {
+    setEditing(true);
+    setTimeout(() => { textareaRef.current?.focus(); }, 0);
+  };
+
+  const handleNoteBlur = async () => {
+    setEditing(false);
+    if (noteText === (task.notas || '')) return;
+    setSavingNote(true);
+    await onUpdateNote(task.id, noteText);
+    setSavingNote(false);
+  };
 
   const dueBadgeClass = due
     ? (due.urgent && !isDone
@@ -128,6 +147,49 @@ function TaskCard({ task, onToggle, onDelete, toggling }) {
           )}
         </div>
       )}
+
+      {/* Notes section */}
+      <div className="mt-2.5 pl-8">
+        {editing ? (
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              onBlur={handleNoteBlur}
+              rows={3}
+              placeholder="Escreva uma nota sobre o andamento..."
+              className="w-full text-xs text-ink leading-relaxed resize-none rounded-apple
+                px-2.5 py-2 bg-elevated border border-accent/30
+                focus:outline-none focus:border-accent/50 focus:bg-surface
+                placeholder:text-ink-faint transition-all duration-150"
+            />
+          </div>
+        ) : noteText ? (
+          <button
+            onClick={openNote}
+            className="w-full text-left group/note flex items-start gap-1.5
+              rounded-apple px-2.5 py-1.5 -mx-2.5
+              hover:bg-elevated transition-all duration-150"
+          >
+            <StickyNote className="w-3 h-3 text-ink-faint shrink-0 mt-0.5" />
+            <span className="text-xs text-ink-soft leading-relaxed line-clamp-3 flex-1">
+              {noteText}
+            </span>
+            {savingNote && <Loader2 className="w-3 h-3 text-ink-faint animate-spin shrink-0 mt-0.5" />}
+          </button>
+        ) : (
+          <button
+            onClick={openNote}
+            className="flex items-center gap-1 text-[11px] text-ink-faint
+              hover:text-ink-muted transition-colors duration-150 cursor-pointer
+              opacity-0 group-hover:opacity-100"
+          >
+            <StickyNote className="w-3 h-3" />
+            Adicionar nota
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -329,6 +391,15 @@ export default function Tarefas() {
     }
   };
 
+  const updateNote = async (id, notas) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, notas } : t));
+    await fetch('/api/crm/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, notas }),
+    });
+  };
+
   // Filter
   const filtered = tasks.filter(t => {
     const members = Array.isArray(t.responsavel) ? t.responsavel : [t.responsavel];
@@ -430,7 +501,7 @@ export default function Tarefas() {
               </div>
               <div className="space-y-2.5">
                 {pending.map(task => (
-                  <TaskCard key={task.id} task={task} onToggle={toggle} onDelete={deleteTask} toggling={toggling} />
+                  <TaskCard key={task.id} task={task} onToggle={toggle} onDelete={deleteTask} onUpdateNote={updateNote} toggling={toggling} />
                 ))}
                 {pending.length === 0 && (
                   <div className="rounded-apple-lg p-10 text-center bg-surface border border-dashed border-hairline">
@@ -452,7 +523,7 @@ export default function Tarefas() {
               </div>
               <div className="space-y-2.5">
                 {done.map(task => (
-                  <TaskCard key={task.id} task={task} onToggle={toggle} onDelete={deleteTask} toggling={toggling} />
+                  <TaskCard key={task.id} task={task} onToggle={toggle} onDelete={deleteTask} onUpdateNote={updateNote} toggling={toggling} />
                 ))}
                 {done.length === 0 && (
                   <div className="rounded-apple-lg p-10 text-center bg-surface border border-dashed border-hairline">
