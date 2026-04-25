@@ -3,7 +3,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Film, X, Loader2, Clock, User, AlertTriangle,
   LayoutGrid, User2, CalendarDays, ChevronLeft, ChevronRight,
-  Save, CheckCircle2, Plus, Trash2, Camera,
+  Save, CheckCircle2, Check, Plus, Trash2, Camera,
   Image, FileText, Palette, ExternalLink, Link2,
   ChevronDown, Upload, Video, Play,
 } from 'lucide-react';
@@ -751,6 +751,76 @@ function isCarouselFmt(formato) {
   return fmtNorm(formato).includes('carrossel');
 }
 
+// ── Reusable collapsible select ───────────────────────────────────────────────
+function SelectField({ label, value, options, onChange, placeholder = 'Selecionar…', colorDot = false }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, []);
+
+  const selected = options.find(o => nrm(String(o.value)) === nrm(String(value)));
+
+  return (
+    <div ref={ref} className="relative">
+      {label && <label className="block t-eyebrow text-ink-muted mb-1.5">{label}</label>}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-apple
+          bg-elevated border border-hairline text-[13px] font-medium text-left
+          hover:border-[rgba(0,113,227,0.3)] transition-all cursor-pointer">
+        <span className="flex items-center gap-2 min-w-0">
+          {colorDot && selected?.color && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.color }}/>
+          )}
+          <span className={`truncate ${selected ? 'text-ink' : 'text-ink-faint'}`}>
+            {selected?.label ?? placeholder}
+          </span>
+        </span>
+        <ChevronDown className={`w-4 h-4 text-ink-faint shrink-0 ml-2 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}/>
+      </button>
+
+      {open && (
+        <div className="absolute z-[60] top-full left-0 right-0 mt-1 rounded-apple-lg
+          bg-surface border border-hairline shadow-apple-md overflow-hidden">
+          {/* Clear option */}
+          <button
+            type="button"
+            onClick={() => { onChange(''); setOpen(false); }}
+            className="w-full flex items-center px-3 py-2 text-[12px] text-ink-faint
+              hover:bg-elevated cursor-pointer transition-colors">
+            Limpar seleção
+          </button>
+          <div className="hairline mx-2"/>
+          {options.map(opt => {
+            const active = nrm(String(opt.value)) === nrm(String(value));
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] text-left
+                  cursor-pointer transition-colors
+                  ${active ? 'bg-accent/8 text-accent font-semibold' : 'hover:bg-elevated text-ink'}`}>
+                {colorDot && opt.color && (
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: active ? opt.color : opt.color + '99' }}/>
+                )}
+                <span className="flex-1">{opt.label}</span>
+                {opt.desc && <span className="text-[10px] text-ink-faint">{opt.desc}</span>}
+                {active && <Check className="w-3.5 h-3.5 shrink-0"/>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Detail Panel — vertical layout (tabs left, content right) ────────────────
 function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIENTS }) {
   const [tab,         setTab]         = useState('tema');
@@ -896,108 +966,64 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
       </div>
 
       {/* Cliente */}
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Cliente</label>
-        <div className="flex flex-wrap gap-1.5">
-          {availableClients.map(c => {
-            const cc = CLIENT_COLORS[c] || {}; const active = nrm(cliente) === nrm(c);
-            return (
-              <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
-                className="px-3 py-1.5 rounded-apple text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all"
-                style={{ background:active?cc.bg:'#f5f5f7', border:`1px solid ${active?cc.border:'rgba(0,0,0,0.06)'}`, color:active?cc.text:'#6b7280' }}>
-                {c}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <SelectField
+        label="Cliente"
+        value={cliente}
+        onChange={setCliente}
+        placeholder="Sem cliente"
+        options={availableClients.map(c => ({
+          value: c,
+          label: c.charAt(0).toUpperCase() + c.slice(1),
+        }))}
+      />
 
       {/* Formato */}
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Formato</label>
-        <div className="flex flex-wrap gap-1.5">
-          {FORMATOS.map(f => {
-            const fc = FORMAT_COLORS[f] || '#8b5cf6'; const active = nrm(formato) === nrm(f);
-            return (
-              <button key={f} type="button" onClick={() => setFormato(active ? '' : f)}
-                className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
-                style={{ background:active?`${fc}18`:'#f5f5f7', border:`1px solid ${active?`${fc}40`:'rgba(0,0,0,0.06)'}`, color:active?fc:'#6b7280' }}>
-                {f}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <SelectField
+        label="Formato"
+        value={formato}
+        onChange={setFormato}
+        placeholder="Sem formato"
+        options={FORMATOS.map(f => ({ value: f, label: f }))}
+      />
 
       {/* Plataforma */}
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Plataforma</label>
-        <div className="flex flex-wrap gap-1.5">
-          {['Instagram','TikTok','YouTube','WhatsApp','Facebook','LinkedIn','Pinterest'].map(p => {
-            const pc = PLAT_COLORS[p] || '#8b5cf6';
-            const active = nrm(plataforma) === nrm(p);
-            return (
-              <button key={p} type="button" onClick={() => setPlataforma(active ? '' : p)}
-                className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
-                style={{ background:active?`${pc}18`:'#f5f5f7', border:`1px solid ${active?`${pc}45`:'rgba(0,0,0,0.06)'}`, color:active?pc:'#6b7280' }}>
-                {p}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <SelectField
+        label="Plataforma"
+        value={plataforma}
+        onChange={setPlataforma}
+        placeholder="Sem plataforma"
+        options={['Instagram','TikTok','YouTube','WhatsApp','Facebook','LinkedIn','Pinterest'].map(p => ({ value: p, label: p }))}
+      />
 
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Responsável</label>
-        <div className="flex gap-2">
-          {MEMBERS.map(m => {
-            const c = memberColors[m]||{}; const active = nrm(responsavel)===nrm(m);
-            return <button key={m} type="button" onClick={() => setResponsavel(active?'':m)}
-              className="flex-1 py-2 rounded-apple text-xs font-semibold cursor-pointer transition-all"
-              style={{ background: active?c.bg:'#f5f5f7', border:`1px solid ${active?c.border:'rgba(0,0,0,0.06)'}`, color: active?c.text:'#6b7280' }}>
-              {m}
-            </button>;
-          })}
-        </div>
-      </div>
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Estado</label>
-        <div className="grid grid-cols-2 gap-1.5">
-          {ESTADO_OPTIONS.map(s => {
-            const active = nrm(estado)===nrm(s.value);
-            return <button key={s.value} type="button" onClick={() => setEstado(s.value)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-apple text-[11px] font-semibold cursor-pointer transition-all text-left"
-              style={{ background: active?`${s.color}14`:'#f5f5f7', border:`1px solid ${active?`${s.color}40`:'rgba(0,0,0,0.06)'}`, color: active?s.color:'#6b7280' }}>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(0,0,0,0.2)' }}/>
-              {s.label}
-            </button>;
-          })}
-        </div>
-      </div>
+      <SelectField
+        label="Responsável"
+        value={responsavel}
+        onChange={setResponsavel}
+        placeholder="Sem responsável"
+        options={MEMBERS.map(m => ({ value: m, label: m }))}
+      />
+      <SelectField
+        label="Estado"
+        value={estado}
+        onChange={setEstado}
+        placeholder="Sem estado"
+        colorDot
+        options={ESTADO_OPTIONS.map(s => ({ value: s.value, label: s.label, color: s.color }))}
+      />
       {/* Pontos de Esforço */}
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Pontos de Esforço</label>
-        <div className="flex gap-1.5">
-          {[
-            { v:'1', label:'1', desc:'Post/Story' },
-            { v:'2', label:'2', desc:'Carrossel' },
-            { v:'3', label:'3', desc:'Vídeo' },
-            { v:'4', label:'4', desc:'Edição' },
-            { v:'5', label:'5', desc:'Hero' },
-          ].map(opt => (
-            <button key={opt.v} type="button"
-              onClick={() => setPontos(pontos === opt.v ? '' : opt.v)}
-              title={opt.desc}
-              className={`flex-1 py-1.5 rounded-apple text-[11px] font-bold cursor-pointer transition-all flex flex-col items-center gap-0.5
-                ${pontos === opt.v
-                  ? 'bg-accent text-white border border-accent'
-                  : 'bg-elevated text-ink-muted border border-hairline hover:bg-surface'}`}>
-              <span>{opt.label}</span>
-              <span className="text-[9px] font-normal opacity-70 leading-none">{opt.desc}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <SelectField
+        label="Pontos de Esforço"
+        value={pontos}
+        onChange={setPontos}
+        placeholder="Não definido"
+        options={[
+          { value: '1', label: '1 pt', desc: 'Post / Story' },
+          { value: '2', label: '2 pts', desc: 'Carrossel' },
+          { value: '3', label: '3 pts', desc: 'Vídeo Básico' },
+          { value: '4', label: '4 pts', desc: 'Edição Elaborada' },
+          { value: '5', label: '5 pts', desc: 'Hero / Superprodução' },
+        ]}
+      />
       <div className="grid grid-cols-2 gap-2">
         {[['Gravação', gravacao, setGravacao], ['Postagem', postagem, setPostagem]].map(([lbl,val,set]) => (
           <div key={lbl}>
@@ -1011,20 +1037,14 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
 
   const renderConteudo = () => (
     <div className="space-y-4">
-      <div>
-        <label className="block t-eyebrow text-ink-muted mb-1.5">Estado</label>
-        <div className="grid grid-cols-2 gap-1.5">
-          {CONTEUDO_STATES.map(s => {
-            const active = nrm(estadoR)===nrm(s.value);
-            return <button key={s.value} type="button" onClick={() => setEstadoR(s.value)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-apple text-[11px] font-semibold cursor-pointer transition-all text-left"
-              style={{ background: active?`${s.color}14`:'#f5f5f7', border:`1px solid ${active?`${s.color}40`:'rgba(0,0,0,0.06)'}`, color: active?s.color:'#6b7280' }}>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active?s.color:'rgba(0,0,0,0.2)' }}/>
-              {s.label}
-            </button>;
-          })}
-        </div>
-      </div>
+      <SelectField
+        label="Estado do Roteiro"
+        value={estadoR}
+        onChange={setEstadoR}
+        placeholder="Sem estado"
+        colorDot
+        options={CONTEUDO_STATES.map(s => ({ value: s.value, label: s.label, color: s.color }))}
+      />
       <div className="flex-1 flex flex-col">
         {/* Roteiro header + AI button */}
         <div className="flex items-center justify-between mb-1.5">
