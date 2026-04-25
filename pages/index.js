@@ -987,10 +987,10 @@ export default function Home() {
     isAwaitingApproval(item.estadoRoteiro)
   );
 
-  // REVISÃO: aceita variações de "aguardando/aguardado aprovação" + tem mídia
+  // REVISÃO: todo conteúdo com estado "Aguardando Aprovação"
+  // (sem exigir mídia — o card mostra placeholder quando ainda não tem arquivo)
   const reviewItems = contents.filter(item =>
-    isAwaitingApproval(item.estado) &&
-    (item.linkFicheiro || item.linkCapa || item.linkCapa2 || item.linkCapa3)
+    isAwaitingApproval(item.estado)
   );
 
   // DOWNLOADS: aprovados/concluídos com mídia
