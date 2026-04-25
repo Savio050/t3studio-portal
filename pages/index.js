@@ -485,9 +485,37 @@ function SmartMedia({ item, showDownload }) {
 
 // ─── Grid de mídia compartilhado ──────────────────────────────────────────────
 function CapaThumb({ url, label, showDownload }) {
-  const [open, setOpen] = useState(false);
+  const [open,    setOpen]    = useState(false);
+  const [loading, setLoading] = useState(false);
   const isDrive  = url?.includes('drive.google.com');
   const embedUrl = getEmbedUrl(url);
+
+  const handleDownload = async () => {
+    if (loading || !url) return;
+    // Google Drive files: open in new tab (Drive handles its own download)
+    if (isDrive) { window.open(url, '_blank'); return; }
+    setLoading(true);
+    try {
+      // Proxy download forces Content-Disposition: attachment
+      const proxyUrl = `/api/download?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('proxy error');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = label ? `${label.replace(/\s+/g, '-').toLowerCase()}.jpg` : 'capa.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+    } catch {
+      // Last resort: open directly
+      window.open(url, '_blank');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col gap-1.5">
@@ -516,12 +544,19 @@ function CapaThumb({ url, label, showDownload }) {
       </button>
 
       {showDownload && (
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center py-2.5 rounded-xl cursor-pointer
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={loading}
+          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl cursor-pointer
             border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700
-            text-xs font-black uppercase tracking-widest active:scale-[0.98] transition-all duration-150">
-          BAIXAR
-        </a>
+            text-xs font-black uppercase tracking-widest active:scale-[0.98]
+            transition-all duration-150 disabled:opacity-60 disabled:cursor-wait">
+          {loading
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Baixando…</>
+            : <>BAIXAR</>
+          }
+        </button>
       )}
 
       {open && (
