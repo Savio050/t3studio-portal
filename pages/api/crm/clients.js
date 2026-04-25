@@ -1,9 +1,32 @@
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-// Hardcoded correct IDs — env vars kept as overrides only if explicitly needed
 const SECTORS_DB = '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID  || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
+
+// ── Canonical client → portal ID (must match content.js) ─────────────────────
+const KNOWN_CLIENT_IDS = {
+  't3studio':      '1000',
+  'fastimoveis':   '3000',
+  'mafro':         '4000',
+  'fortfer':       '5000',
+  'kalebemartins': '6000',
+};
+
+function normalizeKey(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '');
+}
+
+function resolveClientId(name) {
+  if (!name) return '';
+  const key = normalizeKey(name);
+  if (KNOWN_CLIENT_IDS[key]) return KNOWN_CLIENT_IDS[key];
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0x7fffffff;
+  return String(7000 + (h % 3000));
+}
 
 function getProp(prop) {
   if (!prop) return null;
@@ -134,13 +157,14 @@ export default async function handler(req, res) {
         categoria:        sectorPage ? (getProp(sectorPage.properties['categoria']) || '') : '',
         descricao:        sectorPage ? (getProp(sectorPage.properties['Descrição']) || '') : '',
         paginaCliente:    sectorPage ? (getProp(sectorPage.properties['Página do cliente']) || '') : '',
-        idCliente:        stats.id || '',
+        // Canonical map wins: if Notion content doesn't have the ID yet, resolve it
+        idCliente:        stats.id || resolveClientId(nome),
         totalContent:     stats.total,
         approved:         stats.approved,
         awaitingApproval: stats.awaitingApproval,
         inProduction:     stats.inProduction,
         done:             stats.done,
-        portalUrl:        stats.id ? `${process.env.NEXT_PUBLIC_BASE_URL || ''}/?id=${stats.id}` : '',
+        portalUrl:        `${process.env.NEXT_PUBLIC_BASE_URL || ''}/?id=${stats.id || resolveClientId(nome)}`,
       };
     });
 

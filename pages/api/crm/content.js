@@ -3,6 +3,39 @@ import { Client } from '@notionhq/client';
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
 
+// ── Canonical client → portal ID map ─────────────────────────────────────────
+// Key: normalized name (lowercase, no accents, no spaces)
+// Value: portal ID string (used in /?id=XXXX)
+const KNOWN_CLIENT_IDS = {
+  't3studio':      '1000',
+  'fastimoveis':   '3000',
+  'mafro':         '4000',
+  'fortfer':       '5000',
+  'kalebemartins': '6000',
+};
+
+function normalizeKey(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '');
+}
+
+/**
+ * Resolves the portal client ID for a given client name.
+ * Known clients → fixed IDs.
+ * Unknown clients → deterministic hash in range 7000–9999
+ * (same name always produces the same ID).
+ */
+function resolveClientId(clienteName) {
+  if (!clienteName) return '';
+  const key = normalizeKey(clienteName);
+  if (KNOWN_CLIENT_IDS[key]) return KNOWN_CLIENT_IDS[key];
+  // Deterministic hash so the same unknown client always gets the same ID
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0x7fffffff;
+  return String(7000 + (h % 3000));
+}
+
 function getProp(prop) {
   if (!prop) return null;
   switch (prop.type) {
@@ -81,7 +114,9 @@ export default async function handler(req, res) {
       if (postagem)      properties['Postagem']             = { date: { start: postagem } };
       if (dataGravacao)  properties['Data de Gravação']     = { date: { start: dataGravacao } };
       if (mesRelativo)   properties['Relativo ao mês de']  = { rich_text: [{ text: { content: mesRelativo } }] };
-      if (idCliente)     properties['ID do Cliente']        = { rich_text: [{ text: { content: String(idCliente) } }] };
+      // Always resolve server-side — canonical map wins over any frontend value
+      const resolvedId = resolveClientId(cliente) || (idCliente ? String(idCliente) : '');
+      if (resolvedId)    properties['ID do Cliente']        = { rich_text: [{ text: { content: resolvedId } }] };
 
       const page = await notion.pages.create({
         parent: { database_id: CONTENT_DB },
