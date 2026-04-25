@@ -68,7 +68,7 @@ function mapContent(page) {
 export default async function handler(req, res) {
   // ── POST: create new content item ─────────────────────────────────────────────
   if (req.method === 'POST') {
-    const { nome, cliente, formato, responsavel, postagem, dataGravacao, mesRelativo } = req.body || {};
+    const { nome, cliente, formato, responsavel, postagem, dataGravacao, mesRelativo, idCliente } = req.body || {};
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
 
     try {
@@ -81,6 +81,7 @@ export default async function handler(req, res) {
       if (postagem)      properties['Postagem']             = { date: { start: postagem } };
       if (dataGravacao)  properties['Data de Gravação']     = { date: { start: dataGravacao } };
       if (mesRelativo)   properties['Relativo ao mês de']  = { rich_text: [{ text: { content: mesRelativo } }] };
+      if (idCliente)     properties['ID do Cliente']        = { rich_text: [{ text: { content: String(idCliente) } }] };
 
       const page = await notion.pages.create({
         parent: { database_id: CONTENT_DB },

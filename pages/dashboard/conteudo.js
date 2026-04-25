@@ -548,7 +548,7 @@ function FeedView({ items, onSelect, loading }) {
 }
 
 // ── New Content Modal ─────────────────────────────────────────────────────────
-function NewContentModal({ onClose, onCreate }) {
+function NewContentModal({ onClose, onCreate, clientIds = {} }) {
   const [nome,         setNome]         = useState('');
   const [cliente,      setCliente]      = useState('');
   const [formato,      setFormato]      = useState('');
@@ -567,10 +567,17 @@ function NewContentModal({ onClose, onCreate }) {
     if (!nome.trim() || saving) return;
     setSaving(true); setError('');
     try {
+      // Look up the client's portal ID so the item appears in the client portal
+      const idCliente = clientIds[(cliente||'').toLowerCase().replace(/\s+/g, '')] || '';
       const res = await fetch('/api/crm/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, cliente, formato, responsavel, postagem: postagem||undefined, dataGravacao: dataGravacao||undefined }),
+        body: JSON.stringify({
+          nome, cliente, formato, responsavel,
+          postagem: postagem||undefined,
+          dataGravacao: dataGravacao||undefined,
+          idCliente: idCliente||undefined,
+        }),
       });
       if (!res.ok) throw new Error();
       const { content } = await res.json();
@@ -768,6 +775,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
   const [deleting,          setDeleting]         = useState(false);
   const [generatingScript,  setGeneratingScript] = useState(false);
   const [scriptError,       setScriptError]      = useState('');
+  const [mediaError,        setMediaError]       = useState('');
 
   const generateScript = async () => {
     if (generatingScript) return;
@@ -841,7 +849,14 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
-  const saveMedia = (fields) => onSave(item.id, fields);
+  const saveMedia = async (fields) => {
+    setMediaError('');
+    try {
+      await onSave(item.id, fields);
+    } catch (e) {
+      setMediaError(e?.message || 'Erro ao salvar mídia. Verifique se o campo existe no Notion.');
+    }
+  };
 
   const addGalleryImages = async (urls) => {
     const next = [...galeriaList, ...urls];
@@ -1125,6 +1140,11 @@ function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIEN
             <UploadZone label="Upload capa 3" accept="image/*"
               onUpload={url => saveMedia({ linkCapa3: url })}/>
           </div>
+          {mediaError && (
+            <p className="text-[11px] text-err px-3 py-2 rounded-apple bg-err-soft border border-err/20 mt-1">
+              ⚠ {mediaError}
+            </p>
+          )}
         </div>
         {/* Drive */}
         <div>
@@ -1340,13 +1360,26 @@ export default function Conteudo() {
   const [showNew,       setShowNew]       = useState(false);
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
+  // Map: normalized client name → portal ID (e.g. 'fastimoveis' → '3000')
+  const [clientIds,     setClientIds]     = useState({});
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/crm/content')
-      .then(r => r.json())
-      .then(d => { setContent(d.content || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch('/api/crm/content').then(r => r.json()),
+      fetch('/api/crm/clients').then(r => r.json()).catch(() => ({ clients: [] })),
+    ]).then(([contentData, clientsData]) => {
+      setContent(contentData.content || []);
+      // Build map from normalized name → idCliente
+      const idMap = {};
+      (clientsData.clients || []).forEach(c => {
+        if (c.idCliente) {
+          idMap[c.nome.toLowerCase().replace(/\s+/g, '')] = c.idCliente;
+        }
+      });
+      setClientIds(idMap);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   const createItem = useCallback(c => setContent(prev => [c, ...prev]), []);
@@ -1365,6 +1398,9 @@ export default function Conteudo() {
       const { content: updated } = await res.json();
       setContent(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
       setSelectedItem(prev => prev?.id === id ? { ...prev, ...updated } : prev);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Erro ao salvar (${res.status})`);
     }
   }, []);
 
@@ -1567,7 +1603,7 @@ export default function Conteudo() {
       )}
 
       {showNew && (
-        <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem}/>
+        <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem} clientIds={clientIds}/>
       )}
     </CRMLayout>
   );

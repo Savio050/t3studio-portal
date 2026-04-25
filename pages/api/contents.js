@@ -28,11 +28,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await notion.databases.query({
-      database_id: process.env.NOTION_DATABASE_ID,
-    });
-
-    const allPages = response.results;
+    // Paginate through all results (Notion caps at 100 per request)
+    const allPages = [];
+    let cursor;
+    do {
+      const response = await notion.databases.query({
+        database_id: process.env.NOTION_DATABASE_ID,
+        filter: { property: 'ID do Cliente', rich_text: { is_not_empty: true } },
+        ...(cursor ? { start_cursor: cursor } : {}),
+        page_size: 100,
+      });
+      allPages.push(...response.results);
+      cursor = response.has_more ? response.next_cursor : null;
+    } while (cursor);
 
     const filtered = allPages.filter((page) => {
       const props = page.properties;
