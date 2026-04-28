@@ -149,7 +149,7 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
       .catch(() => {});
   }, [session]);
 
-  // Photo upload flow
+  // Photo upload flow — server-side to avoid R2 CORS issues
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -160,36 +160,15 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
     setUploadErr('');
 
     try {
-      // 1. Get presigned URL
-      const signRes = await fetch('/api/crm/upload', {
+      // Single server-side call: upload to R2 + save to Notion, no CORS
+      const res = await fetch('/api/crm/upload-avatar', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          filename:    `avatar-${session.user.id}.${file.name.split('.').pop()}`,
-          contentType: file.type,
-          folder:      'avatars',
-        }),
-      });
-      const { presignedUrl, publicUrl } = await signRes.json();
-      if (!signRes.ok || !presignedUrl) throw new Error('Falha ao gerar URL de upload.');
-
-      // 2. PUT to R2
-      const putRes = await fetch(presignedUrl, {
-        method:  'PUT',
         headers: { 'Content-Type': file.type },
         body:    file,
       });
-      if (!putRes.ok) throw new Error('Falha ao enviar imagem.');
-
-      // 3. Save URL to profile
-      const patchRes = await fetch('/api/crm/profile', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ foto: publicUrl }),
-      });
-      if (!patchRes.ok) throw new Error('Falha ao salvar foto.');
-
-      setUserFoto(publicUrl);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao enviar foto.');
+      setUserFoto(data.foto);
     } catch (err) {
       setUploadErr(err.message || 'Erro ao enviar foto.');
     } finally {
