@@ -10,11 +10,22 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MEMBERS   = ['Matheus', 'Sávio'];
-const CLIENTS   = ['fastimoveis', 'mafro'];
 const FORMATOS  = ['Carrossel', 'Stories', 'Post', 'Vídeo curto', 'Estático'];
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const WEEKDAYS_PT = ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
+
+// ── Dynamic client color palette (deterministic by name) ─────────────────────
+const COLOR_PALETTE = [
+  { bg:'rgba(244,63,94,0.12)',   text:'#e11d48', border:'rgba(244,63,94,0.28)'  },
+  { bg:'rgba(14,165,233,0.12)',  text:'#0284c7', border:'rgba(14,165,233,0.28)' },
+  { bg:'rgba(139,92,246,0.12)',  text:'#7c3aed', border:'rgba(139,92,246,0.28)' },
+  { bg:'rgba(34,197,94,0.12)',   text:'#15803d', border:'rgba(34,197,94,0.28)'  },
+  { bg:'rgba(249,115,22,0.12)',  text:'#c2410c', border:'rgba(249,115,22,0.28)' },
+  { bg:'rgba(236,72,153,0.12)',  text:'#be185d', border:'rgba(236,72,153,0.28)' },
+  { bg:'rgba(20,184,166,0.12)',  text:'#0f766e', border:'rgba(20,184,166,0.28)' },
+  { bg:'rgba(234,179,8,0.12)',   text:'#a16207', border:'rgba(234,179,8,0.28)'  },
+];
 
 const ESTADO_OPTIONS = [
   { value: 'não iniciado',         label: 'Não iniciado',      color: '#8e8e93' },
@@ -34,10 +45,9 @@ const CONTEUDO_STATES = [
   { value: 'Concluido',            label: 'Concluído',         color: '#8e8e93' },
 ];
 
-const CLIENT_COLORS = {
-  fastimoveis: { bg: 'rgba(244,63,94,0.12)',  text: '#e11d48', border: 'rgba(244,63,94,0.28)' },
-  mafro:       { bg: 'rgba(14,165,233,0.12)', text: '#0284c7', border: 'rgba(14,165,233,0.28)' },
-};
+// Legacy static map kept for backwards compat (now supplemented by dynamic palette)
+const CLIENT_COLORS = {};
+
 
 const FORMAT_COLORS = {
   Reels:     '#8b5cf6', Carrossel: '#0ea5e9', Stories: '#ec4899',
@@ -60,8 +70,13 @@ const SECTION_STATUS = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const nrm       = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-const clientColor = n => CLIENT_COLORS[nrm(n).replace(/\s/g,'')] ||
-  { bg:'rgba(0,0,0,0.04)', text:'#6b7280', border:'rgba(0,0,0,0.08)' };
+function clientColor(name) {
+  const k = nrm(name || '').replace(/\s/g,'');
+  if (!k) return { bg:'rgba(0,0,0,0.04)', text:'#6b7280', border:'rgba(0,0,0,0.08)' };
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) & 0xffff;
+  return COLOR_PALETTE[h % COLOR_PALETTE.length];
+}
 const fmtShort  = d => { if (!d) return null; const [,m,day] = d.split('-'); return `${day}/${m}`; };
 const fmtFull   = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
 const isoDate   = d => d.toISOString().slice(0, 10);
@@ -548,7 +563,12 @@ function FeedView({ items, onSelect, loading }) {
 }
 
 // ── New Content Modal ─────────────────────────────────────────────────────────
-function NewContentModal({ onClose, onCreate, clientIds = {} }) {
+function NewContentModal({ onClose, onCreate, clientsList = [] }) {
+  // build clientIds map from list
+  const clientIds = {};
+  clientsList.forEach(c => {
+    if (c.idCliente) clientIds[nrm(c.nome).replace(/\s/g,'')] = c.idCliente;
+  });
   const [nome,         setNome]         = useState('');
   const [cliente,      setCliente]      = useState('');
   const [formato,      setFormato]      = useState('');
@@ -600,19 +620,13 @@ function NewContentModal({ onClose, onCreate, clientIds = {} }) {
               placeholder="Ex: Reels lançamento novembro"
               className="input"/>
           </div>
-          <div>
-            <label className="block t-eyebrow text-ink-muted mb-2">Cliente</label>
-            <div className="flex gap-2">
-              {CLIENTS.map(c => {
-                const cc = CLIENT_COLORS[c] || {}; const active = cliente === c;
-                return <button key={c} type="button" onClick={() => setCliente(active ? '' : c)}
-                  className="flex-1 py-2.5 rounded-apple text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all"
-                  style={{ background: active ? cc.bg : '#f5f5f7', border: `1px solid ${active ? cc.border : 'rgba(0,0,0,0.06)'}`, color: active ? cc.text : '#6b7280' }}>
-                  {c}
-                </button>;
-              })}
-            </div>
-          </div>
+          <SelectField
+            label="Cliente"
+            value={cliente}
+            onChange={setCliente}
+            placeholder="Selecionar cliente…"
+            options={clientsList.map(c => ({ value: c.nome, label: c.nome }))}
+          />
           <div>
             <label className="block t-eyebrow text-ink-muted mb-2">Formato</label>
             <div className="flex flex-wrap gap-2">
@@ -822,7 +836,8 @@ function SelectField({ label, value, options, onChange, placeholder = 'Seleciona
 }
 
 // ── Detail Panel — vertical layout (tabs left, content right) ────────────────
-function DetailPanel({ item, onSave, onDelete, onClose, availableClients = CLIENTS }) {
+function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
+  const availableClients = clientsList.map(c => c.nome);
   const [tab,         setTab]         = useState('tema');
   const [nome,        setNome]        = useState(item.nome);
   const [formato,     setFormato]     = useState(item.formato || '');
@@ -1380,8 +1395,8 @@ export default function Conteudo() {
   const [showNew,       setShowNew]       = useState(false);
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
-  // Map: normalized client name → portal ID (e.g. 'fastimoveis' → '3000')
-  const [clientIds,     setClientIds]     = useState({});
+  // Full client list from API [{nome, idCliente, ...}]
+  const [clientsList,   setClientsList]   = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -1390,14 +1405,7 @@ export default function Conteudo() {
       fetch('/api/crm/clients').then(r => r.json()).catch(() => ({ clients: [] })),
     ]).then(([contentData, clientsData]) => {
       setContent(contentData.content || []);
-      // Build map from normalized name → idCliente
-      const idMap = {};
-      (clientsData.clients || []).forEach(c => {
-        if (c.idCliente) {
-          idMap[c.nome.toLowerCase().replace(/\s+/g, '')] = c.idCliente;
-        }
-      });
-      setClientIds(idMap);
+      setClientsList(clientsData.clients || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -1424,10 +1432,11 @@ export default function Conteudo() {
     }
   }, []);
 
-  // Dynamic filter options
-  const availableClients = useMemo(() => (
-    [...new Set(content.map(c => (c.cliente||'').toLowerCase().replace(/\s+/g,'')).filter(Boolean))]
-  ), [content]);
+  // Dynamic filter options — API list first, fall back to names found in content
+  const availableClients = useMemo(() => {
+    if (clientsList.length > 0) return clientsList.map(c => c.nome).filter(Boolean);
+    return [...new Set(content.map(c => c.cliente).filter(Boolean))];
+  }, [clientsList, content]);
 
   const availablePlatforms = useMemo(() => {
     const set = new Set();
@@ -1531,27 +1540,23 @@ export default function Conteudo() {
           {/* ── Alternating filter list ── */}
           <div className="rounded-apple-xl overflow-hidden border border-hairline bg-surface">
 
-            {/* Row 1 — Cliente */}
+            {/* Row 1 — Cliente (expandable dropdown) */}
             <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
               <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
                 <div className="w-1.5 h-1.5 rounded-full bg-accent"/>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Cliente</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
-                {[{ key:'', label:'Todos', cc:{} }, ...availableClients.map(c => ({ key:c, label:c, cc: CLIENT_COLORS[c]||{} }))].map(({ key, label, cc }) => {
-                  const active = nrm(filterCliente).replace(/\s/g,'') === nrm(key).replace(/\s/g,'');
-                  return (
-                    <button key={key||'todos'} onClick={() => setFilterCliente(active && key ? '' : key)}
-                      className="shrink-0 px-3 py-1 rounded-pill text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-all duration-150 active:scale-95"
-                      style={{
-                        background: active ? (key ? `${cc.text}14` : '#1d1d1f') : '#f5f5f7',
-                        border: `1px solid ${active ? (key ? `${cc.text}40` : '#1d1d1f') : 'rgba(0,0,0,0.06)'}`,
-                        color: active ? (key ? cc.text : 'white') : '#6b7280',
-                      }}>
-                      {label}
-                    </button>
-                  );
-                })}
+              <div className="flex-1 px-3 py-2">
+                <SelectField
+                  value={filterCliente}
+                  onChange={setFilterCliente}
+                  placeholder="Todos os clientes"
+                  options={availableClients.map(c => {
+                    const cc = clientColor(c);
+                    return { value: c, label: c, color: cc.text };
+                  })}
+                  colorDot={true}
+                />
               </div>
               {filterCliente && (
                 <button onClick={() => setFilterCliente('')}
@@ -1619,11 +1624,11 @@ export default function Conteudo() {
           onSave={async (id, fields) => { await updateItem(id, fields); }}
           onDelete={deleteItem}
           onClose={() => setSelectedItem(null)}
-          availableClients={availableClients}/>
+          clientsList={clientsList}/>
       )}
 
       {showNew && (
-        <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem} clientIds={clientIds}/>
+        <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem} clientsList={clientsList}/>
       )}
     </CRMLayout>
   );
