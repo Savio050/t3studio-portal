@@ -2,9 +2,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
-  ExternalLink, Menu, X, Bot, Search, Bell, Megaphone,
+  ExternalLink, Menu, X, Bot, Search, LogOut, Megaphone,
 } from 'lucide-react';
 
 const NAV = [
@@ -65,9 +66,20 @@ function Logo({ size = 'md' }) {
   );
 }
 
+function getInitials(name) {
+  if (!name) return 'T3';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function CRMLayout({ children, title = 'T3 Studio' }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const userName  = session?.user?.name  || 'T3 Studio';
+  const userEmail = session?.user?.email || '';
+  const initials  = getInitials(userName);
   const currentPath = router.pathname;
 
   const isActive = (href) =>
@@ -125,12 +137,20 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           <div className="p-3 pb-5">
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-elevated border border-[rgba(0,0,0,0.05)]">
               <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[12px] font-semibold text-white brand-gradient">
-                TS
+                {initials}
               </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink truncate">T3 Studio</p>
-                <p className="text-[11px] text-ink-faint truncate">atendimento@t3studio.com.br</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-ink truncate">{userName}</p>
+                <p className="text-[11px] text-ink-faint truncate">{userEmail}</p>
               </div>
+              <button
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                title="Sair"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-faint
+                  hover:text-[#ff3b30] hover:bg-[rgba(255,59,48,0.08)]
+                  transition-all duration-150 cursor-pointer shrink-0">
+                <LogOut className="w-[15px] h-[15px]" />
+              </button>
             </div>
           </div>
         </aside>
