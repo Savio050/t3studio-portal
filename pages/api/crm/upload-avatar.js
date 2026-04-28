@@ -6,6 +6,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client as NotionClient } from '@notionhq/client';
 import { getToken } from 'next-auth/jwt';
+import { sanitizeNotionId } from '../../../lib/notionId';
 
 export const config = {
   api: { bodyParser: false, responseLimit: '6mb' },
@@ -29,11 +30,13 @@ function isValidNotionId(id) {
 }
 
 // Find a user's Notion page by email (fallback when we don't have a page ID)
+const USERS_DB = sanitizeNotionId(process.env.NOTION_USERS_DB_ID);
+
 async function findNotionPageByEmail(email) {
-  if (!process.env.NOTION_USERS_DB_ID || !email) return null;
+  if (!USERS_DB || !email) return null;
   try {
     const res = await notion.databases.query({
-      database_id: process.env.NOTION_USERS_DB_ID,
+      database_id: USERS_DB,
       filter: { property: 'Email', rich_text: { equals: email.toLowerCase().trim() } },
     });
     return res.results[0]?.id || null;
@@ -82,7 +85,7 @@ export default async function handler(req, res) {
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;
 
     // ── Save URL to Notion ──────────────────────────────────────────────────
-    if (process.env.NOTION_USERS_DB_ID) {
+    if (USERS_DB) {
       // Resolve the Notion page ID: prefer notionId from token, else look up by email
       let pageId = isValidNotionId(token.notionId) ? token.notionId : null;
       if (!pageId) pageId = await findNotionPageByEmail(token.email);

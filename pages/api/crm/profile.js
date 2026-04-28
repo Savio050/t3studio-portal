@@ -5,9 +5,10 @@
  */
 import { Client } from '@notionhq/client';
 import { getToken } from 'next-auth/jwt';
+import { sanitizeNotionId } from '../../../lib/notionId';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const USERS_DB = process.env.NOTION_USERS_DB_ID;
+const USERS_DB = sanitizeNotionId(process.env.NOTION_USERS_DB_ID);
 
 function getProp(prop) {
   if (!prop) return null;
