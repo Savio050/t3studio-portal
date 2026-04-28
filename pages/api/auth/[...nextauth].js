@@ -11,44 +11,16 @@ function getProp(prop) {
   switch (prop.type) {
     case 'title':     return prop.title?.[0]?.plain_text     || '';
     case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
+    case 'email':     return prop.email                      || '';
     case 'select':    return prop.select?.name               || '';
-    case 'checkbox':  return prop.checkbox ?? false;
+    case 'checkbox':  return prop.checkbox ?? null; // null = not set, false = explicitly off
     default:          return null;
   }
 }
 
-// ── Fallback: legacy users from AUTH_USERS env var ────────────────────────────
-// Used only when NOTION_USERS_DB_ID is not set (during migration / initial setup).
+// ── Fallback: legacy users from AUTH_USERS env var ───────────────────────────
 function getLegacyUsers() {
   try { return JSON.parse(process.env.AUTH_USERS || '[]'); } catch { return []; }
-}
-
-async function authorizeWithNotion(credentials) {
-  const res = await notion.databases.query({
-    database_id: USERS_DB,
-    filter: {
-      property: 'Email',
-      rich_text: { equals: (credentials?.email || '').toLowerCase().trim() },
-    },
-  });
-
-  const page = res.results[0];
-  if (!page) return null;
-
-  const ativo = getProp(page.properties['Ativo']);
-  if (!ativo) return null; // deactivated account
-
-  const hash = getProp(page.properties['Senha']) || '';
-  const valid = await bcrypt.compare(credentials?.password || '', hash);
-  if (!valid) return null;
-
-  return {
-    id:       page.id,
-    notionId: page.id,
-    name:     getProp(page.properties['Nome'])  || '',
-    email:    getProp(page.properties['Email']) || '',
-    role:     getProp(page.properties['Cargo']) || 'participante',
-  };
 }
 
 function authorizeWithLegacy(credentials) {
@@ -63,7 +35,70 @@ function authorizeWithLegacy(credentials) {
     notionId: null,
     name:     user.name,
     email:    user.email,
-    role:     user.role || 'administrador', // legacy users are admins by default
+    role:     user.role || 'administrador',
+  };
+}
+
+async function authorizeWithNotion(credentials) {
+  const email = (credentials?.email || '').toLowerCase().trim();
+  const password = credentials?.password || '';
+
+  // Try filtering by Email field (rich_text or email type)
+  let results = [];
+  try {
+    const res = await notion.databases.query({
+      database_id: USERS_DB,
+      filter: { property: 'Email', rich_text: { equals: email } },
+    });
+    results = res.results;
+  } catch {
+    // Email field might be a different type — fall back to fetching all and filtering
+    try {
+      const res = await notion.databases.query({ database_id: USERS_DB, page_size: 100 });
+      results = res.results.filter(p => {
+        const e = getProp(p.properties['Email']) || '';
+        return e.toLowerCase().trim() === email;
+      });
+    } catch (err) {
+      console.error('Notion auth query error:', err?.message || err);
+      return null;
+    }
+  }
+
+  const page = results[0];
+  if (!page) return null;
+
+  // ── Ativo check ─────────────────────────────────────────────────────────────
+  // Only block if explicitly set to false. If the field is missing or unchecked
+  // (which is the Notion default for new rows), treat as active.
+  const ativoRaw = page.properties['Ativo'];
+  if (ativoRaw && ativoRaw.type === 'checkbox' && ativoRaw.checkbox === false) {
+    return null; // explicitly deactivated
+  }
+
+  // ── Password check ──────────────────────────────────────────────────────────
+  // Support both bcrypt hashes ($2b$…) and plain-text passwords.
+  // Plain-text is accepted for bootstrap / manual Notion setup.
+  // Once a user logs in via the admin panel's "Redefinir senha", it gets hashed.
+  const stored = getProp(page.properties['Senha']) || '';
+  if (!stored) return null;
+
+  let valid = false;
+  if (stored.startsWith('$2')) {
+    // bcrypt hash
+    valid = await bcrypt.compare(password, stored);
+  } else {
+    // plain text (bootstrap phase)
+    valid = stored === password;
+  }
+  if (!valid) return null;
+
+  return {
+    id:       page.id,
+    notionId: page.id,
+    name:     getProp(page.properties['Nome'])  || '',
+    email:    getProp(page.properties['Email']) || email,
+    role:     getProp(page.properties['Cargo']) || 'administrador',
   };
 }
 
@@ -76,10 +111,17 @@ export default NextAuth({
         password: { label: 'Senha',  type: 'password' },
       },
       async authorize(credentials) {
-        // Try Notion first; fall back to legacy env-var users
+        // 1. Try Notion if configured
         if (USERS_DB) {
-          return await authorizeWithNotion(credentials);
+          try {
+            const user = await authorizeWithNotion(credentials);
+            if (user) return user;
+          } catch (err) {
+            console.error('Notion auth error:', err?.message || err);
+            // Fall through to legacy
+          }
         }
+        // 2. Fallback to AUTH_USERS env var
         return authorizeWithLegacy(credentials);
       },
     }),
