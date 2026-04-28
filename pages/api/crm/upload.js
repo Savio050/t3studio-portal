@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { filename, contentType } = req.body || {};
+  const { filename, contentType, folder } = req.body || {};
   if (!filename || !contentType)
     return res.status(400).json({ error: 'filename e contentType são obrigatórios' });
 
@@ -24,8 +24,9 @@ export default async function handler(req, res) {
     credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
   });
 
-  const ext = filename.split('.').pop().toLowerCase();
-  const key = `media/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const ext    = filename.split('.').pop().toLowerCase();
+  const prefix = folder === 'avatars' ? 'avatars' : 'media';
+  const key    = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   try {
     const command = new PutObjectCommand({
