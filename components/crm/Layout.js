@@ -22,7 +22,7 @@ const NAV = [
 ];
 
 const ADMIN_NAV = [
-  { href: '/dashboard/usuarios', icon: ShieldCheck, label: 'Usuários' },
+  { href: '/dashboard/usuarios', icon: ShieldCheck, label: 'Configurações avançadas' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

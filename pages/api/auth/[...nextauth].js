@@ -71,7 +71,7 @@ async function authorizeWithNotion(credentials) {
   // ── Ativo check ─────────────────────────────────────────────────────────────
   // Only block if explicitly set to false. If the field is missing or unchecked
   // (which is the Notion default for new rows), treat as active.
-  const ativoRaw = page.properties['Ativo'];
+  const ativoRaw = page.properties['ativo'];
   if (ativoRaw && ativoRaw.type === 'checkbox' && ativoRaw.checkbox === false) {
     return null; // explicitly deactivated
   }
@@ -98,7 +98,7 @@ async function authorizeWithNotion(credentials) {
     notionId: page.id,
     name:     getProp(page.properties['Nome'])  || '',
     email:    getProp(page.properties['Email']) || email,
-    role:     getProp(page.properties['Cargo']) || 'administrador',
+    role:     (getProp(page.properties['Cargo']) || 'administrador').toLowerCase(),
   };
 }
 

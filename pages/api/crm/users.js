@@ -23,8 +23,8 @@ function mapUser(page) {
     nome:  getProp(page.properties['Nome'])  || '',
     email: getProp(page.properties['Email']) || '',
     cargo: (getProp(page.properties['Cargo']) || 'participante').toLowerCase(),
-    ativo: page.properties['Ativo']?.checkbox !== false, // default true if unchecked/missing
-    foto:  getProp(page.properties['Foto'])  || null,
+    ativo: page.properties['ativo']?.checkbox !== false, // default true if unchecked/missing
+    foto:  getProp(page.properties['foto'])  || null,
     source: 'notion',
   };
 }
@@ -104,30 +104,59 @@ export default async function handler(req, res) {
     if (!email?.trim())    return res.status(400).json({ error: 'Email é obrigatório.' });
     if (!password?.trim()) return res.status(400).json({ error: 'Senha é obrigatória.' });
 
+    const emailClean = email.trim().toLowerCase();
+    const cargoClean = cargo === 'administrador' ? 'Administrador' : 'Participante';
+
     try {
-      const existing = await notion.databases.query({
-        database_id: USERS_DB,
-        filter: { property: 'Email', rich_text: { equals: email.trim().toLowerCase() } },
-      });
-      if (existing.results.length > 0) {
-        return res.status(409).json({ error: 'Já existe um usuário com este email.' });
+      // Check for duplicates — try rich_text filter first, fall back to email type
+      let duplicate = false;
+      try {
+        const res1 = await notion.databases.query({
+          database_id: USERS_DB,
+          filter: { property: 'Email', rich_text: { equals: emailClean } },
+        });
+        duplicate = res1.results.length > 0;
+      } catch {
+        try {
+          const res2 = await notion.databases.query({
+            database_id: USERS_DB,
+            filter: { property: 'Email', email: { equals: emailClean } },
+          });
+          duplicate = res2.results.length > 0;
+        } catch {
+          // Can't check — proceed and let Notion enforce uniqueness
+        }
       }
+      if (duplicate) return res.status(409).json({ error: 'Já existe um usuário com este email.' });
 
       const hash = await bcrypt.hash(password, 10);
+
+      // Detect Email property type from DB schema and build the correct payload
+      let emailProp;
+      try {
+        const db = await notion.databases.retrieve({ database_id: USERS_DB });
+        const emailType = db.properties['Email']?.type;
+        emailProp = emailType === 'email'
+          ? { email: emailClean }
+          : { rich_text: [{ text: { content: emailClean } }] };
+      } catch {
+        emailProp = { rich_text: [{ text: { content: emailClean } }] };
+      }
+
       const page = await notion.pages.create({
         parent: { database_id: USERS_DB },
         properties: {
           'Nome':  { title:     [{ text: { content: nome.trim() } }] },
-          'Email': { rich_text: [{ text: { content: email.trim().toLowerCase() } }] },
+          'Email': emailProp,
           'Senha': { rich_text: [{ text: { content: hash } }] },
-          'Cargo': { select: { name: cargo === 'administrador' ? 'administrador' : 'participante' } },
-          'Ativo': { checkbox: true },
+          'Cargo': { select: { name: cargoClean } },
+          'ativo': { checkbox: true },
         },
       });
       return res.status(201).json({ user: mapUser(page) });
     } catch (err) {
-      console.error('Users POST error:', err);
-      return res.status(500).json({ error: 'Erro ao criar usuário.' });
+      console.error('Users POST error:', err?.message || err);
+      return res.status(500).json({ error: 'Erro ao criar usuário: ' + (err?.message || 'desconhecido') });
     }
   }
 
@@ -142,7 +171,7 @@ export default async function handler(req, res) {
       if (cargo !== undefined)
         properties['Cargo'] = { select: { name: cargo === 'administrador' ? 'administrador' : 'participante' } };
       if (ativo !== undefined)
-        properties['Ativo'] = { checkbox: Boolean(ativo) };
+        properties['ativo'] = { checkbox: Boolean(ativo) };
       if (password?.trim()) {
         const hash = await bcrypt.hash(password, 10);
         properties['Senha'] = { rich_text: [{ text: { content: hash } }] };

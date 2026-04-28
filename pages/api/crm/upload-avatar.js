@@ -1,13 +1,7 @@
 /**
  * POST /api/crm/upload-avatar
- * Receives the image binary directly, uploads to R2 server-side (no CORS),
- * saves the public URL to the user's Notion profile, and returns { foto }.
- *
- * Client sends: fetch('/api/crm/upload-avatar', {
- *   method: 'POST',
- *   headers: { 'Content-Type': file.type },
- *   body: file,
- * });
+ * Receives image binary, uploads to R2 server-side (no CORS),
+ * saves the public URL to the user's Notion profile, returns { foto }.
  */
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client as NotionClient } from '@notionhq/client';
@@ -28,21 +22,38 @@ async function readBody(req) {
   });
 }
 
+// Notion page IDs are 32 hex chars (UUID). Anything else (email, "legacy-X") is invalid.
+function isValidNotionId(id) {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(id);
+}
+
+// Find a user's Notion page by email (fallback when we don't have a page ID)
+async function findNotionPageByEmail(email) {
+  if (!process.env.NOTION_USERS_DB_ID || !email) return null;
+  try {
+    const res = await notion.databases.query({
+      database_id: process.env.NOTION_USERS_DB_ID,
+      filter: { property: 'Email', rich_text: { equals: email.toLowerCase().trim() } },
+    });
+    return res.results[0]?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
 
-  // ── R2 env check ──────────────────────────────────────────────────────────
   const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env;
   if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME || !R2_PUBLIC_URL) {
     return res.status(503).json({ error: 'R2 não configurado. Adicione as variáveis R2_* no Vercel.' });
   }
 
   try {
-    // ── Read body ────────────────────────────────────────────────────────────
     const buffer = await readBody(req);
     if (!buffer.length) return res.status(400).json({ error: 'Arquivo vazio.' });
 
@@ -51,9 +62,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Apenas imagens são aceitas.' });
     }
 
-    // ── Upload to R2 (server-side, no CORS) ──────────────────────────────────
+    // ── Upload to R2 ────────────────────────────────────────────────────────
     const ext = contentType.split('/')[1]?.split(';')[0] || 'jpg';
-    const key = `avatars/${token.id || 'user'}-${Date.now()}.${ext}`;
+    const key = `avatars/${(token.id || 'user').replace(/[^a-z0-9]/gi, '_')}-${Date.now()}.${ext}`;
 
     const s3 = new S3Client({
       region: 'auto',
@@ -62,25 +73,31 @@ export default async function handler(req, res) {
     });
 
     await s3.send(new PutObjectCommand({
-      Bucket:      R2_BUCKET_NAME,
-      Key:         key,
-      Body:        buffer,
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
       ContentType: contentType,
     }));
 
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;
 
-    // ── Save URL to Notion profile (if Notion users DB is configured) ────────
-    const notionId = token.notionId || token.id;
-    if (process.env.NOTION_USERS_DB_ID && notionId) {
-      try {
-        await notion.pages.update({
-          page_id: notionId,
-          properties: { 'Foto': { url: publicUrl } },
-        });
-      } catch (notionErr) {
-        // Log but don't fail — return the URL even if Notion save fails
-        console.error('Notion foto update error:', notionErr?.message);
+    // ── Save URL to Notion ──────────────────────────────────────────────────
+    if (process.env.NOTION_USERS_DB_ID) {
+      // Resolve the Notion page ID: prefer notionId from token, else look up by email
+      let pageId = isValidNotionId(token.notionId) ? token.notionId : null;
+      if (!pageId) pageId = await findNotionPageByEmail(token.email);
+
+      if (pageId) {
+        try {
+          await notion.pages.update({
+            page_id: pageId,
+            properties: { 'foto': { url: publicUrl } },
+          });
+        } catch (err) {
+          console.error('Notion foto update error:', err?.message);
+        }
+      } else {
+        console.warn('Avatar upload: no Notion page found for user', token.email);
       }
     }
 
