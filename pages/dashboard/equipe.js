@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import CRMLayout from '../../components/crm/Layout';
-import { Shield, User, Mail, Loader2, Users } from 'lucide-react';
+import { Shield, User, Mail, Loader2, Users2 } from 'lucide-react';
 import Image from 'next/image';
 
 const AVATAR_GRADIENTS = [
@@ -137,7 +137,7 @@ export default function EquipePage() {
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg,#0a84ff,#0055d4)' }}>
-              <Users className="w-5 h-5 text-white" />
+              <Users2 className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-[28px] font-bold text-[#1d1d1f] tracking-tight leading-none">Nossa Equipe</h1>
