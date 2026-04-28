@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
   ExternalLink, Menu, X, Bot, Search, LogOut, Megaphone,
+  ShieldCheck,
 } from 'lucide-react';
 
 const NAV = [
@@ -16,6 +17,11 @@ const NAV = [
   { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
   { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
   { href: '/dashboard/assistente',  icon: Bot,             label: 'Assistente', highlight: true },
+];
+
+// Admin-only items shown after the main nav separator
+const ADMIN_NAV = [
+  { href: '/dashboard/usuarios', icon: ShieldCheck, label: 'Usuários', adminOnly: true },
 ];
 
 function NavItem({ href, icon: Icon, label, active, onClick, highlight }) {
@@ -82,9 +88,11 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
   const initials  = getInitials(userName);
   const currentPath = router.pathname;
 
-  const isActive = (href) =>
+  const isAdmin   = session?.user?.role === 'administrador';
+  const isActive  = (href) =>
     href === '/dashboard' ? currentPath === href : currentPath.startsWith(href);
-  const pageTitle = NAV.find(n => isActive(n.href))?.label ?? 'Dashboard';
+  const allNav    = [...NAV, ...(isAdmin ? ADMIN_NAV : [])];
+  const pageTitle = allNav.find(n => isActive(n.href))?.label ?? 'Dashboard';
 
   return (
     <>
@@ -121,6 +129,15 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
             {NAV.slice(6).map(item => (
               <NavItem key={item.href} {...item} active={isActive(item.href)} />
             ))}
+
+            {isAdmin && (
+              <>
+                <p className="px-3 pt-5 pb-1.5 t-eyebrow text-[10px]">Administração</p>
+                {ADMIN_NAV.map(item => (
+                  <NavItem key={item.href} {...item} active={isActive(item.href)} />
+                ))}
+              </>
+            )}
           </nav>
 
           {/* Footer */}
@@ -140,7 +157,15 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-ink truncate">{userName}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13px] font-semibold text-ink truncate">{userName}</p>
+                  {isAdmin && (
+                    <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full
+                      bg-[rgba(0,113,227,0.10)] text-[#0071e3] uppercase tracking-wide">
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-ink-faint truncate">{userEmail}</p>
               </div>
               <button
@@ -212,6 +237,16 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
                     active={isActive(item.href)}
                     onClick={() => setSidebarOpen(false)} />
                 ))}
+                {isAdmin && (
+                  <>
+                    <p className="px-3 pt-4 pb-1.5 t-eyebrow text-[10px]">Administração</p>
+                    {ADMIN_NAV.map(item => (
+                      <NavItem key={item.href} {...item}
+                        active={isActive(item.href)}
+                        onClick={() => setSidebarOpen(false)} />
+                    ))}
+                  </>
+                )}
               </nav>
               <div className="p-3 pb-8">
                 <Link href="/" onClick={() => setSidebarOpen(false)}
