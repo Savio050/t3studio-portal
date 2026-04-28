@@ -799,7 +799,7 @@ function SelectField({ label, value, options, onChange, placeholder = 'Seleciona
       </button>
 
       {open && (
-        <div className="absolute z-[60] top-full left-0 right-0 mt-1 rounded-apple-lg
+        <div className="absolute z-[200] top-full left-0 right-0 mt-1 rounded-apple-lg
           bg-surface border border-hairline shadow-apple-md overflow-hidden">
           {/* Clear option */}
           <button
@@ -1538,7 +1538,7 @@ export default function Conteudo() {
           </div>
 
           {/* ── Alternating filter list ── */}
-          <div className="rounded-apple-xl overflow-hidden border border-hairline bg-surface">
+          <div className="rounded-apple-xl border border-hairline bg-surface">
 
             {/* Row 1 — Cliente (expandable dropdown) */}
             <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
