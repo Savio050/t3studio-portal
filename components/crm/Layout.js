@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
@@ -101,7 +100,8 @@ function UserAvatar({ name, foto, size = 'sm', onUpload, uploading }) {
 
       {/* Photo or initials */}
       {showPhoto ? (
-        <Image src={foto} alt={name} fill className="object-cover" onError={() => setErr(true)} />
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={foto} alt={name} className="w-full h-full object-cover" onError={() => setErr(true)} />
       ) : (
         <div className={`w-full h-full flex items-center justify-center
           ${textSz} font-semibold text-white brand-gradient`}>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import CRMLayout from '../../components/crm/Layout';
 import { Shield, User, Mail, Loader2, Users2 } from 'lucide-react';
-import Image from 'next/image';
 
 const AVATAR_GRADIENTS = [
   ['#0a84ff', '#0055d4'],
@@ -66,10 +65,10 @@ function MemberCard({ member, isCurrentUser }) {
       <div className="relative w-24 h-24 mb-5">
         <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white shadow-md">
           {showPhoto ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={member.foto}
               alt={member.nome}
-              width={96} height={96}
               className="w-full h-full object-cover"
               onError={() => setImgErr(true)}
             />

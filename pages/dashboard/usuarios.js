@@ -9,7 +9,7 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function RoleBadge({ role }) {
-  const isAdmin = role === 'administrador';
+  const isAdmin = (role || '').toLowerCase() === 'administrador';
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold
       ${isAdmin
@@ -435,9 +435,13 @@ export default function UsuariosPage() {
               {users.map((user, idx) => (
                 <li key={user.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[rgba(0,0,0,0.015)] transition-colors">
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13px] font-bold text-white"
-                    style={{ background: avatarColor(user.id) }}>
-                    {getInitials(user.nome)}
+                  <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-[13px] font-bold text-white"
+                    style={{ background: user.foto ? 'transparent' : avatarColor(user.id) }}>
+                    {user.foto
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={user.foto} alt={user.nome} className="w-full h-full object-cover" />
+                      : getInitials(user.nome)
+                    }
                   </div>
 
                   {/* Info */}
@@ -445,6 +449,13 @@ export default function UsuariosPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[14px] font-semibold text-[#1d1d1f]">{user.nome}</span>
                       <RoleBadge role={user.cargo} />
+                      {user.source === 'legacy' && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full
+                          bg-[rgba(255,149,0,0.10)] text-[#c93400] uppercase tracking-wide"
+                          title="Usuário definido em AUTH_USERS. Para gerenciar, adicione-o via botão Adicionar.">
+                          ENV
+                        </span>
+                      )}
                     </div>
                     <p className="text-[12px] text-[#aeaeb2] mt-0.5">{user.email}</p>
                   </div>
