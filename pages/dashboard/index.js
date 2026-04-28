@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import CRMLayout from '../../components/crm/Layout';
 import {
   CheckSquare, Film, Users, TrendingUp, AlertCircle,
@@ -190,6 +191,8 @@ function SectionCard({ title, icon: Icon, iconColor, count, href, hrefLabel = 'V
 
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const { data: session } = useSession();
+  const firstName = session?.user?.name?.split(' ')[0] || 'T3 Studio';
   const [stats,   setStats]   = useState(null);
   const [tasks,   setTasks]   = useState([]);
   const [content, setContent] = useState([]);
@@ -305,7 +308,7 @@ export default function Dashboard() {
         <div className="mb-10 animate-slide-up">
           <p className="t-eyebrow mb-2 text-accent">CRM Interno</p>
           <h1 className="t-hero">
-            {greeting()}, T3 Studio
+            {greeting()}, {firstName}
           </h1>
           <p className="text-[15px] text-ink-muted mt-2">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

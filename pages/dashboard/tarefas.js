@@ -3,13 +3,61 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Plus, CheckSquare, Circle, CheckCircle2, Clock, X,
   Loader2, User, Calendar, Tag, ChevronDown, Trash2,
-  StickyNote,
+  StickyNote, Check,
 } from 'lucide-react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const STATUSES   = ['Pendente', 'Concluído'];
-const MEMBERS    = ['Matheus', 'savio'];
-const CLIENTS    = ['mafro', 'fast imoveis'];
+
+// ── SelectField ───────────────────────────────────────────────────────────────
+function SelectField({ label, value, options, onChange, placeholder = 'Selecionar…' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, []);
+
+  const selected = options.find(o => o.value?.toLowerCase() === (value || '').toLowerCase());
+
+  return (
+    <div ref={ref} className="relative">
+      {label && <label className="block t-eyebrow text-ink-muted mb-1.5">{label}</label>}
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-apple
+          bg-elevated border border-hairline text-[13px] font-medium text-left
+          hover:border-accent/40 transition-all cursor-pointer">
+        <span className={`truncate ${selected ? 'text-ink' : 'text-ink-faint'}`}>
+          {selected?.label ?? placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-ink-faint shrink-0 ml-2 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-[200] top-full left-0 right-0 mt-1 rounded-apple-lg
+          bg-surface border border-hairline shadow-apple-md overflow-hidden">
+          <button type="button" onClick={() => { onChange(''); setOpen(false); }}
+            className="w-full flex items-center px-3 py-2 text-[12px] text-ink-faint hover:bg-elevated cursor-pointer transition-colors">
+            Limpar seleção
+          </button>
+          <div className="h-px bg-hairline mx-2" />
+          {options.map(opt => {
+            const active = opt.value?.toLowerCase() === (value || '').toLowerCase();
+            return (
+              <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] text-left cursor-pointer transition-colors
+                  ${active ? 'bg-accent/8 text-accent font-semibold' : 'hover:bg-elevated text-ink'}`}>
+                <span className="flex-1">{opt.label}</span>
+                {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const STATUS_CONFIG = {
   'Pendente':  { badge: 'badge badge-orange', dot: 'dot dot-orange' },
@@ -195,7 +243,7 @@ function TaskCard({ task, onToggle, onDelete, onUpdateNote, toggling }) {
 }
 
 // ── New Task Modal ────────────────────────────────────────────────────────────
-function NewTaskModal({ onClose, onCreate }) {
+function NewTaskModal({ onClose, onCreate, clientsList = [], membersList = [] }) {
   const [nome, setNome] = useState('');
   const [responsavel, setResponsavel] = useState([]);
   const [cliente, setCliente] = useState('');
@@ -247,24 +295,18 @@ function NewTaskModal({ onClose, onCreate }) {
             />
           </div>
 
-          {/* Responsável */}
+          {/* Responsável — multi-toggle */}
           <div>
-            <label className="block t-eyebrow text-ink-muted mb-2">
-              Responsável
-            </label>
-            <div className="flex gap-2">
-              {MEMBERS.map(m => {
+            <label className="block t-eyebrow text-ink-muted mb-2">Responsável</label>
+            <div className="flex flex-wrap gap-2">
+              {(membersList.length ? membersList : ['Matheus', 'Sávio']).map(m => {
                 const active = responsavel.includes(m);
                 return (
-                  <button
-                    type="button"
-                    key={m}
-                    onClick={() => toggleMember(m)}
-                    className={`flex-1 py-2.5 rounded-apple text-sm font-medium cursor-pointer transition-all duration-150
+                  <button type="button" key={m} onClick={() => toggleMember(m)}
+                    className={`px-4 py-2 rounded-apple text-sm font-medium cursor-pointer transition-all duration-150
                       ${active
                         ? 'bg-accent-soft text-accent-ink border border-accent/20'
-                        : 'bg-elevated text-ink-soft border border-hairline hover:bg-surface hover:border-ink-faint'}`}
-                  >
+                        : 'bg-elevated text-ink-soft border border-hairline hover:bg-surface hover:border-ink-faint'}`}>
                     {m}
                   </button>
                 );
@@ -272,40 +314,14 @@ function NewTaskModal({ onClose, onCreate }) {
             </div>
           </div>
 
-          {/* Cliente */}
-          <div>
-            <label className="block t-eyebrow text-ink-muted mb-2">
-              Cliente
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setCliente('')}
-                className={`px-3 py-2 rounded-apple text-xs font-medium cursor-pointer transition-all duration-150
-                  ${!cliente
-                    ? 'bg-accent-soft text-accent-ink border border-accent/20'
-                    : 'bg-elevated text-ink-muted border border-hairline hover:bg-surface'}`}
-              >
-                Nenhum
-              </button>
-              {CLIENTS.map(c => {
-                const active = cliente === c;
-                return (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => setCliente(c)}
-                    className={`flex-1 py-2 rounded-apple text-xs font-semibold cursor-pointer transition-all duration-150
-                      ${active
-                        ? 'bg-accent-soft text-accent-ink border border-accent/20'
-                        : 'bg-elevated text-ink-muted border border-hairline hover:bg-surface'}`}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* Cliente — dropdown */}
+          <SelectField
+            label="Cliente"
+            value={cliente}
+            onChange={setCliente}
+            placeholder="Nenhum cliente"
+            options={clientsList.map(c => ({ value: c.nome, label: c.nome }))}
+          />
 
           {/* Data de entrega */}
           <div>
@@ -343,6 +359,8 @@ export default function Tarefas() {
   const [showModal,    setShowModal]    = useState(false);
   const [filterMember, setFilterMember] = useState('');
   const [filterClient, setFilterClient] = useState('');
+  const [clientsList,  setClientsList]  = useState([]);
+  const [membersList,  setMembersList]  = useState([]);
 
   const loadTasks = () => {
     setLoading(true);
@@ -352,7 +370,18 @@ export default function Tarefas() {
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { loadTasks(); }, []);
+  useEffect(() => {
+    loadTasks();
+    // Fetch clients and team members for filters/modal
+    fetch('/api/crm/clients')
+      .then(r => r.json())
+      .then(d => setClientsList(d.clients || []))
+      .catch(() => {});
+    fetch('/api/crm/team')
+      .then(r => r.json())
+      .then(d => setMembersList((d.members || []).map(m => m.nome).filter(Boolean)))
+      .catch(() => {});
+  }, []);
 
   const toggle = async (task) => {
     const next = task.status === 'Concluído' ? 'Pendente' : 'Concluído';
@@ -416,20 +445,6 @@ export default function Tarefas() {
     });
   const done = filtered.filter(t => t.status === 'Concluído');
 
-  const FilterChip = ({ value, current, onChange, label }) => {
-    const active = current === value;
-    return (
-      <button
-        onClick={() => onChange(active ? '' : value)}
-        className={`px-3 py-1.5 rounded-pill text-xs font-medium transition-all duration-150 cursor-pointer
-          ${active
-            ? 'bg-accent-soft text-accent-ink border border-accent/20'
-            : 'bg-surface text-ink-soft border border-hairline hover:bg-elevated'}`}
-      >
-        {label}
-      </button>
-    );
-  };
 
   return (
     <CRMLayout title="Tarefas — T3 Studio CRM">
@@ -456,22 +471,33 @@ export default function Tarefas() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-8 items-center">
-          <span className="t-small text-ink-muted font-medium mr-1">Filtrar</span>
-          {MEMBERS.map(m => (
-            <FilterChip key={m} value={m} current={filterMember} onChange={setFilterMember} label={m} />
-          ))}
-          <div className="w-px h-5 bg-hairline mx-1" />
-          {CLIENTS.map(c => (
-            <FilterChip key={c} value={c} current={filterClient} onChange={setFilterClient} label={c} />
-          ))}
+        <div className="flex flex-wrap gap-3 mb-8 items-end">
+          <div className="w-48">
+            <SelectField
+              label="Responsável"
+              value={filterMember}
+              onChange={setFilterMember}
+              placeholder="Todos"
+              options={(membersList.length ? membersList : ['Matheus', 'Sávio'])
+                .map(m => ({ value: m, label: m }))}
+            />
+          </div>
+          <div className="w-48">
+            <SelectField
+              label="Cliente"
+              value={filterClient}
+              onChange={setFilterClient}
+              placeholder="Todos os clientes"
+              options={clientsList.map(c => ({ value: c.nome, label: c.nome }))}
+            />
+          </div>
           {(filterMember || filterClient) && (
             <button
               onClick={() => { setFilterMember(''); setFilterClient(''); }}
-              className="px-3 py-1.5 rounded-pill text-xs font-medium transition-all duration-150 cursor-pointer
-                text-ink-muted hover:text-ink hover:bg-elevated"
-            >
-              Limpar filtros
+              className="flex items-center gap-1.5 px-3 py-2 rounded-apple text-xs font-medium
+                text-ink-muted hover:text-ink hover:bg-elevated border border-hairline
+                transition-all cursor-pointer mb-0.5">
+              <X className="w-3 h-3" /> Limpar
             </button>
           )}
         </div>
@@ -538,7 +564,7 @@ export default function Tarefas() {
       </div>
 
       {showModal && (
-        <NewTaskModal onClose={() => setShowModal(false)} onCreate={createTask} />
+        <NewTaskModal onClose={() => setShowModal(false)} onCreate={createTask} clientsList={clientsList} membersList={membersList} />
       )}
     </CRMLayout>
   );
