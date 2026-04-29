@@ -1,11 +1,11 @@
 /**
  * POST /api/crm/upload-avatar
- * Uploads image to R2, saves URL to Notion, returns { foto, notionSaved, notionError }.
+ * Uploads image to R2, saves URL to Notion, returns { foto, notionSaved, debug }.
  */
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client as NotionClient } from '@notionhq/client';
 import { getToken } from 'next-auth/jwt';
-import { sanitizeNotionId, isValidNotionId, findNotionPageByEmail } from '../../../lib/notionId';
+import { sanitizeNotionId, isValidNotionId } from '../../../lib/notionId';
 
 export const config = {
   api: { bodyParser: false, responseLimit: '6mb' },
@@ -21,6 +21,93 @@ async function readBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
+}
+
+// Inline page lookup with full diagnostics returned to caller
+async function resolveNotionPageId(token) {
+  const log = [];
+
+  log.push(`notionId no token: ${token.notionId || 'null/undefined'}`);
+  log.push(`email no token: ${token.email}`);
+  log.push(`USERS_DB: ${USERS_DB || 'não configurado'}`);
+
+  // 1. Use notionId from JWT if it's a valid UUID
+  if (isValidNotionId(token.notionId)) {
+    log.push(`Usando notionId direto do token: ${token.notionId}`);
+    return { pageId: token.notionId, log };
+  }
+
+  if (!USERS_DB) {
+    log.push('USERS_DB não configurado — abortando busca');
+    return { pageId: null, log };
+  }
+
+  const email = (token.email || '').toLowerCase().trim();
+  if (!email) {
+    log.push('Email não disponível no token');
+    return { pageId: null, log };
+  }
+
+  // 2. rich_text filter
+  try {
+    const res = await notion.databases.query({
+      database_id: USERS_DB,
+      filter: { property: 'Email', rich_text: { equals: email } },
+    });
+    log.push(`rich_text filter: ${res.results.length} resultado(s)`);
+    if (res.results.length > 0) return { pageId: res.results[0].id, log };
+  } catch (e) {
+    log.push(`rich_text filter erro: ${e.message}`);
+  }
+
+  // 3. email-type filter
+  try {
+    const res = await notion.databases.query({
+      database_id: USERS_DB,
+      filter: { property: 'Email', email: { equals: email } },
+    });
+    log.push(`email filter: ${res.results.length} resultado(s)`);
+    if (res.results.length > 0) return { pageId: res.results[0].id, log };
+  } catch (e) {
+    log.push(`email filter erro: ${e.message}`);
+  }
+
+  // 4. Full scan + match in JS
+  try {
+    const pages = [];
+    const r = await notion.databases.query({ database_id: USERS_DB, page_size: 100 });
+    pages.push(...r.results);
+    log.push(`Full scan: ${pages.length} página(s) retornada(s)`);
+
+    const found = pages.find(p => {
+      const prop = p.properties['Email'];
+      if (!prop) return false;
+      const val = prop.type === 'email'
+        ? (prop.email || '')
+        : (prop.rich_text?.[0]?.plain_text || prop.title?.[0]?.plain_text || '');
+      return val.toLowerCase().trim() === email;
+    });
+
+    if (found) {
+      log.push(`Página encontrada via full scan: ${found.id}`);
+      return { pageId: found.id, log };
+    }
+
+    // Log all emails found for comparison
+    const emails = pages.map(p => {
+      const prop = p.properties['Email'];
+      if (!prop) return '[sem Email]';
+      return prop.type === 'email'
+        ? prop.email
+        : (prop.rich_text?.[0]?.plain_text || '[vazio]');
+    });
+    log.push(`Emails na DB: ${emails.join(', ')}`);
+    log.push(`Nenhuma página encontrada para: "${email}"`);
+  } catch (e) {
+    log.push(`Full scan erro: ${e.message}`);
+  }
+
+  return { pageId: null, log };
 }
 
 export default async function handler(req, res) {
@@ -65,30 +152,31 @@ export default async function handler(req, res) {
     // ── Save URL to Notion ──────────────────────────────────────────────────
     let notionSaved = false;
     let notionError = null;
+    let debug = [];
 
     if (USERS_DB) {
-      try {
-        const pageId = isValidNotionId(token.notionId)
-          ? token.notionId
-          : await findNotionPageByEmail(notion, USERS_DB, token.email);
+      const { pageId, log } = await resolveNotionPageId(token);
+      debug = log;
 
-        if (!pageId) {
-          notionError = `Página não encontrada para ${token.email}`;
-        } else {
+      if (!pageId) {
+        notionError = 'Página não encontrada';
+      } else {
+        try {
           await notion.pages.update({
             page_id: pageId,
             properties: { 'foto': { url: publicUrl } },
           });
           notionSaved = true;
+          debug.push(`Foto salva com sucesso na página ${pageId}`);
+        } catch (err) {
+          notionError = err?.message || 'Erro ao atualizar página';
+          debug.push(`Erro ao salvar: ${notionError}`);
+          console.error('Notion foto update error:', notionError);
         }
-      } catch (err) {
-        notionError = err?.message || 'Erro desconhecido';
-        console.error('Notion foto update error:', notionError);
       }
     }
 
-    // Always return the URL even if Notion save failed (client will retry via PATCH /profile)
-    return res.status(200).json({ foto: publicUrl, notionSaved, notionError });
+    return res.status(200).json({ foto: publicUrl, notionSaved, notionError, debug });
 
   } catch (err) {
     console.error('Avatar upload error:', err?.message || err);

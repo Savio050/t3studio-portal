@@ -172,14 +172,9 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
       const fotoUrl = data.foto;
       setUserFoto(fotoUrl);
 
-      // Step 2: if upload-avatar didn't save to Notion, try PATCH /profile explicitly
+      // Log full diagnostic if Notion save failed
       if (!data.notionSaved) {
-        if (data.notionError) console.warn('Avatar upload: Notion save failed —', data.notionError);
-        await fetch('/api/crm/profile', {
-          method:  'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ foto: fotoUrl }),
-        });
+        console.warn('Avatar upload: Notion save failed. Debug:', data.debug);
       }
     } catch (err) {
       setUploadErr(err.message || 'Erro ao enviar foto.');
