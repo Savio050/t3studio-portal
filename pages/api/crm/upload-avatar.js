@@ -1,7 +1,6 @@
 /**
  * POST /api/crm/upload-avatar
- * Receives image binary, uploads to R2 server-side (no CORS),
- * saves the public URL to the user's Notion profile, returns { foto }.
+ * Uploads image to R2, saves URL to Notion, returns { foto, notionSaved, notionError }.
  */
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client as NotionClient } from '@notionhq/client';
@@ -32,7 +31,7 @@ export default async function handler(req, res) {
 
   const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env;
   if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME || !R2_PUBLIC_URL) {
-    return res.status(503).json({ error: 'R2 não configurado. Adicione as variáveis R2_* no Vercel.' });
+    return res.status(503).json({ error: 'R2 não configurado.' });
   }
 
   try {
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
 
     // ── Upload to R2 ────────────────────────────────────────────────────────
     const ext = contentType.split('/')[1]?.split(';')[0] || 'jpg';
-    const key = `avatars/${(token.id || 'user').replace(/[^a-z0-9]/gi, '_')}-${Date.now()}.${ext}`;
+    const key = `avatars/${(token.email || 'user').replace(/[^a-z0-9]/gi, '_')}-${Date.now()}.${ext}`;
 
     const s3 = new S3Client({
       region: 'auto',
@@ -64,26 +63,33 @@ export default async function handler(req, res) {
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;
 
     // ── Save URL to Notion ──────────────────────────────────────────────────
-    if (USERS_DB) {
-      const pageId = isValidNotionId(token.notionId)
-        ? token.notionId
-        : await findNotionPageByEmail(notion, USERS_DB, token.email);
+    let notionSaved = false;
+    let notionError = null;
 
-      if (pageId) {
-        try {
+    if (USERS_DB) {
+      try {
+        const pageId = isValidNotionId(token.notionId)
+          ? token.notionId
+          : await findNotionPageByEmail(notion, USERS_DB, token.email);
+
+        if (!pageId) {
+          notionError = `Página não encontrada para ${token.email}`;
+        } else {
           await notion.pages.update({
             page_id: pageId,
             properties: { 'foto': { url: publicUrl } },
           });
-        } catch (err) {
-          console.error('Notion foto update error:', err?.message);
+          notionSaved = true;
         }
-      } else {
-        console.warn('Avatar upload: no Notion page found for', token.email);
+      } catch (err) {
+        notionError = err?.message || 'Erro desconhecido';
+        console.error('Notion foto update error:', notionError);
       }
     }
 
-    return res.status(200).json({ foto: publicUrl });
+    // Always return the URL even if Notion save failed (client will retry via PATCH /profile)
+    return res.status(200).json({ foto: publicUrl, notionSaved, notionError });
+
   } catch (err) {
     console.error('Avatar upload error:', err?.message || err);
     return res.status(500).json({ error: 'Erro ao fazer upload: ' + (err?.message || 'desconhecido') });

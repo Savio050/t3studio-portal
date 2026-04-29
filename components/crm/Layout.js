@@ -160,7 +160,7 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
     setUploadErr('');
 
     try {
-      // Single server-side call: upload to R2 + save to Notion, no CORS
+      // Step 1: upload to R2 (server-side, no CORS)
       const res = await fetch('/api/crm/upload-avatar', {
         method:  'POST',
         headers: { 'Content-Type': file.type },
@@ -168,7 +168,19 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro ao enviar foto.');
-      setUserFoto(data.foto);
+
+      const fotoUrl = data.foto;
+      setUserFoto(fotoUrl);
+
+      // Step 2: if upload-avatar didn't save to Notion, try PATCH /profile explicitly
+      if (!data.notionSaved) {
+        if (data.notionError) console.warn('Avatar upload: Notion save failed —', data.notionError);
+        await fetch('/api/crm/profile', {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ foto: fotoUrl }),
+        });
+      }
     } catch (err) {
       setUploadErr(err.message || 'Erro ao enviar foto.');
     } finally {
