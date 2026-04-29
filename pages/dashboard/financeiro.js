@@ -22,6 +22,27 @@ const STATUS_OPTS = ['Confirmado','Pendente','Cancelado'];
 const CATEGORIAS_RECEITA = ['Projeto','Mensalidade','Consultoria','Bônus','Outros'];
 const CATEGORIAS_DESPESA = ['Salários','Ferramentas','Marketing','Infraestrutura','Impostos','Freelancer','Outros'];
 
+const FREQ_OPTS = [
+  { label: 'Semanal',    value: 'semanal',    days: 7   },
+  { label: 'Quinzenal',  value: 'quinzenal',  days: 14  },
+  { label: 'Mensal',     value: 'mensal',     months: 1 },
+  { label: 'Bimestral',  value: 'bimestral',  months: 2 },
+  { label: 'Trimestral', value: 'trimestral', months: 3 },
+  { label: 'Semestral',  value: 'semestral',  months: 6 },
+  { label: 'Anual',      value: 'anual',      months: 12},
+];
+
+function offsetDate(dateStr, freq, times) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const f = FREQ_OPTS.find(o => o.value === freq);
+  if (!f) return dateStr;
+  for (let i = 0; i < times; i++) {
+    if (f.days)   d.setDate(d.getDate() + f.days);
+    else          d.setMonth(d.getMonth() + f.months);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 const STATUS_META = {
   Confirmado: { icon: CheckCircle2, color: 'text-ok',   bg: 'bg-ok/10',   label: 'Confirmado' },
   Pendente:   { icon: Clock,        color: 'text-warn',  bg: 'bg-warn/10',  label: 'Pendente'   },
@@ -329,44 +350,92 @@ function TxRow({ tx, onEdit, onDelete }) {
 // ── Transaction Modal ─────────────────────────────────────────────────────────
 function TxModal({ tx, clients, team, onSave, onClose }) {
   const isEdit = !!tx?.id;
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
+  const [saving,      setSaving]      = useState(false);
+  const [progress,    setProgress]    = useState(null); // { done, total } during bulk create
+  const [err,         setErr]         = useState('');
+  const [recorrente,  setRecorrente]  = useState(false);
+  const [recFreq,     setRecFreq]     = useState('mensal');
+  const [recReps,     setRecReps]     = useState(3);
   const [form, setForm] = useState({
-    nome: tx?.nome || '',
-    tipo: tx?.tipo || 'Receita',
-    categoria: tx?.categoria || '',
-    valor: tx?.valor ? String(tx.valor) : '',
-    data: tx?.data || new Date().toISOString().slice(0, 10),
-    cliente: tx?.cliente || '',
+    nome:        tx?.nome        || '',
+    tipo:        tx?.tipo        || 'Receita',
+    categoria:   tx?.categoria   || '',
+    valor:       tx?.valor       ? String(tx.valor) : '',
+    data:        tx?.data        || new Date().toISOString().slice(0, 10),
+    cliente:     tx?.cliente     || '',
     responsavel: tx?.responsavel || '',
-    status: tx?.status || 'Confirmado',
-    notas: tx?.notas || '',
+    status:      tx?.status      || 'Confirmado',
+    notas:       tx?.notas       || '',
   });
 
   const categorias = form.tipo === 'Receita' ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA;
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // Preview of recurring dates
+  const recDates = useMemo(() => {
+    if (!recorrente || !form.data) return [];
+    const dates = [form.data];
+    for (let i = 1; i < recReps; i++) {
+      dates.push(offsetDate(dates[dates.length - 1], recFreq, 1));
+    }
+    return dates;
+  }, [recorrente, form.data, recFreq, recReps]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.nome.trim()) { setErr('Nome é obrigatório.'); return; }
+    if (!form.nome.trim()) { setErr('Descrição é obrigatória.'); return; }
     if (!form.valor || isNaN(Number(form.valor))) { setErr('Valor inválido.'); return; }
     setSaving(true); setErr('');
+
     try {
-      const body = { ...form, valor: Number(form.valor) };
-      if (isEdit) body.id = tx.id;
-      const res = await fetch('/api/crm/finance', {
-        method: isEdit ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao salvar.');
-      onSave(data.transaction, isEdit);
+      const base = { ...form, valor: Number(form.valor) };
+
+      // ── Edit: single PATCH ──────────────────────────────────────────────────
+      if (isEdit) {
+        const res = await fetch('/api/crm/finance', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...base, id: tx.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar.');
+        onSave([data.transaction], true);
+        return;
+      }
+
+      // ── Create: single or recurring ─────────────────────────────────────────
+      const entries = recorrente
+        ? recDates.map((date, i) => ({
+            ...base,
+            nome: recReps > 1 ? `${base.nome} (${i + 1}/${recReps})` : base.nome,
+            data: date,
+            notas: base.notas
+              ? `${base.notas} · Recorrência ${i + 1}/${recReps}`
+              : `Recorrência ${i + 1}/${recReps}`,
+          }))
+        : [base];
+
+      const created = [];
+      setProgress({ done: 0, total: entries.length });
+
+      for (let i = 0; i < entries.length; i++) {
+        const res = await fetch('/api/crm/finance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entries[i]),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Erro na entrada ${i + 1}.`);
+        created.push(data.transaction);
+        setProgress({ done: i + 1, total: entries.length });
+      }
+
+      onSave(created, false);
     } catch (e) {
       setErr(e.message);
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   };
 
@@ -374,6 +443,12 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
     rounded-xl text-ink placeholder-ink-faint focus:outline-none focus:border-accent
     focus:ring-2 focus:ring-accent/20 transition-all duration-150`;
   const labelCls = 'block text-[11px] font-semibold text-ink-soft mb-1';
+
+  const submitLabel = isEdit
+    ? 'Salvar alterações'
+    : recorrente
+      ? `Criar ${recReps} transações`
+      : 'Adicionar';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in">
@@ -399,9 +474,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
                   onClick={() => { set('tipo', t); set('categoria', ''); }}
                   className={`flex-1 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer
                     ${form.tipo === t
-                      ? t === 'Receita'
-                        ? 'bg-[#30d158] text-white'
-                        : 'bg-[#ff375f] text-white'
+                      ? t === 'Receita' ? 'bg-[#30d158] text-white' : 'bg-[#ff375f] text-white'
                       : 'bg-elevated text-ink-soft hover:bg-[rgba(0,0,0,0.06)]'}`}>
                   {t}
                 </button>
@@ -412,7 +485,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
           {/* Nome */}
           <div>
             <label className={labelCls}>Descrição *</label>
-            <input className={inputCls} placeholder="Ex: Projeto website cliente X"
+            <input className={inputCls} placeholder="Ex: Mensalidade gestão de redes"
               value={form.nome} onChange={e => set('nome', e.target.value)} />
           </div>
 
@@ -424,7 +497,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
                 value={form.valor} onChange={e => set('valor', e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>Data</label>
+              <label className={labelCls}>Data inicial</label>
               <input className={inputCls} type="date"
                 value={form.data} onChange={e => set('data', e.target.value)} />
             </div>
@@ -472,12 +545,91 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
               value={form.notas} onChange={e => set('notas', e.target.value)} />
           </div>
 
+          {/* ── Recorrência (only on new transactions) ─────────────────── */}
+          {!isEdit && (
+            <div className="rounded-xl border border-[rgba(0,0,0,0.08)] overflow-hidden">
+              {/* Toggle header */}
+              <button type="button"
+                onClick={() => setRecorrente(r => !r)}
+                className="w-full flex items-center justify-between px-4 py-3
+                  bg-elevated hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
+                    ${recorrente ? 'border-accent bg-accent' : 'border-[rgba(0,0,0,0.2)] bg-transparent'}`}>
+                    {recorrente && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span className="text-[13px] font-semibold text-ink">Transação recorrente</span>
+                </div>
+                <span className="text-[11px] text-ink-faint">
+                  {recorrente ? 'Ativado' : 'Desativado'}
+                </span>
+              </button>
+
+              {/* Recurrence options */}
+              {recorrente && (
+                <div className="px-4 pb-4 pt-3 space-y-3 bg-canvas">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Frequência</label>
+                      <select className={inputCls} value={recFreq} onChange={e => setRecFreq(e.target.value)}>
+                        {FREQ_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Repetições</label>
+                      <input className={inputCls} type="number" min="2" max="60"
+                        value={recReps} onChange={e => setRecReps(Math.max(2, Math.min(60, Number(e.target.value))))} />
+                    </div>
+                  </div>
+
+                  {/* Preview dates */}
+                  {recDates.length > 0 && (
+                    <div>
+                      <p className={labelCls}>Datas geradas ({recDates.length})</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {recDates.slice(0, 12).map((d, i) => (
+                          <span key={i}
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-accent/10 text-accent">
+                            {new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                          </span>
+                        ))}
+                        {recDates.length > 12 && (
+                          <span className="text-[10px] text-ink-faint px-1 py-0.5">
+                            +{recDates.length - 12} mais
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-ink-faint mt-1.5">
+                        Total: {fmt(Number(form.valor || 0) * recReps)} em {recReps} parcelas de {fmt(Number(form.valor || 0))}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {err && <p className="text-[12px] text-[#ff375f] font-medium">{err}</p>}
 
+          {/* Progress bar during bulk create */}
+          {progress && (
+            <div>
+              <div className="flex justify-between text-[10px] text-ink-faint mb-1">
+                <span>Criando transações...</span>
+                <span>{progress.done}/{progress.total}</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-elevated overflow-hidden">
+                <div className="h-full bg-accent rounded-full transition-all duration-300"
+                  style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose}
+            <button type="button" onClick={onClose} disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold
-                bg-elevated text-ink-soft hover:bg-[rgba(0,0,0,0.06)] transition-all cursor-pointer">
+                bg-elevated text-ink-soft hover:bg-[rgba(0,0,0,0.06)] transition-all cursor-pointer
+                disabled:opacity-50">
               Cancelar
             </button>
             <button type="submit" disabled={saving}
@@ -485,7 +637,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
                 bg-accent hover:bg-accent/90 transition-all cursor-pointer flex items-center justify-center gap-2
                 disabled:opacity-60">
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {isEdit ? 'Salvar alterações' : 'Adicionar'}
+              {submitLabel}
             </button>
           </div>
         </form>
@@ -509,7 +661,7 @@ export default function FinanceiroPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/crm/finance').then(r => r.json()),
-      fetch('/api/crm/clientes').then(r => r.json()).catch(() => ({})),
+      fetch('/api/crm/clients').then(r => r.json()).catch(() => ({})),
       fetch('/api/crm/equipe').then(r => r.json()).catch(() => ({})),
     ]).then(([fin, cli, eq]) => {
       setTxs(fin.transactions || []);
@@ -609,11 +761,13 @@ export default function FinanceiroPage() {
   const maxClientVal = topClients[0]?.[1] || 1;
 
   // Handlers
-  const handleSave = useCallback((tx, isEdit) => {
-    setTxs(prev => isEdit
-      ? prev.map(t => t.id === tx.id ? tx : t)
-      : [tx, ...prev]
-    );
+  const handleSave = useCallback((txList, isEdit) => {
+    setTxs(prev => {
+      if (isEdit && txList.length === 1) {
+        return prev.map(t => t.id === txList[0].id ? txList[0] : t);
+      }
+      return [...txList, ...prev];
+    });
     setModal(null);
   }, []);
 
