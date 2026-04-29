@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import CRMLayout from '../../components/crm/Layout';
 import {
   TrendingUp, TrendingDown, DollarSign, Percent,
@@ -648,6 +650,8 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinanceiroPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [txs,      setTxs]      = useState([]);
   const [clients,  setClients]  = useState([]);
   const [team,     setTeam]     = useState([]);
@@ -657,8 +661,17 @@ export default function FinanceiroPage() {
   const [filter,   setFilter]   = useState({ tipo: 'Todos', periodo: 'all', search: '' });
   const [sortDesc, setSortDesc] = useState(true);
 
-  // Load data
+  // ── Guard: admin only ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!session || session.user?.role !== 'administrador') {
+      router.replace('/dashboard');
+    }
+  }, [session, status, router]);
+
+  // Load data — only after session confirmed as admin
+  useEffect(() => {
+    if (status === 'loading' || session?.user?.role !== 'administrador') return;
     Promise.all([
       fetch('/api/crm/finance').then(r => r.json()),
       fetch('/api/crm/clients').then(r => r.json()).catch(() => ({})),
@@ -672,7 +685,7 @@ export default function FinanceiroPage() {
       setErr(e.message);
       setLoading(false);
     });
-  }, []);
+  }, [session, status]);
 
   // Filter + sort
   const now = new Date();
@@ -779,6 +792,16 @@ export default function FinanceiroPage() {
     });
     setTxs(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  if (status === 'loading' || (session && session.user?.role !== 'administrador')) {
+    return (
+      <CRMLayout title="Financeiro · T3 Studio">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-6 h-6 animate-spin text-[#aeaeb2]" />
+        </div>
+      </CRMLayout>
+    );
+  }
 
   const notionConfigured = !err?.includes('NOTION_FINANCE_DB_ID');
 
