@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
-  Loader2, Plus, X, Trash2,
+  Loader2, Plus, X, Trash2, Camera,
 } from 'lucide-react';
 
 // ── Stat mini ─────────────────────────────────────────────────────────────────
@@ -37,12 +37,90 @@ function ProgressBar({ approved, awaiting, inProd, total }) {
   );
 }
 
+// ── Client Logo Avatar ────────────────────────────────────────────────────────
+function ClientAvatar({ clientId, nome, logo, onLogoChange }) {
+  const fileRef          = useRef(null);
+  const [uploading,  setUploading]  = useState(false);
+  const [localLogo,  setLocalLogo]  = useState(logo);
+  const [imgErr,     setImgErr]     = useState(false);
+  const initial = (nome || '??').slice(0, 2).toUpperCase();
+
+  // Sync external logo changes (e.g. initial load)
+  useEffect(() => { setLocalLogo(logo); setImgErr(false); }, [logo]);
+
+  const canUpload = /^[0-9a-f-]{36}$/.test(clientId);
+  const showPhoto = localLogo && !imgErr;
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx 5MB).'); return; }
+
+    setUploading(true);
+    try {
+      const res = await fetch(`/api/crm/upload-client-logo?clientId=${encodeURIComponent(clientId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao enviar logo.');
+      setLocalLogo(data.logo);
+      setImgErr(false);
+      onLogoChange?.(clientId, data.logo);
+    } catch (err) {
+      console.error('Logo upload error:', err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <button
+        type="button"
+        onClick={() => canUpload && fileRef.current?.click()}
+        title={canUpload ? 'Alterar logo' : undefined}
+        disabled={uploading || !canUpload}
+        className={`w-11 h-11 rounded-apple shrink-0 relative overflow-hidden
+          ${canUpload ? 'group cursor-pointer' : 'cursor-default'}
+          focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1`}>
+
+        {showPhoto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={localLogo} alt={nome}
+            className="w-full h-full object-cover"
+            onError={() => setImgErr(true)} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-white brand-gradient shadow-apple-sm">
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : initial}
+          </div>
+        )}
+
+        {canUpload && !uploading && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-apple">
+            <Camera className="w-4 h-4 text-white" />
+          </div>
+        )}
+        {uploading && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-apple">
+            <Loader2 className="w-4 h-4 text-white animate-spin" />
+          </div>
+        )}
+      </button>
+    </>
+  );
+}
+
 // ── Client Card ───────────────────────────────────────────────────────────────
-function ClientCard({ client, onDelete }) {
+function ClientCard({ client, onDelete, onLogoChange }) {
   const total      = client.totalContent;
   const [confirm,  setConfirm]  = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const initial    = (client.nome || '??').slice(0, 2).toUpperCase();
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -62,9 +140,12 @@ function ClientCard({ client, onDelete }) {
       {/* Header row: avatar + name + portal */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-apple flex items-center justify-center text-sm font-semibold text-white shrink-0 brand-gradient shadow-apple-sm">
-            {initial}
-          </div>
+          <ClientAvatar
+            clientId={client.id}
+            nome={client.nome}
+            logo={client.logo}
+            onLogoChange={onLogoChange}
+          />
           <div className="min-w-0">
             <h3 className="t-title capitalize truncate">{client.nome}</h3>
             {client.descricao && (
@@ -262,6 +343,10 @@ export default function Clientes() {
     setClients(prev => prev.filter(c => c.id !== id));
   };
 
+  const handleLogoChange = (clientId, logoUrl) => {
+    setClients(prev => prev.map(c => c.id === clientId ? { ...c, logo: logoUrl } : c));
+  };
+
   const totalContent   = clients.reduce((s, c) => s + c.totalContent, 0);
   const totalAwaiting  = clients.reduce((s, c) => s + c.awaitingApproval, 0);
   const totalApproved  = clients.reduce((s, c) => s + c.approved + c.done, 0);
@@ -306,7 +391,7 @@ export default function Clientes() {
         ) : clients.length > 0 ? (
           <div className="grid sm:grid-cols-2 gap-5">
             {clients.map(client => (
-              <ClientCard key={client.id} client={client} onDelete={deleteClient} />
+              <ClientCard key={client.id} client={client} onDelete={deleteClient} onLogoChange={handleLogoChange} />
             ))}
           </div>
         ) : (

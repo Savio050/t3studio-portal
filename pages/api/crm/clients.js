@@ -77,6 +77,22 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── PATCH: update client logo URL ────────────────────────────────────────────
+  if (req.method === 'PATCH') {
+    const { id, logo } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
+    try {
+      await notion.pages.update({
+        page_id: id,
+        properties: { 'logo': { url: logo || null } },
+      });
+      return res.status(200).json({ ok: true, logo: logo || null });
+    } catch (err) {
+      console.error('Client PATCH error:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Erro ao atualizar logo' });
+    }
+  }
+
   // ── DELETE: archive client ────────────────────────────────────────────────────
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
@@ -154,6 +170,7 @@ export default async function handler(req, res) {
       return {
         id:               sectorPage?.id || nome,
         nome,
+        logo:             sectorPage ? (getProp(sectorPage.properties['logo']) || null) : null,
         categoria:        sectorPage ? (getProp(sectorPage.properties['categoria']) || '') : '',
         descricao:        sectorPage ? (getProp(sectorPage.properties['Descrição']) || '') : '',
         paginaCliente:    sectorPage ? (getProp(sectorPage.properties['Página do cliente']) || '') : '',
