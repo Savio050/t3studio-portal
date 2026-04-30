@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
   Menu, X, Bot, Search, LogOut, Megaphone,
-  ShieldCheck, Camera, Loader2, Users2, TrendingUp,
+  ShieldCheck, Camera, Loader2, Users2, TrendingUp, AlignLeft,
 } from 'lucide-react';
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -18,7 +18,8 @@ const NAV = [
   { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
   { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
   { href: '/dashboard/equipe',      icon: Users2,          label: 'Equipe'     },
-  { href: '/dashboard/assistente',  icon: Bot,             label: 'Assistente', highlight: true },
+  { href: '/dashboard/assistente',    icon: Bot,       label: 'Assistente',   highlight: true },
+  { href: '/dashboard/teleprompter', icon: AlignLeft, label: 'Teleprompter' },
 ];
 
 const ADMIN_NAV = [
