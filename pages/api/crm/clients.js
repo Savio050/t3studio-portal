@@ -1,7 +1,7 @@
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const SECTORS_DB = process.env.NOTION_SECTORS_DB_ID  || '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
+const SECTORS_DB = '32df7ecb-bb9b-80a0-af6f-d69061b82a36';
 const CONTENT_DB = process.env.NOTION_CONTENT_DB_ID  || '329f7ecb-bb9b-8018-b303-f2175c7cbb21';
 
 // ── Canonical client → portal ID (must match content.js) ─────────────────────
