@@ -1050,12 +1050,18 @@ export default function Home() {
     parsedItems.map(i => i._parsed.year).filter(Boolean)
   )].sort((a, b) => Number(b) - Number(a));
 
-  // Aplicar filtro
-  const downloadItems = parsedItems.filter(item => {
-    const mOk = !selMonth || item._parsed.month === selMonth;
-    const yOk = !selYear  || item._parsed.year  === selYear;
-    return mOk && yOk;
-  });
+  // Aplicar filtro + ordenar mais recente primeiro
+  const downloadItems = parsedItems
+    .filter(item => {
+      const mOk = !selMonth || item._parsed.month === selMonth;
+      const yOk = !selYear  || item._parsed.year  === selYear;
+      return mOk && yOk;
+    })
+    .sort((a, b) => {
+      const da = a.dataGravacao || a.postagem || '';
+      const db = b.dataGravacao || b.postagem || '';
+      return db.localeCompare(da); // descending: mais recente no topo
+    });
 
   // Badges urgência
   const approvalBadge = approvalItems.filter(i => getScriptStatus(i.estadoRoteiro).urgent).length;
