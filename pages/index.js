@@ -912,6 +912,17 @@ function ApprovalCard({ item, onApprove, onReject }) {
   );
 }
 
+function getApproveLabel(formato) {
+  const f = (formato || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (f.includes('carrossel') || f.includes('carousel')) return 'Aprovar Carrossel';
+  if (f.includes('stories'))                              return 'Aprovar Stories';
+  if (f.includes('reels'))                               return 'Aprovar Reels';
+  if (f.includes('video') || f.includes('vídeo'))        return 'Aprovar Vídeo';
+  if (f.includes('post'))                                return 'Aprovar Post';
+  if (f.includes('estatico') || f.includes('estático'))  return 'Aprovar Post';
+  return 'Aprovar Conteúdo';
+}
+
 function ReviewCard({ item, onApprove, onReject }) {
   const [busy, setBusy] = useState(false);
   const approve = async () => { setBusy(true); await onApprove('video'); setBusy(false); };
@@ -932,7 +943,7 @@ function ReviewCard({ item, onApprove, onReject }) {
         <ActionButtons
           onApprove={approve}
           onReject={reject}
-          approveLabel="Aprovar Vídeo"
+          approveLabel={getApproveLabel(item.formato)}
           submitting={busy}
         />
       </div>
