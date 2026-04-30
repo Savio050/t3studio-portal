@@ -398,7 +398,7 @@ function SmartMedia({ item, showDownload }) {
               text-sm font-black uppercase tracking-widest
               active:scale-[0.98] transition-all duration-150
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
-            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA
+            <Download className="w-4 h-4" aria-hidden="true" /> BAIXAR EM ALTA QUALIDADE
           </a>
         )}
 

@@ -1184,7 +1184,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
         </div>
         {/* Drive */}
         <div>
-          <label className="block t-eyebrow text-ink-muted mb-1.5">Link Drive (download alta)</label>
+          <label className="block t-eyebrow text-ink-muted mb-1.5">Link Drive (download alta qualidade)</label>
           <input type="url" value={linkDrive} onChange={e => setLinkDrive(e.target.value)}
             placeholder="https://drive.google.com/…" className="input"/>
         </div>
