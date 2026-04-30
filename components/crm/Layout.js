@@ -5,7 +5,7 @@ import Head from 'next/head';
 import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
-  ExternalLink, Menu, X, Bot, Search, LogOut, Megaphone,
+  Menu, X, Bot, Search, LogOut, Megaphone,
   ShieldCheck, Camera, Loader2, Users2, TrendingUp,
 } from 'lucide-react';
 
@@ -16,14 +16,14 @@ const NAV = [
   { href: '/dashboard/conteudo',    icon: Film,            label: 'Conteúdo'   },
   { href: '/dashboard/campanhas',   icon: Megaphone,       label: 'Campanhas'  },
   { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
-  { href: '/dashboard/financeiro',  icon: TrendingUp,      label: 'Financeiro' },
   { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
   { href: '/dashboard/equipe',      icon: Users2,          label: 'Equipe'     },
   { href: '/dashboard/assistente',  icon: Bot,             label: 'Assistente', highlight: true },
 ];
 
 const ADMIN_NAV = [
-  { href: '/dashboard/usuarios', icon: ShieldCheck, label: 'Configurações avançadas' },
+  { href: '/dashboard/financeiro', icon: TrendingUp,  label: 'Financeiro'            },
+  { href: '/dashboard/usuarios',   icon: ShieldCheck, label: 'Configurações avançadas' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -65,19 +65,6 @@ function MobileNavItem({ href, icon: Icon, label, active }) {
       <Icon className={`w-[22px] h-[22px] transition-colors ${active ? 'text-accent' : 'text-ink-faint'}`} />
       <span className={active ? 'text-accent font-semibold' : 'text-ink-muted'}>{label}</span>
     </Link>
-  );
-}
-
-function Logo({ size = 'md' }) {
-  const s       = size === 'sm' ? 'w-7 h-7' : 'w-8 h-8';
-  const iconSz  = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
-  return (
-    <div className={`${s} rounded-[9px] brand-gradient flex items-center justify-center shrink-0`}>
-      <svg className={`${iconSz} text-white`} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 7h16M7 7v13M17 7v13M4 20h16"/>
-      </svg>
-    </div>
   );
 }
 
@@ -283,7 +270,6 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           {/* Brand */}
           <div className="px-5 pt-6 pb-5">
             <Link href="/dashboard" className="flex items-center gap-2.5 group">
-              <Logo />
               <div>
                 <p className="text-[15px] font-semibold text-ink tracking-apple-snug">T3 Studio</p>
                 <p className="text-[11px] text-ink-faint font-medium tracking-wide">CRM Interno</p>
@@ -295,16 +281,6 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
             {renderNav()}
           </nav>
-
-          {/* Footer */}
-          <div className="px-3 pb-3 space-y-1">
-            <Link href="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-[10px] text-[13px] text-ink-muted
-                hover:text-ink hover:bg-[rgba(0,0,0,0.04)] transition-all duration-150 cursor-pointer">
-              <ExternalLink className="w-[16px] h-[16px] shrink-0" />
-              Portal do Cliente
-            </Link>
-          </div>
 
           {/* User card */}
           <div className="p-3 pb-5">
@@ -321,7 +297,6 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
             <Menu className="w-[20px] h-[20px]" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <Logo size="sm" />
             <span className="text-[15px] font-semibold text-ink tracking-apple-snug">{pageTitle}</span>
           </div>
           <button aria-label="Buscar"
@@ -340,7 +315,6 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
             <aside className="absolute left-0 top-0 bottom-0 w-[276px] flex flex-col bg-white animate-slide-up">
               <div className="px-5 pt-6 pb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Logo />
                   <div>
                     <p className="text-[15px] font-semibold text-ink">T3 Studio</p>
                     <p className="text-[11px] text-ink-faint">CRM</p>
@@ -364,14 +338,6 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
                 {renderUserCard()}
               </div>
 
-              <div className="px-3 pb-8 pt-1">
-                <Link href="/" onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] text-[13px]
-                    text-ink-muted hover:text-ink transition-all duration-150">
-                  <ExternalLink className="w-[16px] h-[16px]" />
-                  Portal do Cliente
-                </Link>
-              </div>
             </aside>
           </div>
         )}

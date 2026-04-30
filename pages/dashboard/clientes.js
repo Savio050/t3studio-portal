@@ -230,17 +230,40 @@ function SummaryCard({ label, value, icon: Icon, tone = 'neutral' }) {
 }
 
 // ── New Client Modal ──────────────────────────────────────────────────────────
+const FREQ_LABEL = {
+  mensal: 'Mensal', trimestral: 'Trimestral', semestral: 'Semestral',
+  anual: 'Anual', quinzenal: 'Quinzenal', semanal: 'Semanal',
+};
+
 function NewClientModal({ onClose, onCreate }) {
+  const [tab,           setTab]           = useState('dados');   // 'dados' | 'financeiro'
   const [nome,          setNome]          = useState('');
   const [descricao,     setDescricao]     = useState('');
   const [paginaCliente, setPaginaCliente] = useState('');
+  // Financeiro
+  const [temFinanceiro, setTemFinanceiro] = useState(false);
+  const [finTipo,       setFinTipo]       = useState('Receita');
+  const [finCategoria,  setFinCategoria]  = useState('Mensalidade');
+  const [finValor,      setFinValor]      = useState('');
+  const [finData,       setFinData]       = useState(new Date().toISOString().slice(0, 10));
+  const [finStatus,     setFinStatus]     = useState('Confirmado');
+  const [finRecorrente, setFinRecorrente] = useState(false);
+  const [finFreq,       setFinFreq]       = useState('mensal');
+  const [finReps,       setFinReps]       = useState(12);
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState('');
 
+  const inputCls = 'input';
+  const labelCls = 'block text-xs font-medium text-ink-soft mb-2';
+
   const submit = async () => {
     if (!nome.trim() || saving) return;
+    if (temFinanceiro && finValor && isNaN(Number(finValor))) {
+      setError('Valor financeiro inválido.'); return;
+    }
     setSaving(true); setError('');
     try {
+      // 1. Create client
       const res = await fetch('/api/crm/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,6 +271,56 @@ function NewClientModal({ onClose, onCreate }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+
+      // 2. Create financial transaction(s) if requested
+      if (temFinanceiro && finValor && Number(finValor) > 0) {
+        const clienteNome = nome.trim();
+        const baseValor   = Number(finValor);
+
+        if (finRecorrente && finReps > 1) {
+          // Build date sequence
+          const FREQ_MONTHS = { mensal:1, bimestral:2, trimestral:3, semestral:6, anual:12 };
+          const FREQ_DAYS   = { semanal:7, quinzenal:14 };
+          const dates = [finData];
+          for (let i = 1; i < finReps; i++) {
+            const prev = new Date(dates[dates.length - 1] + 'T12:00:00');
+            if (FREQ_DAYS[finFreq])   prev.setDate(prev.getDate() + FREQ_DAYS[finFreq]);
+            else                       prev.setMonth(prev.getMonth() + (FREQ_MONTHS[finFreq] || 1));
+            dates.push(prev.toISOString().slice(0, 10));
+          }
+          for (let i = 0; i < dates.length; i++) {
+            await fetch('/api/crm/finance', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                nome:      `${clienteNome} (${i + 1}/${finReps})`,
+                tipo:      finTipo,
+                categoria: finCategoria,
+                valor:     baseValor,
+                data:      dates[i],
+                cliente:   clienteNome,
+                status:    finStatus,
+                notas:     `Recorrência ${i + 1}/${finReps} · ${FREQ_LABEL[finFreq] || finFreq}`,
+              }),
+            });
+          }
+        } else {
+          await fetch('/api/crm/finance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nome:      clienteNome,
+              tipo:      finTipo,
+              categoria: finCategoria,
+              valor:     baseValor,
+              data:      finData,
+              cliente:   clienteNome,
+              status:    finStatus,
+            }),
+          });
+        }
+      }
+
       onCreate(); onClose();
     } catch (e) {
       setError(e.message || 'Erro ao criar cliente. Tente novamente.');
@@ -258,60 +331,200 @@ function NewClientModal({ onClose, onCreate }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/20 backdrop-blur-md" onClick={onClose}/>
-      <div className="relative w-full max-w-md rounded-apple-xl flex flex-col overflow-hidden bg-surface shadow-apple-lg border border-hairline">
+      <div className="relative w-full max-w-lg rounded-apple-xl flex flex-col overflow-hidden bg-surface shadow-apple-lg border border-hairline max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-hairline shrink-0">
           <p className="t-title">Novo cliente</p>
           <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all">
+            className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer">
             <X className="w-4 h-4"/>
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-hairline shrink-0">
+          {[['dados', 'Dados'], ['financeiro', 'Financeiro']].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)}
+              className={`flex-1 py-2.5 text-[13px] font-semibold transition-all cursor-pointer
+                ${tab === key
+                  ? 'text-accent border-b-2 border-accent -mb-px'
+                  : 'text-ink-soft hover:text-ink'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-ink-soft mb-2">
-              Nome <span className="text-err-ink">*</span>
-            </label>
-            <input autoFocus type="text" value={nome} onChange={e => setNome(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && submit()}
-              placeholder="Ex: Fast Imóveis"
-              className="input"/>
-          </div>
+        <div className="px-6 py-5 space-y-4 overflow-y-auto">
 
-          <div>
-            <label className="block text-xs font-medium text-ink-soft mb-2">Descrição</label>
-            <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2}
-              placeholder="Breve descrição do cliente…"
-              className="input resize-none"/>
-          </div>
+          {/* ── Tab: Dados ── */}
+          {tab === 'dados' && (
+            <>
+              <div>
+                <label className={labelCls}>Nome <span className="text-err-ink">*</span></label>
+                <input autoFocus type="text" value={nome} onChange={e => setNome(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && setTab('financeiro')}
+                  placeholder="Ex: Fast Imóveis"
+                  className={inputCls}/>
+              </div>
+              <div>
+                <label className={labelCls}>Descrição</label>
+                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2}
+                  placeholder="Breve descrição do cliente…"
+                  className={`${inputCls} resize-none`}/>
+              </div>
+              <div>
+                <label className={labelCls}>Página do cliente (URL)</label>
+                <input type="url" value={paginaCliente} onChange={e => setPaginaCliente(e.target.value)}
+                  placeholder="https://…"
+                  className={inputCls}/>
+              </div>
+            </>
+          )}
 
-          <div>
-            <label className="block text-xs font-medium text-ink-soft mb-2">Página do cliente (URL)</label>
-            <input type="url" value={paginaCliente} onChange={e => setPaginaCliente(e.target.value)}
-              placeholder="https://…"
-              className="input"/>
-          </div>
+          {/* ── Tab: Financeiro ── */}
+          {tab === 'financeiro' && (
+            <>
+              {/* Toggle financeiro */}
+              <div className="rounded-xl border border-[rgba(0,0,0,0.08)] overflow-hidden">
+                <button type="button" onClick={() => setTemFinanceiro(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3
+                    bg-elevated hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
+                      ${temFinanceiro ? 'border-accent bg-accent' : 'border-[rgba(0,0,0,0.2)]'}`}>
+                      {temFinanceiro && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
+                    </div>
+                    <span className="text-[13px] font-semibold text-ink">Adicionar lançamento financeiro</span>
+                  </div>
+                  <span className="text-[11px] text-ink-faint">{temFinanceiro ? 'Ativado' : 'Desativado'}</span>
+                </button>
+
+                {temFinanceiro && (
+                  <div className="px-4 pb-4 pt-3 space-y-3 bg-canvas">
+                    {/* Tipo */}
+                    <div>
+                      <label className={labelCls}>Tipo</label>
+                      <div className="flex gap-2">
+                        {['Receita','Despesa'].map(t => (
+                          <button key={t} type="button" onClick={() => setFinTipo(t)}
+                            className={`flex-1 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer
+                              ${finTipo === t
+                                ? t === 'Receita' ? 'bg-[#30d158] text-white' : 'bg-[#ff375f] text-white'
+                                : 'bg-elevated text-ink-soft hover:bg-[rgba(0,0,0,0.06)]'}`}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Valor + Data */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Valor (R$)</label>
+                        <input className={inputCls} type="number" step="0.01" min="0" placeholder="0,00"
+                          value={finValor} onChange={e => setFinValor(e.target.value)}/>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Data</label>
+                        <input className={inputCls} type="date"
+                          value={finData} onChange={e => setFinData(e.target.value)}/>
+                      </div>
+                    </div>
+
+                    {/* Categoria + Status */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Categoria</label>
+                        <select className={inputCls} value={finCategoria} onChange={e => setFinCategoria(e.target.value)}>
+                          {(finTipo === 'Receita'
+                            ? ['Projeto','Mensalidade','Consultoria','Bônus','Outros']
+                            : ['Salários','Ferramentas','Marketing','Infraestrutura','Impostos','Freelancer','Outros']
+                          ).map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Status</label>
+                        <select className={inputCls} value={finStatus} onChange={e => setFinStatus(e.target.value)}>
+                          {['Confirmado','Pendente','Cancelado'].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Recorrência */}
+                    <div className="rounded-xl border border-[rgba(0,0,0,0.08)] overflow-hidden">
+                      <button type="button" onClick={() => setFinRecorrente(v => !v)}
+                        className="w-full flex items-center justify-between px-3 py-2.5
+                          bg-elevated hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all
+                            ${finRecorrente ? 'border-accent bg-accent' : 'border-[rgba(0,0,0,0.2)]'}`}>
+                            {finRecorrente && <div className="w-1 h-1 rounded-full bg-white"/>}
+                          </div>
+                          <span className="text-[12px] font-semibold text-ink">Recorrente</span>
+                        </div>
+                        <span className="text-[10px] text-ink-faint">{finRecorrente ? 'Sim' : 'Não'}</span>
+                      </button>
+
+                      {finRecorrente && (
+                        <div className="px-3 pb-3 pt-2 space-y-2 bg-canvas">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={labelCls}>Frequência</label>
+                              <select className={inputCls} value={finFreq} onChange={e => setFinFreq(e.target.value)}>
+                                <option value="semanal">Semanal</option>
+                                <option value="quinzenal">Quinzenal</option>
+                                <option value="mensal">Mensal</option>
+                                <option value="bimestral">Bimestral</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="semestral">Semestral</option>
+                                <option value="anual">Anual</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className={labelCls}>Repetições</label>
+                              <input className={inputCls} type="number" min="2" max="60"
+                                value={finReps} onChange={e => setFinReps(Math.max(2, Math.min(60, Number(e.target.value))))}/>
+                            </div>
+                          </div>
+                          {finValor && Number(finValor) > 0 && (
+                            <p className="text-[11px] text-ink-faint">
+                              Total: <strong className="text-ink">
+                                {new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(finValor) * finReps)}
+                              </strong> em {finReps}× de {new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(finValor))} ({FREQ_LABEL[finFreq]})
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {error && (
-            <p className="text-xs text-err-ink px-3 py-2 rounded-apple bg-err-soft">
-              {error}
-            </p>
+            <p className="text-xs text-err-ink px-3 py-2 rounded-apple bg-err-soft">{error}</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-hairline flex gap-3 bg-canvas">
-          <button onClick={onClose} className="btn btn-secondary flex-1">
-            Cancelar
-          </button>
-          <button onClick={submit} disabled={!nome.trim() || saving}
-            className="btn btn-primary flex-1 disabled:opacity-40">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
-            {saving ? 'Criando…' : 'Criar cliente'}
-          </button>
+        <div className="px-6 py-4 border-t border-hairline flex gap-3 bg-canvas shrink-0">
+          <button onClick={onClose} className="btn btn-secondary flex-1">Cancelar</button>
+          {tab === 'dados' ? (
+            <button onClick={() => nome.trim() && setTab('financeiro')}
+              disabled={!nome.trim()}
+              className="btn btn-primary flex-1 disabled:opacity-40">
+              Próximo →
+            </button>
+          ) : (
+            <button onClick={submit} disabled={!nome.trim() || saving}
+              className="btn btn-primary flex-1 disabled:opacity-40">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
+              {saving ? 'Criando…' : 'Criar cliente'}
+            </button>
+          )}
         </div>
       </div>
     </div>
