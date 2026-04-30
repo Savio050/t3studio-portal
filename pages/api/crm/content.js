@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ content: mapContent(page) });
     } catch (err) {
       console.error('Content POST error:', err);
-      return res.status(500).json({ error: 'Failed to create content' });
+      return res.status(500).json({ error: err?.message || 'Failed to create content' });
     }
   }
 
@@ -199,7 +199,12 @@ export default async function handler(req, res) {
       if (pontos    !== undefined)    properties['Pontos']             = pontos ? { select: { name: String(pontos) } } : { select: null };
       if (plataforma !== undefined)   properties['plataforma']         = { select: plataforma ? { name: plataforma } : null };
       if (formato)                    properties['Formato']            = { select: { name: formato } };
-      if (cliente)                    properties['Cliente']            = { select: { name: cliente } };
+      if (cliente) {
+        properties['Cliente']        = { select: { name: cliente } };
+        // Keep ID do Cliente in sync when client changes
+        const resolvedId = resolveClientId(cliente);
+        if (resolvedId) properties['ID do Cliente'] = { rich_text: [{ text: { content: resolvedId } }] };
+      }
 
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });

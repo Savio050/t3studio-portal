@@ -129,6 +129,28 @@ async function toolListContent({ cliente, estado, mes } = {}) {
   }
 }
 
+// ── Client ID resolution (mirrors content.js) ────────────────────────────────
+const KNOWN_CLIENT_IDS = {
+  't3studio':      '1000',
+  'fastimoveis':   '3000',
+  'mafro':         '4000',
+  'fortfer':       '5000',
+  'kalebemartins': '6000',
+};
+function normalizeClientKey(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, '');
+}
+function resolveClientId(clienteName) {
+  if (!clienteName) return '';
+  const key = normalizeClientKey(clienteName);
+  if (KNOWN_CLIENT_IDS[key]) return KNOWN_CLIENT_IDS[key];
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0x7fffffff;
+  return String(7000 + (h % 3000));
+}
+
 async function toolCreateContent({ nome, cliente, formato, plataforma, responsavel, postagem, dataGravacao }) {
   try {
     const props = { 'Nome': { title: [{ text: { content: nome } }] } };
@@ -138,6 +160,9 @@ async function toolCreateContent({ nome, cliente, formato, plataforma, responsav
     if (responsavel)  props['responsável']      = { select: { name: responsavel } };
     if (postagem)     props['Postagem']         = { date: { start: postagem } };
     if (dataGravacao) props['Data de Gravação'] = { date: { start: dataGravacao } };
+    // Always resolve and set ID do Cliente so content appears in the client portal
+    const resolvedId = resolveClientId(cliente);
+    if (resolvedId)   props['ID do Cliente']    = { rich_text: [{ text: { content: resolvedId } }] };
     const page = await notion.pages.create({ parent: { database_id: CONTENT_DB }, properties: props });
     return { success: true, item: mapContent(page), message: `Conteúdo "${nome}" criado com sucesso` };
   } catch (e) {
@@ -145,10 +170,15 @@ async function toolCreateContent({ nome, cliente, formato, plataforma, responsav
   }
 }
 
-async function toolUpdateContent({ id, nome, estado, estadoRoteiro, responsavel, postagem, feedbackCliente, feedbackRoteiro }) {
+async function toolUpdateContent({ id, nome, cliente, estado, estadoRoteiro, responsavel, postagem, feedbackCliente, feedbackRoteiro }) {
   try {
     const props = {};
     if (nome)            props['Nome']                = { title: [{ text: { content: nome } }] };
+    if (cliente) {
+      props['Cliente']   = { select: { name: cliente } };
+      const resolvedId = resolveClientId(cliente);
+      if (resolvedId)    props['ID do Cliente']       = { rich_text: [{ text: { content: resolvedId } }] };
+    }
     if (estado)          props['Estado']              = { select: { name: estado } };
     if (estadoRoteiro)   props['EstadoRoteiro']       = { status: { name: estadoRoteiro } };
     if (responsavel)     props['responsável']         = { select: { name: responsavel } };
@@ -409,6 +439,7 @@ const FUNCTION_DECLARATIONS = [
       properties: {
         id:              { type: 'string', description: 'ID do conteúdo (obrigatório)' },
         nome:            { type: 'string' },
+        cliente:         { type: 'string', description: 'Nome do cliente (atualiza também o ID do Cliente automaticamente)' },
         estado:          { type: 'string', description: 'não iniciado | Em Produção | Aguardando Aprovação | Ajuste Solicitado | Aprovado | Concluido' },
         estadoRoteiro:   { type: 'string' },
         responsavel:     { type: 'string', description: 'Matheus ou Sávio' },
