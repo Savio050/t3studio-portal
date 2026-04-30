@@ -5,27 +5,46 @@ import {
   Plus, Film, CheckSquare, Search, Zap,
   Check, Copy, RotateCcw, ChevronRight,
   FilePlus, ListTodo, AlertCircle, Trash2, PenLine,
-  BarChart2,
+  BarChart2, DollarSign, TrendingUp, Users, FileText,
 } from 'lucide-react';
 
 // ── Action label helpers ──────────────────────────────────────────────────────
 const ACTION_META = {
-  list_content:   { icon: Search,      label: 'Consultou a esteira',  tone: 'blue'   },
-  create_content: { icon: FilePlus,    label: 'Criou conteúdo',       tone: 'green'  },
-  update_content: { icon: PenLine,     label: 'Atualizou conteúdo',   tone: 'purple' },
-  delete_content: { icon: Trash2,      label: 'Removeu conteúdo',     tone: 'red'    },
-  list_tasks:     { icon: ListTodo,    label: 'Consultou tarefas',    tone: 'blue'   },
-  create_task:    { icon: CheckSquare, label: 'Criou tarefa',         tone: 'green'  },
+  list_content:         { icon: Search,      label: 'Consultou a esteira',       tone: 'blue'   },
+  create_content:       { icon: FilePlus,    label: 'Criou conteúdo',            tone: 'green'  },
+  update_content:       { icon: PenLine,     label: 'Atualizou conteúdo',        tone: 'purple' },
+  delete_content:       { icon: Trash2,      label: 'Removeu conteúdo',          tone: 'red'    },
+  list_tasks:           { icon: ListTodo,    label: 'Consultou tarefas',         tone: 'blue'   },
+  create_task:          { icon: CheckSquare, label: 'Criou tarefa',              tone: 'green'  },
+  list_clients:         { icon: Users,       label: 'Consultou clientes',        tone: 'blue'   },
+  list_finance:         { icon: TrendingUp,  label: 'Consultou financeiro',      tone: 'blue'   },
+  create_finance_entry: { icon: DollarSign,  label: 'Criou transação',           tone: 'green'  },
+  list_script_prompts:  { icon: FileText,    label: 'Buscou instruções',         tone: 'purple' },
+  read_script_prompt:   { icon: FileText,    label: 'Leu guia de roteiro',       tone: 'purple' },
+};
+
+const TOOL_THINKING_LABEL = {
+  list_content:         'Consultando esteira de conteúdo…',
+  create_content:       'Criando conteúdo…',
+  update_content:       'Atualizando conteúdo…',
+  delete_content:       'Removendo conteúdo…',
+  list_tasks:           'Consultando tarefas…',
+  create_task:          'Criando tarefa…',
+  list_clients:         'Buscando clientes…',
+  list_finance:         'Consultando dados financeiros…',
+  create_finance_entry: 'Registrando transação…',
+  list_script_prompts:  'Buscando guias de roteiro…',
+  read_script_prompt:   'Lendo instruções de roteiro…',
 };
 
 // ── Quick suggestions ─────────────────────────────────────────────────────────
 const SUGGESTIONS = [
-  { icon: BarChart2,  label: 'Briefing diário',                            prompt: 'Analise o estado atual de toda a esteira de conteúdo e das tarefas abertas. Identifique gargalos, conteúdos parados na mesma etapa por mais de 48h, e gere um resumo executivo com o que a equipe precisa priorizar hoje. Seja específico com nomes de clientes e conteúdos.' },
-  { icon: Film,       label: 'Quais conteúdos estão pendentes?',           prompt: 'Quais conteúdos estão pendentes ou não iniciados?' },
-  { icon: AlertCircle,label: 'O que está aguardando cliente?',              prompt: 'Liste os conteúdos que estão aguardando aprovação do cliente.' },
-  { icon: CheckSquare,label: 'Resumo das tarefas abertas',                 prompt: 'Me dê um resumo das tarefas em aberto da equipe.' },
-  { icon: Plus,       label: 'Criar um Reels para mafro',                  prompt: 'Crie um novo conteúdo Reels para o cliente mafro, responsável Sávio.' },
-  { icon: Zap,        label: 'O que devo fazer hoje?',                     prompt: 'Com base na esteira e tarefas, o que a equipe deveria priorizar hoje?' },
+  { icon: BarChart2,   label: 'Briefing diário',                   prompt: 'Analise o estado atual de toda a esteira de conteúdo e das tarefas abertas. Identifique gargalos, conteúdos parados, e gere um resumo executivo com o que a equipe precisa priorizar hoje. Seja específico com nomes de clientes e conteúdos.' },
+  { icon: Film,        label: 'Conteúdos pendentes',               prompt: 'Quais conteúdos estão pendentes ou não iniciados?' },
+  { icon: AlertCircle, label: 'Aguardando aprovação do cliente',   prompt: 'Liste os conteúdos que estão aguardando aprovação do cliente.' },
+  { icon: CheckSquare, label: 'Resumo das tarefas abertas',        prompt: 'Me dê um resumo das tarefas em aberto da equipe.' },
+  { icon: TrendingUp,  label: 'Resumo financeiro do mês',         prompt: 'Me dê um resumo financeiro do mês atual: receitas, despesas e lucro.' },
+  { icon: Zap,         label: 'O que priorizar hoje?',             prompt: 'Com base na esteira, tarefas e financeiro, o que a equipe deveria priorizar hoje?' },
 ];
 
 // ── Markdown-lite renderer (bold, code, lists) ────────────────────────────────
@@ -237,8 +256,10 @@ function EmptyState({ onSelect }) {
         {[
           { icon: Film,       label: 'Gerenciar conteúdos' },
           { icon: CheckSquare,label: 'Criar tarefas'       },
+          { icon: TrendingUp, label: 'Controle financeiro' },
+          { icon: Users,      label: 'Consultar clientes'  },
           { icon: Search,     label: 'Consultar esteira'   },
-          { icon: PenLine,    label: 'Editar em massa'     },
+          { icon: PenLine,    label: 'Gerar roteiros'      },
         ].map(({ icon: Icon, label }) => (
           <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium text-ink-soft bg-elevated border border-hairline">
             <Icon className="w-3.5 h-3.5 text-accent"/>
@@ -288,6 +309,17 @@ export default function Assistente() {
     setLoading(true);
     setThinkLabel('Pensando…');
 
+    // Simulate dynamic thinking label via polling trick
+    let thinkTimeout;
+    const updateThinkLabel = (labels) => {
+      if (!labels?.length) return;
+      labels.forEach((label, i) => {
+        thinkTimeout = setTimeout(() => {
+          setThinkLabel(TOOL_THINKING_LABEL[label] || 'Processando…');
+        }, i * 800);
+      });
+    };
+
     try {
       const res = await fetch('/api/crm/assistant', {
         method: 'POST',
@@ -300,7 +332,9 @@ export default function Assistente() {
         throw new Error(err.error || `Erro ${res.status}`);
       }
 
-      const { reply, actions } = await res.json();
+      const { reply, actions, toolLabels } = await res.json();
+      updateThinkLabel(toolLabels);
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: reply,
@@ -309,9 +343,10 @@ export default function Assistente() {
     } catch (err) {
       setMessages(prev => [...prev, {
         role: 'error',
-        content: err.message || 'Não consegui processar sua mensagem. Verifique se a GEMINI_API_KEY está configurada.',
+        content: err.message || 'Não consegui processar sua mensagem. Verifique se a GEMINI_API_KEY está configurada no Vercel.',
       }]);
     } finally {
+      clearTimeout(thinkTimeout);
       setLoading(false);
       setThinkLabel('');
       setTimeout(() => inputRef.current?.focus(), 100);
