@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter } from 'next/router';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Film, X, Loader2, Clock, User, AlertTriangle,
@@ -1384,6 +1385,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Conteudo() {
+  const router = useRouter();
   const now = new Date();
   const [content,       setContent]       = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -1397,6 +1399,13 @@ export default function Conteudo() {
   const [calYear,       setCalYear]       = useState(now.getFullYear());
   // Full client list from API [{nome, idCliente, ...}]
   const [clientsList,   setClientsList]   = useState([]);
+
+  // Pre-populate filter from ?cliente= query param (e.g. from Clientes page)
+  useEffect(() => {
+    if (!router.isReady) return;
+    const qCliente = router.query.cliente;
+    if (qCliente) setFilterCliente(String(qCliente));
+  }, [router.isReady, router.query.cliente]);
 
   useEffect(() => {
     setLoading(true);
