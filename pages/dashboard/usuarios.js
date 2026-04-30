@@ -52,7 +52,7 @@ function avatarColor(id) {
 }
 
 // ── Action Menu ──────────────────────────────────────────────────────────────
-function ActionMenu({ user, currentUserId, onToggleRole, onToggleActive, onDelete, onResetPassword }) {
+function ActionMenu({ user, currentUserId, onToggleRole, onToggleActive, onDelete, onResetPassword, isLast }) {
   const [open, setOpen]   = useState(false);
   const ref               = useRef(null);
   const isSelf            = user.id === currentUserId;
@@ -73,8 +73,8 @@ function ActionMenu({ user, currentUserId, onToggleRole, onToggleActive, onDelet
       </button>
 
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-52 bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.08)]
-          py-1 animate-fade-in">
+        <div className={`absolute right-0 z-50 w-52 bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.08)]
+          py-1 animate-fade-in ${isLast ? 'bottom-9' : 'top-9'}`}>
 
           {/* Promote / Demote */}
           <button
@@ -417,7 +417,7 @@ export default function UsuariosPage() {
         )}
 
         {/* Users list */}
-        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden shadow-sm">
+        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-sm">
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="w-5 h-5 animate-spin text-[#aeaeb2]" />
@@ -433,7 +433,9 @@ export default function UsuariosPage() {
           ) : (
             <ul className="divide-y divide-[rgba(0,0,0,0.05)]">
               {users.map((user, idx) => (
-                <li key={user.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[rgba(0,0,0,0.015)] transition-colors">
+                <li key={user.id} className={`flex items-center gap-4 px-5 py-4 hover:bg-[rgba(0,0,0,0.015)] transition-colors relative
+                  ${idx === 0 ? 'rounded-t-2xl' : ''}
+                  ${idx === users.length - 1 ? 'rounded-b-2xl' : ''}`}>
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-[13px] font-bold text-white"
                     style={{ background: user.foto ? 'transparent' : avatarColor(user.id) }}>
@@ -473,6 +475,7 @@ export default function UsuariosPage() {
                     onToggleActive={handleToggleActive}
                     onDelete={handleDelete}
                     onResetPassword={u => setResetUser(u)}
+                    isLast={idx === users.length - 1}
                   />
                 </li>
               ))}
