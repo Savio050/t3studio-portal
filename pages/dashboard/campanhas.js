@@ -3,6 +3,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   Megaphone, Plus, X, Loader2, Save, Trash2, CheckCircle2,
   Target, DollarSign, Users, Zap, Tag, User,
+  Bot, Send, ChevronDown, ShieldAlert, Check, RotateCcw,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -773,6 +774,252 @@ function CampaignPanel({ item, onSave, onDelete, onClose }) {
   );
 }
 
+// ── Mini Chat Drawer ──────────────────────────────────────────────────────────
+function MiniChat({ campaigns, onClose }) {
+  const GREETING = {
+    role: 'assistant',
+    content: 'Olá! Estou aqui enquanto você analisa as campanhas. Posso consultar métricas do Meta Ads, sugerir ajustes de verba, pausar campanhas ou criar novas. Como posso ajudar?',
+  };
+
+  const [messages,      setMessages]      = useState([GREETING]);
+  const [input,         setInput]         = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [approving,     setApproving]     = useState(false);
+  const [visible,       setVisible]       = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef  = useRef(null);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading, pendingAction]);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 240);
+  };
+
+  const send = useCallback(async (txt) => {
+    const text = (txt || input).trim();
+    if (!text || loading) return;
+    setPendingAction(null);
+    setInput('');
+    const newMsgs = [...messages, { role: 'user', content: text }];
+    setMessages(newMsgs);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/crm/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMsgs }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+      if (data.pendingAction) {
+        setPendingAction(data.pendingAction);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      }
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'error', content: e.message }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [input, messages, loading]);
+
+  const approve = useCallback(async () => {
+    if (!pendingAction || approving) return;
+    setApproving(true);
+    try {
+      const res = await fetch('/api/crm/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, pendingAction: { ...pendingAction, approved: true } }),
+      });
+      const data = await res.json();
+      setPendingAction(null);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply || '✅ Ação executada.' }]);
+    } catch (e) {
+      setPendingAction(null);
+      setMessages(prev => [...prev, { role: 'error', content: e.message }]);
+    } finally {
+      setApproving(false);
+    }
+  }, [pendingAction, approving, messages]);
+
+  const cancel = useCallback(() => {
+    const title = pendingAction?.description?.title || 'Ação';
+    setPendingAction(null);
+    setMessages(prev => [...prev, { role: 'assistant', content: `❌ **${title}** cancelada. Nenhuma alteração foi feita.` }]);
+  }, [pendingAction]);
+
+  // Quick suggestions for campaigns context
+  const QUICK = [
+    'Liste as campanhas ativas',
+    'Ver métricas do Meta Ads',
+    'Pausar uma campanha',
+  ];
+
+  function MsgBubble({ msg }) {
+    const isUser  = msg.role === 'user';
+    const isError = msg.role === 'error';
+    // Mini markdown: bold only
+    const renderText = (text) => text.split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+      p.startsWith('**') && p.endsWith('**')
+        ? <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong>
+        : p
+    );
+    return (
+      <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
+        {!isUser && (
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5
+            ${isError ? 'bg-red-100' : 'bg-gradient-to-br from-[#0a84ff] to-[#0055d4]'}`}>
+            <Bot className="w-3 h-3 text-white"/>
+          </div>
+        )}
+        <div className={`px-3 py-2 rounded-[12px] text-[13px] leading-relaxed max-w-[82%] whitespace-pre-wrap
+          ${isUser  ? 'bg-[rgba(0,113,227,0.10)] text-[#0055d4]' :
+            isError ? 'bg-red-50 text-red-700 border border-red-100' :
+                      'bg-white text-[#1d1d1f] border border-[rgba(0,0,0,0.07)] shadow-sm'}`}>
+          {msg.content.split('\n').map((line, i) => (
+            <p key={i} className={i > 0 ? 'mt-1' : ''}>{renderText(line)}</p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="fixed z-[45] flex flex-col bg-[#f5f5f7] rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-[rgba(0,0,0,0.08)]"
+      style={{
+        bottom: 'calc(env(safe-area-inset-bottom) + 88px)',
+        right: 16,
+        width: 'min(390px, calc(100vw - 32px))',
+        height: 'min(520px, 65vh)',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.97)',
+        opacity: visible ? 1 : 0,
+        transition: 'transform 0.24s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[rgba(0,0,0,0.07)] bg-white rounded-t-[20px] shrink-0">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0a84ff] to-[#0055d4] flex items-center justify-center">
+          <Bot className="w-3.5 h-3.5 text-white"/>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-[#1d1d1f]">Assistente IA</p>
+          <p className="text-[10px] text-[#aeaeb2]">Campanhas · Gemini 2.5 Flash</p>
+        </div>
+        <button onClick={handleClose}
+          className="w-7 h-7 flex items-center justify-center rounded-full text-[#aeaeb2]
+            hover:text-[#1d1d1f] hover:bg-[rgba(0,0,0,0.06)] transition-all cursor-pointer">
+          <ChevronDown className="w-4 h-4"/>
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3" style={{ scrollbarWidth: 'none' }}>
+        {messages.map((m, i) => <MsgBubble key={i} msg={m}/>)}
+
+        {/* Approval card */}
+        {pendingAction && (
+          <div className="rounded-[14px] border-2 border-amber-200 bg-amber-50 overflow-hidden">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-100 border-b border-amber-200">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700"/>
+              <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wide">Confirmação — Meta Ads</p>
+            </div>
+            <div className="px-3 py-2.5 space-y-2">
+              <p className="text-[12px] font-semibold text-[#1d1d1f]">{pendingAction.description?.title}</p>
+              <p className="text-[11px] text-amber-700 leading-snug">{pendingAction.description?.warning}</p>
+              <div className="rounded-[8px] bg-white border border-amber-100 overflow-hidden">
+                {(pendingAction.description?.params || []).map((p, i) => (
+                  <div key={i} className={`flex gap-2 px-2.5 py-1.5 ${i > 0 ? 'border-t border-amber-50' : ''}`}>
+                    <span className="text-[10px] text-[#aeaeb2] font-medium w-24 shrink-0">{p.label}</span>
+                    <span className="text-[11px] font-semibold text-[#1d1d1f] break-all">{p.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-0.5">
+                <button onClick={cancel} disabled={approving}
+                  className="flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold text-[#6e6e73]
+                    border border-[rgba(0,0,0,0.12)] bg-white hover:bg-[#f5f5f7] transition-all cursor-pointer">
+                  Cancelar
+                </button>
+                <button onClick={approve} disabled={approving}
+                  className="flex-1 py-1.5 rounded-[8px] text-[12px] font-bold text-white
+                    bg-amber-500 hover:bg-amber-600 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                  {approving ? <Loader2 className="w-3 h-3 animate-spin"/> : <Check className="w-3 h-3"/>}
+                  Aprovar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex gap-2 items-center">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0a84ff] to-[#0055d4] flex items-center justify-center shrink-0">
+              <Bot className="w-3 h-3 text-white"/>
+            </div>
+            <div className="flex items-center gap-1 bg-white border border-[rgba(0,0,0,0.07)] shadow-sm px-3 py-2 rounded-[12px]">
+              {[0,1,2].map(i => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#aeaeb2] animate-bounce"
+                  style={{ animationDelay: `${i*150}ms`, animationDuration: '900ms' }}/>
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      {/* Quick suggestions (only before user sends first message) */}
+      {messages.length === 1 && !loading && (
+        <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
+          {QUICK.map(q => (
+            <button key={q} onClick={() => send(q)}
+              className="shrink-0 px-2.5 py-1.5 rounded-[10px] text-[11px] font-medium
+                bg-white border border-[rgba(0,0,0,0.08)] text-[#6e6e73]
+                hover:text-[#1d1d1f] hover:border-[rgba(0,0,0,0.18)] transition-all cursor-pointer whitespace-nowrap">
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="px-3 pb-3 pt-2 shrink-0">
+        <div className="flex items-end gap-2 bg-white rounded-[14px] border border-[rgba(0,0,0,0.10)] px-3 py-2 shadow-sm">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            disabled={loading}
+            rows={1}
+            placeholder="Pergunte sobre as campanhas…"
+            className="flex-1 text-[13px] text-[#1d1d1f] placeholder-[#aeaeb2] resize-none outline-none bg-transparent leading-relaxed disabled:opacity-50"
+            style={{ maxHeight: 80, overflowY: 'auto' }}
+            onInput={e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 80) + 'px'; }}
+          />
+          <button onClick={() => send()} disabled={!input.trim() || loading}
+            className="w-8 h-8 flex items-center justify-center rounded-full shrink-0 cursor-pointer
+              bg-[#0071e3] hover:bg-[#0055d4] text-white transition-all
+              disabled:opacity-30 disabled:cursor-not-allowed active:scale-90">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Send className="w-3.5 h-3.5"/>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Campanhas() {
   const [campaigns,     setCampaigns]     = useState([]);
@@ -781,6 +1028,7 @@ export default function Campanhas() {
   const [filterCliente, setFilterCliente] = useState('');
   const [selectedItem,  setSelectedItem]  = useState(null);
   const [showNew,       setShowNew]       = useState(false);
+  const [showChat,      setShowChat]      = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1055,6 +1303,32 @@ export default function Campanhas() {
           onClose={() => setShowNew(false)}
           onCreate={createCampaign}
         />
+      )}
+
+      {/* ── Floating AI chat button ── */}
+      <button
+        onClick={() => setShowChat(v => !v)}
+        aria-label="Abrir assistente IA"
+        className="fixed z-40 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white transition-all active:scale-95 cursor-pointer"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+          right: 20,
+          background: showChat
+            ? 'linear-gradient(135deg, #636366 0%, #3a3a3c 100%)'
+            : 'linear-gradient(135deg, #0a84ff 0%, #0055d4 100%)',
+          boxShadow: showChat
+            ? '0 4px 20px rgba(0,0,0,0.25)'
+            : '0 4px 20px rgba(0,113,227,0.45)',
+        }}
+      >
+        {showChat
+          ? <ChevronDown className="w-5 h-5"/>
+          : <Bot className="w-5 h-5"/>}
+      </button>
+
+      {/* ── Mini chat drawer ── */}
+      {showChat && (
+        <MiniChat campaigns={campaigns} onClose={() => setShowChat(false)}/>
       )}
     </CRMLayout>
   );
