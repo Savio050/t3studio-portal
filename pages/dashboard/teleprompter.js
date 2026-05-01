@@ -5,6 +5,17 @@ import {
   X, Underline, ChevronLeft, ChevronRight, Loader2, AlignLeft,
 } from 'lucide-react';
 
+// ── Restart icon (inline SVG) ─────────────────────────────────────────────────
+function RestartIcon({ className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+    </svg>
+  );
+}
+
 // ── Mirror icon (inline SVG — não depende da versão do lucide) ────────────────
 function MirrorIcon({ className = 'w-5 h-5' }) {
   return (
@@ -29,6 +40,13 @@ function PrompterView({ text, initialFontSize, initialSpeed, onExit, onEdit }) {
   const scrollRef = useRef(null);
   const rafRef    = useRef(null);
   const accRef    = useRef(0);
+
+  function handleRestart() {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    accRef.current = 0;
+    setActiveIdx(-1);
+    setPlaying(false);
+  }
 
   const lines = text.split('\n');
 
@@ -161,6 +179,11 @@ function PrompterView({ text, initialFontSize, initialSpeed, onExit, onEdit }) {
             {/* Play / Pause */}
             <CtrlBtn onClick={() => setPlaying(v => !v)} title={playing ? 'Pausar' : 'Iniciar'} primary>
               {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            </CtrlBtn>
+
+            {/* Restart */}
+            <CtrlBtn onClick={handleRestart} title="Recomeçar do início">
+              <RestartIcon />
             </CtrlBtn>
 
             <div className="w-6 border-t border-white/10 my-1" />
