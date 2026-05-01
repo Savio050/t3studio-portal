@@ -1,7 +1,15 @@
 /**
  * POST /api/crm/assistant
  * AI assistant powered by Google Gemini with function-calling tools.
- * Covers: content pipeline, tasks, clients, financial transactions, script prompts.
+ * Covers: content pipeline, tasks, clients, financial transactions, script prompts,
+ * and Meta Ads management with human-in-the-loop approval for write operations.
+ *
+ * Fluxo Human-in-the-Loop (Meta Ads):
+ *   1. Gemini chama uma tool de ESCRITA (ex: update_meta_budget)
+ *   2. Backend intercepta → NÃO executa → devolve { pendingAction }
+ *   3. Frontend exibe ApprovalCard com botões Aprovar/Cancelar
+ *   4. Usuário aprova → frontend envia { pendingAction: { ...action, approved: true } }
+ *   5. Backend executa a ação real na API do Meta Ads
  */
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Client } from '@notionhq/client';
@@ -9,6 +17,11 @@ import { getToken } from 'next-auth/jwt';
 import { sanitizeNotionId } from '../../../lib/notionId';
 import path from 'path';
 import fs from 'fs';
+import {
+  listCampaigns, getCampaignInsights, getAccountInsights,
+  updateCampaignBudget, updateCampaignStatus, createCampaign,
+  buildActionDescription,
+} from '../../../lib/meta-ads';
 
 export const config = { maxDuration: 60 };
 
@@ -382,6 +395,67 @@ function toolReadScriptPrompt({ cliente, formato, tema }) {
   };
 }
 
+// ── Meta Ads — tools de LEITURA (executadas imediatamente) ───────────────────
+
+async function toolListMetaCampaigns({ ad_account_id, status }) {
+  try {
+    const campaigns = await listCampaigns(ad_account_id, status || 'ALL');
+    return {
+      success: true,
+      count: campaigns.length,
+      campaigns: campaigns.map(c => ({
+        id: c.id, name: c.name, status: c.effective_status,
+        objective: c.objective,
+        daily_budget: c.daily_budget_brl ? `R$ ${c.daily_budget_brl}/dia` : '—',
+        lifetime_budget: c.lifetime_budget_brl ? `R$ ${c.lifetime_budget_brl}` : '—',
+      })),
+    };
+  } catch (e) { return { success: false, error: e.message }; }
+}
+
+async function toolGetMetaInsights({ ad_account_id, campaign_id, date_preset }) {
+  try {
+    if (campaign_id) {
+      const data = await getCampaignInsights(campaign_id, date_preset || 'last_30d');
+      return { success: true, insights: data };
+    }
+    if (ad_account_id) {
+      const data = await getAccountInsights(ad_account_id, date_preset || 'last_30d');
+      return { success: true, count: data.length, insights: data };
+    }
+    return { success: false, error: 'Informe campaign_id ou ad_account_id.' };
+  } catch (e) { return { success: false, error: e.message }; }
+}
+
+// ── Meta Ads — tools de ESCRITA (executadas após aprovação humana) ────────────
+
+/**
+ * Executa uma ação de escrita no Meta Ads após aprovação explícita do usuário.
+ * Esta função SÓ é chamada quando o frontend envia pendingAction.approved === true.
+ */
+async function executeApprovedMetaAction(tool, args) {
+  switch (tool) {
+    case 'update_meta_budget':
+      return updateCampaignBudget(args.campaign_id, args.daily_budget);
+    case 'update_meta_status':
+      return updateCampaignStatus(args.campaign_id, args.status);
+    case 'create_meta_campaign':
+      return createCampaign(args.ad_account_id, {
+        name: args.name, objective: args.objective,
+        dailyBudget: args.daily_budget, status: 'PAUSED',
+      });
+    default:
+      throw new Error(`Ação Meta Ads desconhecida: ${tool}`);
+  }
+}
+
+// ── Conjunto de tools que exigem aprovação humana ─────────────────────────────
+const META_WRITE_TOOLS = new Set([
+  'update_meta_budget',
+  'update_meta_status',
+  'create_meta_campaign',
+]);
+
 // ── Tool router ───────────────────────────────────────────────────────────────
 async function executeTool(name, args) {
   switch (name) {
@@ -396,6 +470,9 @@ async function executeTool(name, args) {
     case 'create_finance_entry':   return toolCreateFinanceEntry(args);
     case 'list_script_prompts':    return toolListScriptPrompts(args);
     case 'read_script_prompt':     return toolReadScriptPrompt(args);
+    // Meta Ads — leitura (seguro executar direto)
+    case 'list_meta_campaigns':    return toolListMetaCampaigns(args);
+    case 'get_meta_insights':      return toolGetMetaInsights(args);
     default: return { success: false, error: `Ferramenta desconhecida: ${name}` };
   }
 }
@@ -547,6 +624,72 @@ const FUNCTION_DECLARATIONS = [
       required: ['cliente', 'formato'],
     },
   },
+
+  // ── Meta Ads — Leitura ──────────────────────────────────────────────────────
+  {
+    name: 'list_meta_campaigns',
+    description: 'Lista as campanhas de uma conta de anúncios do Meta Ads. Use para consultar campanhase métricas antes de sugerir alterações.',
+    parameters: {
+      type: 'object',
+      properties: {
+        ad_account_id: { type: 'string', description: 'ID da conta de anúncios (ex: act_123456789 ou 123456789)' },
+        status:        { type: 'string', description: 'Filtrar por status: ACTIVE, PAUSED ou ALL (padrão: ALL)' },
+      },
+      required: ['ad_account_id'],
+    },
+  },
+  {
+    name: 'get_meta_insights',
+    description: 'Obtém métricas de performance (impressões, cliques, gasto, CTR, CPC) de campanhas do Meta Ads.',
+    parameters: {
+      type: 'object',
+      properties: {
+        ad_account_id: { type: 'string', description: 'ID da conta — retorna insights de todas as campanhas' },
+        campaign_id:   { type: 'string', description: 'ID de uma campanha específica (opcional)' },
+        date_preset:   { type: 'string', description: 'Período: today, yesterday, last_7d, last_30d, this_month (padrão: last_30d)' },
+      },
+    },
+  },
+
+  // ── Meta Ads — Escrita (requerem aprovação humana) ──────────────────────────
+  {
+    name: 'update_meta_budget',
+    description: '⚠️ REQUER APROVAÇÃO — Altera o orçamento diário de uma campanha no Meta Ads. NUNCA execute sem listar as campanhas antes para confirmar o ID correto.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaign_id:  { type: 'string', description: 'ID numérico da campanha (obrigatório)' },
+        daily_budget: { type: 'number', description: 'Novo orçamento diário em REAIS (ex: 50.00 para R$50/dia)' },
+      },
+      required: ['campaign_id', 'daily_budget'],
+    },
+  },
+  {
+    name: 'update_meta_status',
+    description: '⚠️ REQUER APROVAÇÃO — Pausa (PAUSED) ou ativa (ACTIVE) uma campanha no Meta Ads.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaign_id: { type: 'string', description: 'ID numérico da campanha (obrigatório)' },
+        status:      { type: 'string', description: 'ACTIVE para ativar, PAUSED para pausar' },
+      },
+      required: ['campaign_id', 'status'],
+    },
+  },
+  {
+    name: 'create_meta_campaign',
+    description: '⚠️ REQUER APROVAÇÃO — Cria uma nova campanha no Meta Ads. A campanha iniciará PAUSADA por segurança.',
+    parameters: {
+      type: 'object',
+      properties: {
+        ad_account_id: { type: 'string', description: 'ID da conta de anúncios' },
+        name:          { type: 'string', description: 'Nome da campanha' },
+        objective:     { type: 'string', description: 'Objetivo: OUTCOME_AWARENESS, OUTCOME_TRAFFIC, OUTCOME_ENGAGEMENT, OUTCOME_LEADS, OUTCOME_SALES' },
+        daily_budget:  { type: 'number', description: 'Orçamento diário em reais (opcional)' },
+      },
+      required: ['ad_account_id', 'name', 'objective'],
+    },
+  },
 ];
 
 // ── System prompt ─────────────────────────────────────────────────────────────
@@ -556,7 +699,7 @@ function buildSystemPrompt() {
   });
 
   return `Você é o Assistente Virtual da T3 Studio, agência de marketing digital brasileira.
-Você gerencia o CRM interno da equipe com acesso completo à esteira de conteúdo, tarefas, clientes e financeiro.
+Você gerencia o CRM interno e as contas de Meta Ads dos clientes.
 
 Data de hoje: ${hoje}
 
@@ -566,6 +709,7 @@ Data de hoje: ${hoje}
 - Listar clientes cadastrados
 - Consultar e criar transações financeiras (receitas e despesas)
 - Gerar roteiros profissionais por cliente, formato e tema
+- **Meta Ads**: listar campanhas, ver métricas, alterar orçamentos, pausar/ativar campanhas, criar campanhas
 
 ## Contexto operacional
 - **Equipe**: Matheus (Criação), Sávio (Produção)
@@ -599,7 +743,14 @@ Data de hoje: ${hoje}
 ## Regras financeiras
 10. Ao consultar financeiro, sempre apresente o resumo (receita, despesa, lucro)
 11. Ao criar transação, confirme tipo, valor e data antes de executar se não estiver claro
-12. Use list_clients para sugerir clientes disponíveis quando relevante`;
+12. Use list_clients para sugerir clientes disponíveis quando relevante
+
+## Regras para Meta Ads
+13. SEMPRE chame list_meta_campaigns antes de update_meta_budget ou update_meta_status para confirmar o ID correto
+14. Ao solicitar alteração de orçamento ou status, as tools update_meta_budget, update_meta_status e create_meta_campaign exigem aprovação humana — o sistema irá mostrar um card de confirmação automaticamente, não tente burlar isso
+15. Ao listar campanhas, mostre: nome, status, orçamento e ID
+16. Para insights, prefira last_30d como padrão e apresente os dados formatados em tabela
+17. Se META_ACCESS_TOKEN não estiver configurado, oriente o usuário a adicionar a variável no Vercel`;
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -610,7 +761,38 @@ export default async function handler(req, res) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return res.status(401).json({ error: 'Não autenticado.' });
 
-  const { messages } = req.body || {};
+  const { messages, pendingAction } = req.body || {};
+
+  // ── Caminho 1: Execução de ação aprovada pelo usuário ─────────────────────
+  // O frontend envia pendingAction.approved === true quando o usuário clicou "Aprovar"
+  if (pendingAction?.approved) {
+    const { tool, args } = pendingAction;
+    try {
+      const result = await executeApprovedMetaAction(tool, args);
+      const desc = buildActionDescription(tool, args);
+
+      // Monta mensagem de sucesso legível
+      const successMsg = result.success === false
+        ? `❌ Erro ao executar: ${result.error || 'Falha desconhecida'}`
+        : `✅ **${desc.title}** executada com sucesso.\n\n` +
+          desc.params.map(p => `**${p.label}:** ${p.value}`).join('\n') +
+          (result.id ? `\n**ID gerado:** ${result.id}` : '');
+
+      return res.status(200).json({
+        reply:      successMsg,
+        actions:    [{ type: tool, args, success: !result.error }],
+        toolLabels: [tool],
+      });
+    } catch (err) {
+      // Erros da API do Meta (token expirado, limite de verba, etc.)
+      return res.status(200).json({
+        reply:      `❌ **Erro ao executar no Meta Ads:**\n${err.message}\n\nVerifique o token de acesso e as permissões da conta.`,
+        actions:    [{ type: tool, args, success: false, message: err.message }],
+        toolLabels: [tool],
+      });
+    }
+  }
+
   if (!messages?.length) return res.status(400).json({ error: 'Messages são obrigatórias.' });
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -649,6 +831,24 @@ export default async function handler(req, res) {
 
       const responseParts = [];
       for (const call of calls) {
+        // ── Interceptação Human-in-the-Loop ──────────────────────────────────
+        // Se o Gemini pedir uma tool de ESCRITA do Meta Ads, NÃO executamos.
+        // Devolvemos um pendingAction para o frontend exibir o card de aprovação.
+        if (META_WRITE_TOOLS.has(call.name)) {
+          const description = buildActionDescription(call.name, call.args);
+          return res.status(200).json({
+            reply:         null,  // sem resposta de texto — o card substitui
+            actions:       [],
+            toolLabels:    [call.name],
+            pendingAction: {
+              tool:        call.name,
+              args:        call.args,
+              description,
+            },
+          });
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         const toolResult = await executeTool(call.name, call.args);
         actions.push({
           type:    call.name,

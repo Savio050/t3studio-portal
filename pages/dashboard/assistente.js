@@ -6,35 +6,47 @@ import {
   Check, Copy, RotateCcw, ChevronRight,
   FilePlus, ListTodo, AlertCircle, Trash2, PenLine,
   BarChart2, DollarSign, TrendingUp, Users, FileText,
+  ShieldAlert, X, BarChart,
 } from 'lucide-react';
 
 // ── Action label helpers ──────────────────────────────────────────────────────
 const ACTION_META = {
-  list_content:         { icon: Search,      label: 'Consultou a esteira',       tone: 'blue'   },
-  create_content:       { icon: FilePlus,    label: 'Criou conteúdo',            tone: 'green'  },
-  update_content:       { icon: PenLine,     label: 'Atualizou conteúdo',        tone: 'purple' },
-  delete_content:       { icon: Trash2,      label: 'Removeu conteúdo',          tone: 'red'    },
-  list_tasks:           { icon: ListTodo,    label: 'Consultou tarefas',         tone: 'blue'   },
-  create_task:          { icon: CheckSquare, label: 'Criou tarefa',              tone: 'green'  },
-  list_clients:         { icon: Users,       label: 'Consultou clientes',        tone: 'blue'   },
-  list_finance:         { icon: TrendingUp,  label: 'Consultou financeiro',      tone: 'blue'   },
-  create_finance_entry: { icon: DollarSign,  label: 'Criou transação',           tone: 'green'  },
-  list_script_prompts:  { icon: FileText,    label: 'Buscou instruções',         tone: 'purple' },
-  read_script_prompt:   { icon: FileText,    label: 'Leu guia de roteiro',       tone: 'purple' },
+  list_content:          { icon: Search,      label: 'Consultou a esteira',        tone: 'blue'   },
+  create_content:        { icon: FilePlus,    label: 'Criou conteúdo',             tone: 'green'  },
+  update_content:        { icon: PenLine,     label: 'Atualizou conteúdo',         tone: 'purple' },
+  delete_content:        { icon: Trash2,      label: 'Removeu conteúdo',           tone: 'red'    },
+  list_tasks:            { icon: ListTodo,    label: 'Consultou tarefas',          tone: 'blue'   },
+  create_task:           { icon: CheckSquare, label: 'Criou tarefa',               tone: 'green'  },
+  list_clients:          { icon: Users,       label: 'Consultou clientes',         tone: 'blue'   },
+  list_finance:          { icon: TrendingUp,  label: 'Consultou financeiro',       tone: 'blue'   },
+  create_finance_entry:  { icon: DollarSign,  label: 'Criou transação',            tone: 'green'  },
+  list_script_prompts:   { icon: FileText,    label: 'Buscou instruções',          tone: 'purple' },
+  read_script_prompt:    { icon: FileText,    label: 'Leu guia de roteiro',        tone: 'purple' },
+  // Meta Ads
+  list_meta_campaigns:   { icon: BarChart,    label: 'Consultou campanhas Meta',   tone: 'blue'   },
+  get_meta_insights:     { icon: BarChart2,   label: 'Consultou métricas Meta',    tone: 'blue'   },
+  update_meta_budget:    { icon: DollarSign,  label: 'Alterou orçamento Meta',     tone: 'green'  },
+  update_meta_status:    { icon: Zap,         label: 'Alterou status Meta',        tone: 'purple' },
+  create_meta_campaign:  { icon: Plus,        label: 'Criou campanha Meta',        tone: 'green'  },
 };
 
 const TOOL_THINKING_LABEL = {
-  list_content:         'Consultando esteira de conteúdo…',
-  create_content:       'Criando conteúdo…',
-  update_content:       'Atualizando conteúdo…',
-  delete_content:       'Removendo conteúdo…',
-  list_tasks:           'Consultando tarefas…',
-  create_task:          'Criando tarefa…',
-  list_clients:         'Buscando clientes…',
-  list_finance:         'Consultando dados financeiros…',
-  create_finance_entry: 'Registrando transação…',
-  list_script_prompts:  'Buscando guias de roteiro…',
-  read_script_prompt:   'Lendo instruções de roteiro…',
+  list_content:          'Consultando esteira de conteúdo…',
+  create_content:        'Criando conteúdo…',
+  update_content:        'Atualizando conteúdo…',
+  delete_content:        'Removendo conteúdo…',
+  list_tasks:            'Consultando tarefas…',
+  create_task:           'Criando tarefa…',
+  list_clients:          'Buscando clientes…',
+  list_finance:          'Consultando dados financeiros…',
+  create_finance_entry:  'Registrando transação…',
+  list_script_prompts:   'Buscando guias de roteiro…',
+  read_script_prompt:    'Lendo instruções de roteiro…',
+  list_meta_campaigns:   'Consultando campanhas do Meta Ads…',
+  get_meta_insights:     'Buscando métricas do Meta Ads…',
+  update_meta_budget:    'Preparando alteração de orçamento…',
+  update_meta_status:    'Preparando alteração de status…',
+  create_meta_campaign:  'Preparando criação de campanha…',
 };
 
 // ── Quick suggestions ─────────────────────────────────────────────────────────
@@ -234,6 +246,82 @@ function TypingIndicator({ thinkingLabel }) {
   );
 }
 
+// ── Action Approval Card (Human-in-the-Loop) ──────────────────────────────────
+function ActionApprovalCard({ action, onApprove, onCancel, loading }) {
+  const { description } = action;
+
+  return (
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200
+        flex items-center justify-center shrink-0 mt-0.5">
+        <ShieldAlert className="w-4 h-4 text-amber-600"/>
+      </div>
+
+      <div className="flex-1 max-w-[80%]">
+        {/* Card */}
+        <div className="rounded-apple-lg border-2 border-amber-200 bg-amber-50 overflow-hidden shadow-apple-sm">
+
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 bg-amber-100 border-b border-amber-200">
+            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0"/>
+            <p className="text-[13px] font-bold text-amber-800 uppercase tracking-wide">
+              Confirmação necessária — Meta Ads
+            </p>
+          </div>
+
+          {/* Body */}
+          <div className="px-4 py-4 space-y-3">
+            <div>
+              <p className="text-[15px] font-semibold text-ink mb-1">{description.title}</p>
+              <p className="text-[13px] text-amber-700 leading-relaxed">{description.warning}</p>
+            </div>
+
+            {/* Params table */}
+            <div className="rounded-lg bg-white border border-amber-100 overflow-hidden">
+              {description.params.map((p, i) => (
+                <div key={i} className={`flex items-start gap-3 px-3 py-2 ${i > 0 ? 'border-t border-amber-50' : ''}`}>
+                  <span className="text-[12px] font-medium text-ink-muted shrink-0 w-32">{p.label}</span>
+                  <span className="text-[13px] font-semibold text-ink break-all">{p.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Disclaimer */}
+            <p className="text-[11px] text-ink-faint">
+              Esta ação será executada diretamente na API do Meta Ads e terá efeito imediato.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 px-4 pb-4">
+            <button
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-apple
+                text-[13px] font-semibold text-ink-soft border border-hairline bg-white
+                hover:bg-elevated transition-all cursor-pointer disabled:opacity-50">
+              <X className="w-3.5 h-3.5"/>
+              Cancelar
+            </button>
+            <button
+              onClick={onApprove}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-apple
+                text-[13px] font-bold text-white cursor-pointer
+                bg-amber-500 hover:bg-amber-600 transition-all
+                disabled:opacity-50 active:scale-[0.98]">
+              {loading
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
+                : <Check className="w-3.5 h-3.5"/>}
+              Aprovar Execução
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ onSelect }) {
   return (
@@ -287,29 +375,33 @@ function EmptyState({ onSelect }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Assistente() {
-  const [messages,    setMessages]    = useState([]);
-  const [input,       setInput]       = useState('');
-  const [loading,     setLoading]     = useState(false);
-  const [thinkLabel,  setThinkLabel]  = useState('');
+  const [messages,       setMessages]       = useState([]);
+  const [input,          setInput]          = useState('');
+  const [loading,        setLoading]        = useState(false);
+  const [thinkLabel,     setThinkLabel]     = useState('');
+  const [pendingAction,  setPendingAction]  = useState(null); // Human-in-the-loop
+  const [approving,      setApproving]      = useState(false);
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, pendingAction]);
 
+  // ── Envia mensagem para o Gemini ────────────────────────────────────────────
   const sendMessage = useCallback(async (text) => {
     const userText = (text || input).trim();
     if (!userText || loading) return;
 
+    // Cancela qualquer pendingAction anterior ao enviar nova mensagem
+    setPendingAction(null);
     setInput('');
     const newMessages = [...messages, { role: 'user', content: userText }];
     setMessages(newMessages);
     setLoading(true);
     setThinkLabel('Pensando…');
 
-    // Simulate dynamic thinking label via polling trick
     let thinkTimeout;
     const updateThinkLabel = (labels) => {
       if (!labels?.length) return;
@@ -332,13 +424,19 @@ export default function Assistente() {
         throw new Error(err.error || `Erro ${res.status}`);
       }
 
-      const { reply, actions, toolLabels } = await res.json();
-      updateThinkLabel(toolLabels);
+      const data = await res.json();
+      updateThinkLabel(data.toolLabels);
+
+      // ── Caso Human-in-the-Loop: backend quer aprovação ────────────────────
+      if (data.pendingAction) {
+        setPendingAction(data.pendingAction);
+        return; // não adiciona mensagem — o ApprovalCard aparece na tela
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: reply,
-        actions: actions || [],
+        content: data.reply,
+        actions: data.actions || [],
       }]);
     } catch (err) {
       setMessages(prev => [...prev, {
@@ -352,6 +450,50 @@ export default function Assistente() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [input, messages, loading]);
+
+  // ── Aprova a ação pendente e executa no Meta Ads ────────────────────────────
+  const approvePendingAction = useCallback(async () => {
+    if (!pendingAction || approving) return;
+    setApproving(true);
+
+    try {
+      const res = await fetch('/api/crm/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          pendingAction: { ...pendingAction, approved: true },
+        }),
+      });
+
+      const data = await res.json();
+      setPendingAction(null);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.reply || '✅ Ação executada.',
+        actions: data.actions || [],
+      }]);
+    } catch (err) {
+      setPendingAction(null);
+      setMessages(prev => [...prev, {
+        role: 'error',
+        content: `Erro ao executar no Meta Ads: ${err.message}`,
+      }]);
+    } finally {
+      setApproving(false);
+    }
+  }, [pendingAction, approving, messages]);
+
+  // ── Cancela a ação pendente ─────────────────────────────────────────────────
+  const cancelPendingAction = useCallback(() => {
+    const actionTitle = pendingAction?.description?.title || 'Ação';
+    setPendingAction(null);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `❌ **${actionTitle}** cancelada pelo usuário. Nenhuma alteração foi feita no Meta Ads.`,
+      actions: [],
+    }]);
+  }, [pendingAction]);
 
   const retry = useCallback(() => {
     // Re-send last user message
@@ -369,7 +511,7 @@ export default function Assistente() {
     }
   };
 
-  const clearChat = () => setMessages([]);
+  const clearChat = () => { setMessages([]); setPendingAction(null); };
 
   return (
     <CRMLayout title="Assistente — T3 Studio CRM">
@@ -403,7 +545,7 @@ export default function Assistente() {
 
         {/* ── Messages area ── */}
         <div className="flex-1 overflow-y-auto px-5 lg:px-8 py-6">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !pendingAction ? (
             <EmptyState onSelect={sendMessage}/>
           ) : (
             <div className="max-w-3xl mx-auto space-y-5">
@@ -414,6 +556,15 @@ export default function Assistente() {
                   onRetry={msg.role === 'error' ? retry : null}
                 />
               ))}
+              {/* Human-in-the-loop: card de aprovação aparece inline na conversa */}
+              {pendingAction && (
+                <ActionApprovalCard
+                  action={pendingAction}
+                  onApprove={approvePendingAction}
+                  onCancel={cancelPendingAction}
+                  loading={approving}
+                />
+              )}
               {loading && <TypingIndicator thinkingLabel={thinkLabel}/>}
               <div ref={bottomRef}/>
             </div>
