@@ -804,6 +804,14 @@ function MiniChat({ campaigns, onClose }) {
     setTimeout(onClose, 240);
   };
 
+  // Gemini requer que o histórico comece com role:'user'.
+  // Remove mensagens de erro e quaisquer mensagens 'assistant' iniciais (ex: saudação).
+  const toApiMsgs = (msgs) => {
+    const clean = msgs.filter(m => m.role === 'user' || m.role === 'assistant');
+    const firstUser = clean.findIndex(m => m.role === 'user');
+    return firstUser > 0 ? clean.slice(firstUser) : clean;
+  };
+
   const send = useCallback(async (txt) => {
     const text = (txt || input).trim();
     if (!text || loading) return;
@@ -816,7 +824,7 @@ function MiniChat({ campaigns, onClose }) {
       const res = await fetch('/api/crm/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMsgs }),
+        body: JSON.stringify({ messages: toApiMsgs(newMsgs) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
@@ -840,7 +848,7 @@ function MiniChat({ campaigns, onClose }) {
       const res = await fetch('/api/crm/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, pendingAction: { ...pendingAction, approved: true } }),
+        body: JSON.stringify({ messages: toApiMsgs(messages), pendingAction: { ...pendingAction, approved: true } }),
       });
       const data = await res.json();
       setPendingAction(null);
