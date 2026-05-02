@@ -4,6 +4,7 @@ import {
   Megaphone, Plus, X, Loader2, Save, Trash2, CheckCircle2,
   Target, DollarSign, Users, Zap, Tag, User,
   Bot, Send, ChevronDown, ShieldAlert, Check, RotateCcw,
+  Play, Pause, RefreshCw, BarChart2, TrendingUp, Eye, AlertTriangle,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -774,6 +775,327 @@ function CampaignPanel({ item, onSave, onDelete, onClose }) {
   );
 }
 
+// ── Meta Ads helpers ──────────────────────────────────────────────────────────
+const DATE_PRESETS = [
+  { value: 'today',      label: 'Hoje'        },
+  { value: 'yesterday',  label: 'Ontem'       },
+  { value: 'last_7d',    label: '7 dias'      },
+  { value: 'last_30d',   label: '30 dias'     },
+  { value: 'this_month', label: 'Este mês'    },
+  { value: 'last_month', label: 'Mês passado' },
+];
+
+const fmtBRL  = (v) => v != null ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+const fmtNum  = (v) => v != null ? Number(v).toLocaleString('pt-BR') : '—';
+const fmtPct  = (v) => v != null ? `${Number(v).toFixed(2)}%` : '—';
+
+// ── MetricCell ─────────────────────────────────────────────────────────────────
+function MetricCell({ label, value, sub, accent }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 text-center">
+      <span className={`text-[13px] font-bold tracking-tight ${accent || 'text-ink'}`}>{value}</span>
+      {sub && <span className="text-[9px] text-ink-faint">{sub}</span>}
+      <span className="text-[9px] font-semibold uppercase tracking-widest text-ink-faint">{label}</span>
+    </div>
+  );
+}
+
+// ── MetaCampaignCard ──────────────────────────────────────────────────────────
+function MetaCampaignCard({ campaign, onRefresh }) {
+  const [stage,       setStage]       = useState('idle'); // idle | confirm-status | edit-budget | confirm-budget | executing | success | error
+  const [budgetInput, setBudgetInput] = useState('');
+  const [errMsg,      setErrMsg]      = useState('');
+  const budgetRef = useRef(null);
+
+  const isActive = ['ACTIVE', 'CAMPAIGN_GROUP_ACTIVE'].includes(campaign.effective_status || campaign.status);
+  const ins       = campaign.insights;
+  const hasBudget = campaign.daily_budget_brl != null;
+
+  const execute = async (action, extra = {}) => {
+    setStage('executing');
+    setErrMsg('');
+    try {
+      const res = await fetch('/api/crm/meta-campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, campaign_id: campaign.id, ...extra }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+      setStage('success');
+      setTimeout(() => { setStage('idle'); onRefresh?.(); }, 2000);
+    } catch (e) {
+      setErrMsg(e.message);
+      setStage('error');
+      setTimeout(() => setStage('idle'), 4000);
+    }
+  };
+
+  const handleStatusClick = () => setStage('confirm-status');
+  const handleBudgetClick = () => {
+    setBudgetInput(campaign.daily_budget_brl || '');
+    setStage('edit-budget');
+    setTimeout(() => budgetRef.current?.focus(), 60);
+  };
+
+  return (
+    <div className={`card flex flex-col transition-all duration-200 ${
+      stage === 'executing' ? 'opacity-70 pointer-events-none' : ''
+    }`}>
+      {/* ── Header ── */}
+      <div className="px-5 pt-5 pb-4 border-b border-hairline">
+        <div className="flex items-start gap-3">
+          {/* Status dot */}
+          <div className="mt-1 shrink-0">
+            <span className={`block w-2.5 h-2.5 rounded-full ${isActive ? 'bg-[#34c759]' : 'bg-[#8e8e93]'}`}
+              style={isActive ? { boxShadow: '0 0 0 3px rgba(52,199,89,0.18)' } : {}} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold text-ink leading-snug tracking-tight line-clamp-2 mb-1">
+              {campaign.name}
+            </p>
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5">
+              <span className={`text-[11px] font-semibold ${isActive ? 'text-[#15803d]' : 'text-[#6b7280]'}`}>
+                {isActive ? '● Ativa' : '● Pausada'}
+              </span>
+              {hasBudget && (
+                <span className="text-[11px] text-ink-muted">
+                  {fmtBRL(campaign.daily_budget_brl)}/dia
+                </span>
+              )}
+              <span className="text-[10px] font-mono text-ink-faint">#{campaign.id}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Metrics ── */}
+      <div className="px-5 py-4">
+        {ins ? (
+          <div className="grid grid-cols-4 gap-2 bg-elevated rounded-apple-lg p-3">
+            <MetricCell label="Investido"  value={fmtBRL(ins.spend)}        accent="text-[#0071e3]" />
+            <MetricCell label="Impressões" value={fmtNum(ins.impressions)}   />
+            <MetricCell label="Cliques"    value={fmtNum(ins.clicks)}        />
+            <MetricCell label="CTR"        value={fmtPct(ins.ctr)}
+              accent={Number(ins.ctr) >= 1 ? 'text-[#34c759]' : 'text-[#ff9500]'} />
+          </div>
+        ) : (
+          <div className="bg-elevated rounded-apple-lg p-3 text-center">
+            <p className="text-[11px] text-ink-faint">Sem métricas para o período selecionado</p>
+          </div>
+        )}
+
+        {/* Reach + CPC extra row */}
+        {ins && (ins.reach || ins.cpc) && (
+          <div className="flex gap-4 mt-2 px-1">
+            {ins.reach && (
+              <span className="text-[11px] text-ink-muted">
+                <span className="font-medium text-ink">{fmtNum(ins.reach)}</span> alcance
+              </span>
+            )}
+            {ins.cpc && (
+              <span className="text-[11px] text-ink-muted">
+                <span className="font-medium text-ink">{fmtBRL(ins.cpc)}</span> CPC
+              </span>
+            )}
+            {ins.cpp && (
+              <span className="text-[11px] text-ink-muted">
+                <span className="font-medium text-ink">{fmtBRL(ins.cpp)}</span> CPM
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Action area ── */}
+      <div className="px-5 pb-5 mt-auto space-y-3">
+
+        {/* Idle — primary actions */}
+        {stage === 'idle' && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleStatusClick}
+              className={`btn flex-1 ${isActive ? 'btn-secondary' : 'btn-primary'}`}
+            >
+              {isActive ? <Pause className="w-3.5 h-3.5"/> : <Play className="w-3.5 h-3.5"/>}
+              {isActive ? 'Pausar' : 'Ativar'}
+            </button>
+            {hasBudget && (
+              <button onClick={handleBudgetClick} className="btn btn-ghost" title="Editar verba">
+                <DollarSign className="w-3.5 h-3.5"/>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Confirm status change */}
+        {stage === 'confirm-status' && (
+          <div className="rounded-[12px] border-2 border-amber-200 bg-amber-50 p-3 space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0"/>
+              <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wide">Confirmar ação</p>
+            </div>
+            <p className="text-[13px] font-semibold text-[#1d1d1f]">
+              {isActive ? 'Pausar campanha' : 'Ativar campanha'}
+            </p>
+            <p className="text-[11px] text-amber-700 leading-relaxed">
+              {isActive
+                ? 'Os anúncios serão pausados imediatamente e o orçamento deixará de ser consumido.'
+                : 'Os anúncios serão veiculados e o orçamento voltará a ser consumido.'}
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setStage('idle')}
+                className="flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold text-[#6e6e73]
+                  border border-[rgba(0,0,0,0.12)] bg-white hover:bg-[#f5f5f7] transition-all cursor-pointer">
+                Cancelar
+              </button>
+              <button onClick={() => execute('update_status', { status: isActive ? 'PAUSED' : 'ACTIVE' })}
+                className="flex-1 py-1.5 rounded-[8px] text-[12px] font-bold text-white
+                  bg-amber-500 hover:bg-amber-600 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                <Check className="w-3 h-3"/> Confirmar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit budget */}
+        {stage === 'edit-budget' && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Novo orçamento diário</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] text-ink-muted font-medium">R$</span>
+              <input
+                ref={budgetRef}
+                type="number"
+                step="1"
+                min="1"
+                value={budgetInput}
+                onChange={e => setBudgetInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && budgetInput) setStage('confirm-budget');
+                  if (e.key === 'Escape') setStage('idle');
+                }}
+                placeholder={campaign.daily_budget_brl || '50'}
+                className="input flex-1"
+              />
+              <span className="text-[13px] text-ink-muted font-medium shrink-0">/dia</span>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setStage('idle')} className="btn btn-secondary flex-1">Cancelar</button>
+              <button
+                onClick={() => budgetInput && setStage('confirm-budget')}
+                disabled={!budgetInput || isNaN(Number(budgetInput)) || Number(budgetInput) < 1}
+                className="btn btn-primary flex-1 disabled:opacity-40"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Confirm budget */}
+        {stage === 'confirm-budget' && (
+          <div className="rounded-[12px] border-2 border-amber-200 bg-amber-50 p-3 space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0"/>
+              <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wide">Confirmar alteração</p>
+            </div>
+            <p className="text-[13px] font-semibold text-[#1d1d1f]">Alterar orçamento diário</p>
+            <div className="flex items-center gap-3 text-[12px]">
+              <span className="text-ink-muted line-through">{fmtBRL(campaign.daily_budget_brl)}/dia</span>
+              <span className="text-[#0071e3] font-bold">→ {fmtBRL(budgetInput)}/dia</span>
+            </div>
+            <p className="text-[11px] text-amber-700">O gasto será ajustado imediatamente na Meta.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setStage('edit-budget')}
+                className="flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold text-[#6e6e73]
+                  border border-[rgba(0,0,0,0.12)] bg-white hover:bg-[#f5f5f7] transition-all cursor-pointer">
+                Voltar
+              </button>
+              <button onClick={() => execute('update_budget', { daily_budget: Number(budgetInput) })}
+                className="flex-1 py-1.5 rounded-[8px] text-[12px] font-bold text-white
+                  bg-amber-500 hover:bg-amber-600 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                <Check className="w-3 h-3"/> Confirmar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Executing */}
+        {stage === 'executing' && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <Loader2 className="w-4 h-4 animate-spin text-accent"/>
+            <span className="text-[12px] text-ink-muted">Executando no Meta Ads…</span>
+          </div>
+        )}
+
+        {/* Success */}
+        {stage === 'success' && (
+          <div className="flex items-center gap-2 py-1.5 px-3 rounded-apple bg-ok-soft">
+            <CheckCircle2 className="w-4 h-4 text-ok-ink shrink-0"/>
+            <span className="text-[12px] font-semibold text-ok-ink">Ação executada com sucesso!</span>
+          </div>
+        )}
+
+        {/* Error */}
+        {stage === 'error' && (
+          <div className="flex items-start gap-2 py-1.5 px-3 rounded-apple bg-err-soft">
+            <AlertTriangle className="w-4 h-4 text-err-ink shrink-0 mt-0.5"/>
+            <span className="text-[11px] text-err-ink leading-relaxed">{errMsg}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Meta Ads skeleton ─────────────────────────────────────────────────────────
+function MetaSkeleton() {
+  return (
+    <div className="card p-5 animate-pulse">
+      <div className="flex items-start gap-3 pb-4 border-b border-hairline mb-4">
+        <div className="w-2.5 h-2.5 rounded-full bg-elevated mt-1 shrink-0"/>
+        <div className="flex-1 space-y-1.5">
+          <div className="h-4 w-3/4 rounded bg-elevated"/>
+          <div className="h-3 w-1/2 rounded bg-elevated"/>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-2 bg-elevated rounded-apple-lg p-3 mb-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <div className="h-4 w-12 rounded bg-surface"/>
+            <div className="h-2.5 w-10 rounded bg-surface"/>
+          </div>
+        ))}
+      </div>
+      <div className="h-9 rounded-apple bg-elevated"/>
+    </div>
+  );
+}
+
+// ── Meta Ads missing config screen ────────────────────────────────────────────
+function MetaMissingConfig({ hint }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+      <div className="w-16 h-16 rounded-apple-2xl bg-elevated flex items-center justify-center mb-5">
+        <BarChart2 className="w-8 h-8 text-ink-faint"/>
+      </div>
+      <h3 className="t-title text-ink mb-2">Conta de anúncios não configurada</h3>
+      <p className="t-small text-ink-muted max-w-sm mb-4 leading-relaxed">
+        Configure a variável <code className="bg-elevated px-1.5 py-0.5 rounded text-[11px] font-mono text-ink">META_AD_ACCOUNT_ID</code> no painel do Vercel com o ID da sua conta de anúncios.
+      </p>
+      {hint && <p className="text-[11px] text-ink-faint max-w-xs">{hint}</p>}
+      <a
+        href="https://vercel.com/dashboard"
+        target="_blank" rel="noopener noreferrer"
+        className="btn btn-primary mt-5"
+      >
+        Abrir painel Vercel
+      </a>
+    </div>
+  );
+}
+
 // ── Mini Chat Drawer ──────────────────────────────────────────────────────────
 function MiniChat({ campaigns, onClose }) {
   const GREETING = {
@@ -1030,6 +1352,7 @@ function MiniChat({ campaigns, onClose }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Campanhas() {
+  // ── Briefings (Notion) state ───────────────────────────────────────────────
   const [campaigns,     setCampaigns]     = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [filterEstado,  setFilterEstado]  = useState('');
@@ -1038,7 +1361,18 @@ export default function Campanhas() {
   const [showNew,       setShowNew]       = useState(false);
   const [showChat,      setShowChat]      = useState(false);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
+  // ── Meta Ads state ────────────────────────────────────────────────────────
+  const [activeTab,      setActiveTab]      = useState('briefings'); // 'briefings' | 'meta'
+  const [metaCampaigns,  setMetaCampaigns]  = useState([]);
+  const [metaLoading,    setMetaLoading]    = useState(false);
+  const [metaError,      setMetaError]      = useState(null);
+  const [metaMissing,    setMetaMissing]    = useState(false);
+  const [metaHint,       setMetaHint]       = useState('');
+  const [metaDatePreset, setMetaDatePreset] = useState('last_30d');
+  const [metaStatus,     setMetaStatus]     = useState('ALL');
+  const metaLoadedRef = useRef(false);
+
+  // ── Fetch briefings (Notion) ───────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     fetch('/api/crm/content')
@@ -1050,6 +1384,37 @@ export default function Campanhas() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  // ── Fetch Meta Ads campaigns ───────────────────────────────────────────────
+  const loadMetaCampaigns = useCallback(async () => {
+    setMetaLoading(true);
+    setMetaError(null);
+    setMetaMissing(false);
+    try {
+      const res = await fetch(
+        `/api/crm/meta-campaigns?status=${metaStatus}&date_preset=${metaDatePreset}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.missingConfig) { setMetaMissing(true); setMetaHint(data.hint || ''); }
+        else setMetaError(data.error || `Erro ${res.status}`);
+        return;
+      }
+      setMetaCampaigns(data.campaigns || []);
+    } catch (e) {
+      setMetaError(e.message);
+    } finally {
+      setMetaLoading(false);
+    }
+  }, [metaStatus, metaDatePreset]);
+
+  // Carrega Meta Ads ao entrar na aba ou mudar filtros
+  useEffect(() => {
+    if (activeTab === 'meta') {
+      loadMetaCampaigns();
+      metaLoadedRef.current = true;
+    }
+  }, [activeTab, metaStatus, metaDatePreset, loadMetaCampaigns]);
 
   // ── CRUD handlers ──────────────────────────────────────────────────────────
   const createCampaign = useCallback(c => {
@@ -1106,24 +1471,55 @@ export default function Campanhas() {
 
         {/* ── Top bar ── */}
         <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
-          <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
               <h1 className="t-title-lg text-ink flex items-center gap-2">
                 <Megaphone className="w-5 h-5 text-accent" />
                 Campanhas
               </h1>
               <p className="t-small text-ink-muted mt-0.5">
-                {loading ? '…' : `${campaigns.length} campanha${campaigns.length !== 1 ? 's' : ''}`}
+                {activeTab === 'briefings'
+                  ? (loading ? '…' : `${campaigns.length} briefing${campaigns.length !== 1 ? 's' : ''}`)
+                  : (metaLoading ? 'Carregando…' : `${metaCampaigns.length} campanha${metaCampaigns.length !== 1 ? 's' : ''} no Meta Ads`)}
               </p>
             </div>
 
-            <button onClick={() => setShowNew(true)} className="btn btn-primary">
-              <Plus className="w-4 h-4" />
-              Nova Campanha
-            </button>
+            {activeTab === 'briefings' ? (
+              <button onClick={() => setShowNew(true)} className="btn btn-primary">
+                <Plus className="w-4 h-4" />
+                Nova Campanha
+              </button>
+            ) : (
+              <button onClick={loadMetaCampaigns} disabled={metaLoading} className="btn btn-secondary">
+                <RefreshCw className={`w-4 h-4 ${metaLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
+            )}
           </div>
 
-          {/* ── Filters ── */}
+          {/* ── Tab switcher ── */}
+          <div className="flex items-center gap-1 bg-elevated rounded-apple-lg p-1 w-fit mb-4">
+            {[
+              { key: 'briefings', label: 'Briefings',  icon: Megaphone  },
+              { key: 'meta',      label: 'Meta Ads',   icon: BarChart2  },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-apple text-[12px] font-semibold cursor-pointer transition-all duration-150 ${
+                  activeTab === key
+                    ? 'bg-white text-ink shadow-apple-sm'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5"/>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Briefings filters ── */}
+          {activeTab === 'briefings' && (
           <div className="rounded-apple-xl overflow-hidden border border-hairline bg-surface">
 
             {/* Row 1 — Estado */}
@@ -1252,9 +1648,53 @@ export default function Campanhas() {
               )}
             </div>
           </div>
+          )} {/* end briefings filters */}
+
+          {/* ── Meta Ads filters ── */}
+          {activeTab === 'meta' && (
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Status */}
+              <div className="flex items-center gap-1 bg-elevated rounded-apple-lg p-1">
+                {[
+                  { value: 'ALL',    label: 'Todas'   },
+                  { value: 'ACTIVE', label: 'Ativas'  },
+                  { value: 'PAUSED', label: 'Pausadas'},
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setMetaStatus(opt.value)}
+                    className={`px-3 py-1 rounded-apple text-[11px] font-semibold cursor-pointer transition-all duration-150 ${
+                      metaStatus === opt.value
+                        ? 'bg-white text-ink shadow-apple-sm'
+                        : 'text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {/* Date preset */}
+              <div className="flex items-center gap-1 bg-elevated rounded-apple-lg p-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {DATE_PRESETS.map(p => (
+                  <button
+                    key={p.value}
+                    onClick={() => setMetaDatePreset(p.value)}
+                    className={`shrink-0 px-3 py-1 rounded-apple text-[11px] font-semibold cursor-pointer transition-all duration-150 ${
+                      metaDatePreset === p.value
+                        ? 'bg-white text-ink shadow-apple-sm'
+                        : 'text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ── Grid ── */}
+        {/* ── Briefings Grid ── */}
+        {activeTab === 'briefings' && (
         <div className="flex-1 px-5 lg:px-8 py-6">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1293,6 +1733,63 @@ export default function Campanhas() {
             </div>
           )}
         </div>
+        )}
+
+        {/* ── Meta Ads Grid ── */}
+        {activeTab === 'meta' && (
+        <div className="flex-1 px-5 lg:px-8 py-6">
+          {/* Missing config */}
+          {metaMissing && <MetaMissingConfig hint={metaHint}/>}
+
+          {/* Error */}
+          {metaError && !metaMissing && (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+              <div className="w-14 h-14 rounded-apple-2xl bg-err-soft flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-err-ink"/>
+              </div>
+              <div>
+                <p className="t-title text-ink mb-1">Erro ao carregar campanhas</p>
+                <p className="t-small text-err-ink max-w-md">{metaError}</p>
+              </div>
+              <button onClick={loadMetaCampaigns} className="btn btn-primary">
+                <RefreshCw className="w-4 h-4"/> Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {/* Loading */}
+          {metaLoading && !metaError && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => <MetaSkeleton key={i}/>)}
+            </div>
+          )}
+
+          {/* Empty */}
+          {!metaLoading && !metaError && !metaMissing && metaCampaigns.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-16 h-16 rounded-apple-2xl bg-elevated flex items-center justify-center mb-4">
+                <BarChart2 className="w-8 h-8 text-ink-faint"/>
+              </div>
+              <p className="t-title text-ink-muted mb-1">Nenhuma campanha encontrada</p>
+              <p className="t-small text-ink-faint mb-4">
+                {metaStatus !== 'ALL' ? `Sem campanhas com status "${metaStatus}" neste período.` : 'A conta não possui campanhas.'}
+              </p>
+              {metaStatus !== 'ALL' && (
+                <button onClick={() => setMetaStatus('ALL')} className="btn btn-secondary">Ver todas</button>
+              )}
+            </div>
+          )}
+
+          {/* Campaigns grid */}
+          {!metaLoading && !metaError && !metaMissing && metaCampaigns.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {metaCampaigns.map(c => (
+                <MetaCampaignCard key={c.id} campaign={c} onRefresh={loadMetaCampaigns}/>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
       </div>
 
       {/* ── Campaign panel ── */}
