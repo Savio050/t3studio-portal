@@ -1,11 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import CRMLayout from '../../components/crm/Layout';
 import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
-  Loader2, Plus, X, Trash2, Camera,
+  Loader2, Plus, X, Trash2, Camera, Pencil, Check,
 } from 'lucide-react';
+
+// ── Instagram SVG icon (inline — avoids lucide version issues) ────────────────
+function IgIcon({ size = 16, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <rect x="2" y="2" width="20" height="20" rx="6" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="17.5" cy="6.5" r="1.25" fill="currentColor"/>
+    </svg>
+  );
+}
 
 // ── Stat mini ─────────────────────────────────────────────────────────────────
 function MiniStat({ icon: Icon, value, label, tone = 'text-ink-soft' }) {
@@ -116,11 +127,198 @@ function ClientAvatar({ clientId, nome, logo, onLogoChange }) {
   );
 }
 
+// ── Instagram Panel ───────────────────────────────────────────────────────────
+function InstagramPanel({ client, onClose }) {
+  const [visible,      setVisible]      = useState(false);
+  const [iframeState,  setIframeState]  = useState('loading'); // 'loading' | 'blocked'
+  const timerRef  = useRef(null);
+  const attemptRef = useRef(0);
+
+  const handle = (client.instagram || '').replace(/^@/, '').trim();
+  const igUrl  = `https://www.instagram.com/${handle}/`;
+
+  // Slide-in animation
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Instagram blocks iframes — after 3s assume it's blocked
+  useEffect(() => {
+    setIframeState('loading');
+    timerRef.current = setTimeout(() => setIframeState('blocked'), 3000);
+    return () => clearTimeout(timerRef.current);
+  }, [attemptRef.current]); // eslint-disable-line
+
+  // Close on Escape
+  useEffect(() => {
+    const fn = e => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, []); // eslint-disable-line
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 260);
+  };
+
+  const retry = () => {
+    clearTimeout(timerRef.current);
+    attemptRef.current += 1;
+    setIframeState('loading');
+    timerRef.current = setTimeout(() => setIframeState('blocked'), 3000);
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px] transition-opacity duration-200"
+        style={{ opacity: visible ? 1 : 0 }}
+        onClick={handleClose}
+      />
+
+      {/* Panel */}
+      <div
+        className="fixed top-0 right-0 bottom-0 z-50 flex flex-col shadow-apple-xl"
+        style={{
+          width: '100%',
+          maxWidth: 440,
+          background: '#fafafa',
+          borderLeft: '1px solid rgba(0,0,0,0.08)',
+          transform: visible ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.26s cubic-bezier(0.32,0.72,0,1)',
+        }}
+      >
+        {/* Instagram gradient header */}
+        <div
+          className="px-5 py-4 shrink-0 flex items-center gap-3"
+          style={{
+            background: 'linear-gradient(135deg, #f09433 0%, #e6683c 22%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+          }}
+        >
+          <div className="w-9 h-9 rounded-apple flex items-center justify-center bg-white/20 shrink-0">
+            <IgIcon size={18} className="text-white"/>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-[14px] leading-none tracking-tight">@{handle}</p>
+            <p className="text-white/70 text-[11px] mt-0.5 truncate">{client.nome}</p>
+          </div>
+          <a
+            href={igUrl} target="_blank" rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-white/20 hover:bg-white/30
+              text-white text-[12px] font-semibold transition-all"
+          >
+            <ExternalLink className="w-3 h-3"/>
+            Abrir
+          </a>
+          <button
+            onClick={handleClose}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-white/70
+              hover:text-white hover:bg-white/20 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Iframe attempt */}
+          {iframeState === 'loading' && (
+            <iframe
+              key={attemptRef.current}
+              src={igUrl}
+              title={`Instagram de @${handle}`}
+              className="absolute inset-0 w-full h-full border-0"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              onLoad={() => { clearTimeout(timerRef.current); /* may still be blocked visually */ }}
+              onError={() => { clearTimeout(timerRef.current); setIframeState('blocked'); }}
+            />
+          )}
+
+          {/* Loading overlay */}
+          {iframeState === 'loading' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none"
+              style={{ background: 'rgba(250,250,250,0.85)' }}>
+              <Loader2 className="w-6 h-6 animate-spin text-[#c13584]"/>
+              <p className="text-[13px] text-[#6e6e73]">Carregando perfil…</p>
+            </div>
+          )}
+
+          {/* Blocked fallback */}
+          {iframeState === 'blocked' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 text-center bg-[#fafafa]">
+              {/* Big gradient logo */}
+              <div
+                className="w-20 h-20 rounded-[22px] flex items-center justify-center shadow-apple"
+                style={{ background: 'linear-gradient(135deg, #f09433 0%, #e6683c 22%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' }}
+              >
+                <IgIcon size={36} className="text-white"/>
+              </div>
+
+              {/* Handle */}
+              <div>
+                <p className="text-[22px] font-bold text-[#1d1d1f] tracking-tight mb-1">@{handle}</p>
+                <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                  O Instagram bloqueia a visualização embutida por segurança.
+                  <br/>Clique abaixo para ver o perfil diretamente.
+                </p>
+              </div>
+
+              {/* Primary CTA */}
+              <a
+                href={igUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-3 rounded-pill text-[14px] font-bold text-white
+                  shadow-apple transition-all hover:scale-[1.02] active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%)' }}
+              >
+                <IgIcon size={16} className="text-white"/>
+                Abrir no Instagram
+              </a>
+
+              <button
+                onClick={retry}
+                className="text-[12px] text-[#aeaeb2] hover:text-[#6e6e73] underline cursor-pointer transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Client Card ───────────────────────────────────────────────────────────────
-function ClientCard({ client, onDelete, onLogoChange }) {
+function ClientCard({ client, onDelete, onLogoChange, onInstagram, onInstagramSave }) {
   const total      = client.totalContent;
   const [confirm,  setConfirm]  = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingIg, setEditingIg] = useState(false);
+  const [igInput,   setIgInput]   = useState(client.instagram || '');
+  const [igSaving,  setIgSaving]  = useState(false);
+  const igInputRef = useRef(null);
+
+  // Keep igInput synced when parent updates client
+  useEffect(() => { setIgInput(client.instagram || ''); }, [client.instagram]);
+
+  const saveIg = async () => {
+    if (igSaving) return;
+    const val = igInput.trim().replace(/^@/, '');
+    setIgSaving(true);
+    try {
+      await fetch('/api/crm/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: client.id, instagram: val }),
+      });
+      onInstagramSave?.(client.id, val);
+    } finally {
+      setIgSaving(false);
+      setEditingIg(false);
+    }
+  };
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -163,8 +361,62 @@ function ClientCard({ client, onDelete, onLogoChange }) {
         )}
       </div>
 
+      {/* Instagram row */}
+      <div className="mt-3 flex items-center gap-2 min-h-[22px]">
+        {editingIg ? (
+          <>
+            <IgIcon size={12} className="text-[#c13584] shrink-0"/>
+            <input
+              ref={igInputRef}
+              value={igInput}
+              onChange={e => setIgInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveIg();
+                if (e.key === 'Escape') { setEditingIg(false); setIgInput(client.instagram || ''); }
+              }}
+              placeholder="handle (sem @)"
+              autoFocus
+              className="flex-1 text-[12px] text-ink bg-transparent outline-none border-b border-accent pb-px placeholder-ink-faint"
+            />
+            <button onClick={saveIg} disabled={igSaving}
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-ok text-white cursor-pointer shrink-0">
+              {igSaving ? <Loader2 className="w-2.5 h-2.5 animate-spin"/> : <Check className="w-2.5 h-2.5"/>}
+            </button>
+            <button onClick={() => { setEditingIg(false); setIgInput(client.instagram || ''); }}
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-elevated text-ink-muted cursor-pointer shrink-0">
+              <X className="w-2.5 h-2.5"/>
+            </button>
+          </>
+        ) : client.instagram ? (
+          <>
+            <IgIcon size={12} className="text-[#c13584] shrink-0"/>
+            <button
+              onClick={() => onInstagram(client)}
+              className="text-[12px] font-medium text-[#c13584] hover:underline cursor-pointer"
+            >
+              @{client.instagram}
+            </button>
+            <button
+              onClick={() => setEditingIg(true)}
+              title="Editar handle"
+              className="w-5 h-5 flex items-center justify-center rounded text-ink-faint hover:text-ink hover:bg-elevated transition-all cursor-pointer shrink-0"
+            >
+              <Pencil className="w-2.5 h-2.5"/>
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setEditingIg(true)}
+            className="flex items-center gap-1 text-[11px] text-ink-faint hover:text-[#c13584] transition-colors cursor-pointer"
+          >
+            <IgIcon size={11} className="shrink-0"/>
+            Adicionar Instagram
+          </button>
+        )}
+      </div>
+
       {/* Progress */}
-      <div className="mt-6">
+      <div className="mt-5">
         <div className="flex items-center justify-between mb-2">
           <span className="t-eyebrow">Progresso</span>
           <span className="text-xs font-semibold text-ink tracking-apple-tight">{donePct}%</span>
@@ -192,6 +444,16 @@ function ClientCard({ client, onDelete, onLogoChange }) {
           Ver conteúdo
           <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
+        {client.instagram && (
+          <button
+            onClick={() => onInstagram(client)}
+            title="Ver perfil no Instagram"
+            className="btn btn-ghost"
+            style={{ color: '#c13584' }}
+          >
+            <IgIcon size={15}/>
+          </button>
+        )}
         {canDelete && (
           <button onClick={handleDelete} disabled={deleting}
             className={`btn ${confirm ? 'btn-danger' : 'btn-ghost'} disabled:opacity-40`}>
@@ -240,6 +502,7 @@ function NewClientModal({ onClose, onCreate }) {
   const [nome,          setNome]          = useState('');
   const [descricao,     setDescricao]     = useState('');
   const [paginaCliente, setPaginaCliente] = useState('');
+  const [instagram,     setInstagram]     = useState('');
   // Financeiro
   const [temFinanceiro, setTemFinanceiro] = useState(false);
   const [finTipo,       setFinTipo]       = useState('Receita');
@@ -267,7 +530,7 @@ function NewClientModal({ onClose, onCreate }) {
       const res = await fetch('/api/crm/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, descricao, paginaCliente }),
+        body: JSON.stringify({ nome, descricao, paginaCliente, instagram }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
@@ -379,6 +642,21 @@ function NewClientModal({ onClose, onCreate }) {
                 <input type="url" value={paginaCliente} onChange={e => setPaginaCliente(e.target.value)}
                   placeholder="https://…"
                   className={inputCls}/>
+              </div>
+              <div>
+                <label className={labelCls} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <IgIcon size={12} className="text-[#c13584]"/> Instagram
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-ink-faint pointer-events-none">@</span>
+                  <input
+                    type="text"
+                    value={instagram}
+                    onChange={e => setInstagram(e.target.value.replace(/^@/, ''))}
+                    placeholder="handle"
+                    className={`${inputCls} pl-7`}
+                  />
+                </div>
               </div>
             </>
           )}
@@ -533,9 +811,10 @@ function NewClientModal({ onClose, onCreate }) {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function Clientes() {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showNew, setShowNew] = useState(false);
+  const [clients,   setClients]   = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [showNew,   setShowNew]   = useState(false);
+  const [igClient,  setIgClient]  = useState(null); // client whose Instagram panel is open
 
   const loadClients = () => {
     setLoading(true);
@@ -559,6 +838,12 @@ export default function Clientes() {
   const handleLogoChange = (clientId, logoUrl) => {
     setClients(prev => prev.map(c => c.id === clientId ? { ...c, logo: logoUrl } : c));
   };
+
+  const handleInstagramSave = useCallback((clientId, handle) => {
+    setClients(prev => prev.map(c => c.id === clientId ? { ...c, instagram: handle } : c));
+    // Keep panel in sync if it's open for this client
+    setIgClient(prev => prev?.id === clientId ? { ...prev, instagram: handle } : prev);
+  }, []);
 
   const totalContent   = clients.reduce((s, c) => s + c.totalContent, 0);
   const totalAwaiting  = clients.reduce((s, c) => s + c.awaitingApproval, 0);
@@ -604,7 +889,14 @@ export default function Clientes() {
         ) : clients.length > 0 ? (
           <div className="grid sm:grid-cols-2 gap-5">
             {clients.map(client => (
-              <ClientCard key={client.id} client={client} onDelete={deleteClient} onLogoChange={handleLogoChange} />
+              <ClientCard
+                key={client.id}
+                client={client}
+                onDelete={deleteClient}
+                onLogoChange={handleLogoChange}
+                onInstagram={setIgClient}
+                onInstagramSave={handleInstagramSave}
+              />
             ))}
           </div>
         ) : (
@@ -651,6 +943,14 @@ export default function Clientes() {
 
       {showNew && (
         <NewClientModal onClose={() => setShowNew(false)} onCreate={loadClients}/>
+      )}
+
+      {/* Instagram panel */}
+      {igClient && (
+        <InstagramPanel
+          client={igClient}
+          onClose={() => setIgClient(null)}
+        />
       )}
     </CRMLayout>
   );

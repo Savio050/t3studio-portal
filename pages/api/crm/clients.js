@@ -60,7 +60,7 @@ async function queryAll(dbId) {
 export default async function handler(req, res) {
   // ── POST: create new client ───────────────────────────────────────────────────
   if (req.method === 'POST') {
-    const { nome, descricao, paginaCliente } = req.body || {};
+    const { nome, descricao, paginaCliente, instagram } = req.body || {};
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
     try {
       const properties = {
@@ -69,6 +69,7 @@ export default async function handler(req, res) {
       };
       if (descricao?.trim())      properties['Descrição']         = { rich_text: [{ text: { content: descricao.trim() } }] };
       if (paginaCliente?.trim())  properties['Página do cliente'] = { url: paginaCliente.trim() };
+      if (instagram?.trim())      properties['Instagram']         = { rich_text: [{ text: { content: instagram.trim().replace(/^@/, '') } }] };
       const page = await notion.pages.create({ parent: { database_id: SECTORS_DB }, properties });
       return res.status(201).json({ ok: true, id: page.id, nome: nome.trim() });
     } catch (err) {
@@ -77,19 +78,21 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── PATCH: update client logo URL ────────────────────────────────────────────
+  // ── PATCH: update client fields (logo, instagram, etc.) ────────────────────────
   if (req.method === 'PATCH') {
-    const { id, logo } = req.body || {};
+    const { id, logo, instagram } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
     try {
-      await notion.pages.update({
-        page_id: id,
-        properties: { 'logo': { url: logo || null } },
-      });
-      return res.status(200).json({ ok: true, logo: logo || null });
+      const properties = {};
+      if (logo !== undefined)      properties['logo']      = { url: logo || null };
+      if (instagram !== undefined) properties['Instagram'] = instagram
+        ? { rich_text: [{ text: { content: instagram.trim().replace(/^@/, '') } }] }
+        : { rich_text: [] };
+      await notion.pages.update({ page_id: id, properties });
+      return res.status(200).json({ ok: true, logo: logo ?? undefined, instagram: instagram ?? undefined });
     } catch (err) {
       console.error('Client PATCH error:', err?.message || err);
-      return res.status(500).json({ error: err?.message || 'Erro ao atualizar logo' });
+      return res.status(500).json({ error: err?.message || 'Erro ao atualizar cliente' });
     }
   }
 
@@ -171,6 +174,7 @@ export default async function handler(req, res) {
         id:               sectorPage?.id || nome,
         nome,
         logo:             sectorPage ? (getProp(sectorPage.properties['logo']) || null) : null,
+        instagram:        sectorPage ? (getProp(sectorPage.properties['Instagram']) || '') : '',
         categoria:        sectorPage ? (getProp(sectorPage.properties['categoria']) || '') : '',
         descricao:        sectorPage ? (getProp(sectorPage.properties['Descrição']) || '') : '',
         paginaCliente:    sectorPage ? (getProp(sectorPage.properties['Página do cliente']) || '') : '',
