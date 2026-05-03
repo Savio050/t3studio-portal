@@ -857,6 +857,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
   );
   const [saving,            setSaving]           = useState(false);
   const [saved,             setSaved]            = useState(false);
+  const [saveError,         setSaveError]        = useState('');
   const [confirmDel,        setConfirmDel]       = useState(false);
   const [deleting,          setDeleting]         = useState(false);
   const [generatingScript,  setGeneratingScript] = useState(false);
@@ -930,9 +931,15 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
 
   const save = async () => {
     if (!nome.trim() || saving) return;
-    setSaving(true);
-    await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, plataforma: plataforma||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined, pontos: pontos||undefined });
-    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
+    setSaving(true); setSaveError('');
+    try {
+      await onSave(item.id, { nome, formato: formato||undefined, cliente: cliente||undefined, plataforma: plataforma||undefined, responsavel, estado, estadoRoteiro: estadoR, conteudo, postagem: postagem||undefined, dataGravacao: gravacao||undefined, linkDrive: linkDrive||undefined, pontos: pontos||undefined });
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setSaveError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveMedia = async (fields) => {
@@ -1033,11 +1040,11 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
         onChange={setPontos}
         placeholder="Não definido"
         options={[
-          { value: '1', label: '1 pt', desc: 'Post / Story' },
-          { value: '2', label: '2 pts', desc: 'Carrossel' },
-          { value: '3', label: '3 pts', desc: 'Vídeo Básico' },
-          { value: '4', label: '4 pts', desc: 'Edição Elaborada' },
-          { value: '5', label: '5 pts', desc: 'Hero / Superprodução' },
+          { value: '1 pt',   label: '1 pt',   desc: 'Post / Story' },
+          { value: '2 pts',  label: '2 pts',  desc: 'Carrossel' },
+          { value: '3 pts',  label: '3 pts',  desc: 'Vídeo Básico' },
+          { value: '4 pts',  label: '4 pts',  desc: 'Edição Elaborada' },
+          { value: '5 pts',  label: '5 pts',  desc: 'Hero / Superprodução' },
         ]}
       />
       <div className="grid grid-cols-2 gap-2">
@@ -1378,6 +1385,9 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
             {saving ? 'Salvando…' : saved ? 'Salvo!' : 'salvar'}
           </button>
         </div>
+        {saveError && (
+          <p className="text-xs text-red-500 mt-1 px-1">{saveError}</p>
+        )}
       </div>
     </div>
   );
