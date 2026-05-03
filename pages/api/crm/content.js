@@ -40,7 +40,7 @@ function getProp(prop) {
   if (!prop) return null;
   switch (prop.type) {
     case 'title':        return prop.title?.[0]?.plain_text || '';
-    case 'rich_text':    return prop.rich_text?.[0]?.plain_text || '';
+    case 'rich_text':    return prop.rich_text?.map(b => b.plain_text).join('') || '';
     case 'select':       return prop.select?.name || '';
     case 'multi_select': return prop.multi_select?.map(i => i.name).join(', ') || '';
     case 'status':       return prop.status?.name || '';
@@ -189,7 +189,15 @@ export default async function handler(req, res) {
       if (postagem)                  properties['Postagem']            = { date: { start: postagem } };
       if (responsavel)               properties['responsável']         = { select: { name: responsavel } };
       if (nome?.trim())              properties['Nome']                = { title: [{ text: { content: nome.trim() } }] };
-      if (conteudo !== undefined)     properties['Roteiro']             = { rich_text: [{ text: { content: conteudo } }] };
+      // Notion rich_text blocks have a hard 2000-char limit per element — chunk if needed
+      if (conteudo !== undefined) {
+        const CHUNK = 2000;
+        const chunks = [];
+        for (let i = 0; i < (conteudo || '').length; i += CHUNK) {
+          chunks.push({ text: { content: conteudo.slice(i, i + CHUNK) } });
+        }
+        properties['Roteiro'] = { rich_text: chunks.length ? chunks : [] };
+      }
       if (galeria !== undefined)     properties['Galeria']             = { rich_text: [{ text: { content: galeria } }] };
       if (linkDrive !== undefined)   properties['Link Drive']          = { url: linkDrive || null };
       if (linkFicheiro !== undefined) properties['Link do Ficheiro']   = { url: linkFicheiro || null };
@@ -209,8 +217,8 @@ export default async function handler(req, res) {
       const page = await notion.pages.update({ page_id: id, properties });
       return res.status(200).json({ content: mapContent(page) });
     } catch (err) {
-      console.error('Content PATCH error:', err);
-      return res.status(500).json({ error: 'Failed to update content' });
+      console.error('Content PATCH error:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Erro ao atualizar conteúdo' });
     }
   }
 
