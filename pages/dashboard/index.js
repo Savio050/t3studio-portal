@@ -349,7 +349,7 @@ export default function Dashboard() {
       color:'#ff9500', href:'/dashboard/conteudo' },
     { icon:Calendar, label:'Posts este mês',           value:stats?.content?.thisMonth,
       sub:`${stats?.content?.approved??'—'} aprovados`, color:'#28cd41', href:'/dashboard/conteudo',
-      progress: stats ? Math.round((stats.content.approved/Math.max(stats.content.thisMonth,1))*100) : null },
+      progress: stats?.content ? Math.round((stats.content.approved/Math.max(stats.content.thisMonth,1))*100) : null },
   ];
 
   return (

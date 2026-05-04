@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const [tasks, content, sectors] = await Promise.all([
       queryAll(TASKS_DB),
       queryAll(CONTENT_DB),
-      queryAll(SECTORS_DB),
+      queryAll(SECTORS_DB).catch(() => []),
     ]);
 
     // Tasks stats
@@ -111,6 +111,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Stats error:', err);
-    return res.status(500).json({ error: 'Failed to fetch stats' });
+    return res.status(500).json({ error: err?.message || 'Failed to fetch stats' });
   }
 }
