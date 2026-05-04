@@ -6,7 +6,7 @@ import {
   LayoutGrid, User2, CalendarDays, ChevronLeft, ChevronRight,
   Save, CheckCircle2, Check, Plus, Trash2, Camera,
   Image, FileText, Palette, ExternalLink, Link2,
-  ChevronDown, Upload, Video, Play,
+  ChevronDown, Upload, Video, Play, MessageSquare,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -975,9 +975,10 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
   };
 
   const TABS = [
-    { id:'tema',     label:'Tema',     icon: Palette,  section:'tema'     },
-    { id:'conteudo', label:'Conteúdo', icon: FileText,  section:'conteudo' },
-    { id:'midia',    label:'Mídia',    icon: Image,     section:'midia'    },
+    { id:'tema',     label:'Tema',     icon: Palette,       section:'tema'     },
+    { id:'conteudo', label:'Conteúdo', icon: FileText,       section:'conteudo' },
+    { id:'midia',    label:'Mídia',    icon: Image,          section:'midia'    },
+    { id:'feedback', label:'Feedback', icon: MessageSquare,  section:'feedback' },
   ];
 
   // ── Tab content renderers ──────────────────────────────────────────────────
@@ -1272,6 +1273,40 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
     );
   };
 
+  // ── Feedback do cliente ────────────────────────────────────────────────────
+  const renderFeedback = () => (
+    <div className="space-y-4">
+      {item.feedbackCliente ? (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-warn shrink-0" />
+            <p className="text-[11px] font-semibold text-warn-ink uppercase tracking-wider">
+              Comentário do cliente
+            </p>
+          </div>
+          <div className="px-4 py-3.5 rounded-apple-lg bg-warn-soft border border-warn/25">
+            <p className="text-[13px] text-warn-ink leading-relaxed whitespace-pre-wrap">
+              {item.feedbackCliente}
+            </p>
+          </div>
+          <p className="text-[10px] text-ink-faint">
+            Enviado pelo portal de aprovação do cliente.
+          </p>
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+          <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center">
+            <MessageSquare className="w-5 h-5 text-ink-faint" />
+          </div>
+          <p className="text-[13px] font-medium text-ink-muted">Nenhum feedback ainda</p>
+          <p className="text-[11px] text-ink-faint max-w-[200px]">
+            O cliente ainda não deixou comentários no portal de aprovação.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}/>
@@ -1336,17 +1371,27 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
           {/* Left: vertical tab list */}
           <div className="flex flex-col gap-1.5 p-3 shrink-0 w-[130px] border-r border-hairline bg-elevated/50">
             {TABS.map(t => {
-              const st      = sectionStatus(item, t.section);
-              const meta    = SECTION_STATUS[st];
+              const isFeedbackTab = t.id === 'feedback';
+              const hasFeedback   = isFeedbackTab && !!item.feedbackCliente;
+              const st   = isFeedbackTab ? (hasFeedback ? 'warn' : 'neutral') : sectionStatus(item, t.section);
+              const meta = isFeedbackTab
+                ? (hasFeedback
+                    ? { color:'#d97706', border:'rgba(217,119,6,0.3)', label:'Novo' }
+                    : { color:'#6b7280', border:'rgba(0,0,0,0.08)',    label:'Vazio' })
+                : SECTION_STATUS[st];
               const isActive = tab === t.id;
               return (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-apple-lg cursor-pointer transition-all duration-150 w-full"
+                  className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-apple-lg cursor-pointer transition-all duration-150 w-full"
                   style={{
                     background: isActive ? '#ffffff' : 'transparent',
                     border: `1px solid ${isActive ? meta.border : 'transparent'}`,
                     boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                   }}>
+                  {/* Badge ponto laranja quando há feedback não lido */}
+                  {hasFeedback && !isActive && (
+                    <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-warn" />
+                  )}
                   <t.icon className="w-4 h-4"
                     style={{ color: isActive ? meta.color : '#6b7280' }}/>
                   <span className="text-[11px] font-semibold leading-none"
@@ -1367,6 +1412,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
             {tab === 'tema'     && renderTema()}
             {tab === 'conteudo' && renderConteudo()}
             {tab === 'midia'    && renderMidia()}
+            {tab === 'feedback' && renderFeedback()}
           </div>
         </div>
 
