@@ -34,7 +34,7 @@ const greeting = () => {
   return 'Boa noite';
 };
 
-const nrm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+const nrm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 
 const badgeClassFor = (s) => {
   const raw = nrm(s);
