@@ -36,38 +36,111 @@ function getEaster(year) {
   return new Date(year, month - 1, day);
 }
 
-// ── Feriados Nacionais Brasileiros ────────────────────────────────────────────
+// Retorna o N-ésimo dia da semana de um mês (ex: 2º domingo de maio)
+// weekday: 0=Dom … 6=Sáb  |  n: 1-based
+function getNthWeekday(year, month, weekday, n) {
+  const first = new Date(year, month, 1);
+  const firstWd = first.getDay();
+  const day = 1 + ((weekday - firstWd + 7) % 7) + (n - 1) * 7;
+  return new Date(year, month, day);
+}
+
+// Último dia da semana do mês (ex: última sexta de novembro = Black Friday)
+function getLastWeekday(year, month, weekday) {
+  const last = new Date(year, month + 1, 0);
+  const diff = (last.getDay() - weekday + 7) % 7;
+  return new Date(year, month, last.getDate() - diff);
+}
+
+// ── Feriados e Datas Comemorativas Brasileiras ────────────────────────────────
+// Verificado em: blog.feriados.com.br/datas-comemorativas-2026 + infomoney.com.br
 function getBrazilianHolidays(year) {
   const easter = getEaster(year);
   const map = {};
 
-  const add = (d, name, type = 'national') => { map[dateKey(d)] = { name, type }; };
+  // type: 'national' | 'carnival' | 'commemorative'
+  const add = (d, name, type = 'national') => {
+    const k = dateKey(d);
+    // Se já existe (ex: Aparecida + Dia das Crianças), concatena o nome
+    if (map[k]) map[k] = { name: `${map[k].name} / ${name}`, type: map[k].type };
+    else map[k] = { name, type };
+  };
 
-  // Fixos
+  // ── Feriados nacionais fixos ──────────────────────────────────────────────
   add(new Date(year,  0,  1), 'Ano Novo');
   add(new Date(year,  3, 21), 'Tiradentes');
   add(new Date(year,  4,  1), 'Dia do Trabalho');
-  add(new Date(year,  4, 11), 'Dia das Mães', 'commemorative');   // 2o domingo de maio — aproximado
-  add(new Date(year,  5, 12), 'Dia dos Namorados', 'commemorative');
-  add(new Date(year,  7, 13), 'Dia dos Pais', 'commemorative');    // 2o domingo de agosto — aproximado
   add(new Date(year,  8,  7), 'Independência do Brasil');
   add(new Date(year,  9, 12), 'Nossa Sra. Aparecida');
-  add(new Date(year,  9, 31), 'Halloween', 'commemorative');
   add(new Date(year, 10,  2), 'Finados');
   add(new Date(year, 10, 15), 'Proclamação da República');
   add(new Date(year, 10, 20), 'Consciência Negra');
-  add(new Date(year, 11, 24), 'Véspera de Natal', 'commemorative');
   add(new Date(year, 11, 25), 'Natal');
-  add(new Date(year, 11, 31), 'Réveillon', 'commemorative');
 
-  // Móveis (baseados na Páscoa)
+  // ── Feriados móveis (baseados na Páscoa) ──────────────────────────────────
   add(addDays(easter, -48), 'Segunda de Carnaval', 'carnival');
   add(addDays(easter, -47), 'Terça de Carnaval',   'carnival');
   add(addDays(easter, -46), 'Quarta de Cinzas',    'carnival');
-  add(addDays(easter,  -3), 'Quinta-feira Santa');
-  add(addDays(easter,  -2), 'Sexta-feira Santa');
+  add(addDays(easter,  -2), 'Sexta-Feira Santa');
   add(easter,               'Páscoa');
   add(addDays(easter,  60), 'Corpus Christi');
+
+  // ── Datas comemorativas dinâmicas (N-ésimo dia da semana) ─────────────────
+  add(getNthWeekday(year, 4, 0, 2), 'Dia das Mães',       'commemorative'); // 2º dom/mai
+  add(getNthWeekday(year, 7, 0, 2), 'Dia dos Pais',       'commemorative'); // 2º dom/ago
+  add(getNthWeekday(year, 9, 0, 2), 'Dia das Crianças',   'commemorative'); // 2º dom/out (SP) — Out/12 já cobre
+
+  // Black Friday — última sexta de novembro
+  add(getLastWeekday(year, 10, 5), 'Black Friday', 'commemorative');
+
+  // ── Datas comemorativas fixas — Janeiro ───────────────────────────────────
+  add(new Date(year,  0,  6), 'Dia de Reis',                    'commemorative');
+
+  // ── Fevereiro ─────────────────────────────────────────────────────────────
+  add(new Date(year,  1, 14), 'Valentine\'s Day',               'commemorative');
+
+  // ── Março ─────────────────────────────────────────────────────────────────
+  add(new Date(year,  2,  8), 'Dia Internacional da Mulher',    'commemorative');
+  add(new Date(year,  2, 15), 'Dia do Consumidor',              'commemorative');
+
+  // ── Abril ─────────────────────────────────────────────────────────────────
+  add(new Date(year,  3,  1), 'Dia da Mentira',                 'commemorative');
+  add(new Date(year,  3, 19), 'Dia dos Povos Indígenas',        'commemorative');
+  add(new Date(year,  3, 22), 'Descobrimento do Brasil',        'commemorative');
+
+  // ── Maio ──────────────────────────────────────────────────────────────────
+  add(new Date(year,  4, 13), 'Abolição da Escravatura',        'commemorative');
+
+  // ── Junho ─────────────────────────────────────────────────────────────────
+  add(new Date(year,  5,  5), 'Dia do Meio Ambiente',           'commemorative');
+  add(new Date(year,  5, 12), 'Dia dos Namorados',              'commemorative');
+  add(new Date(year,  5, 24), 'Dia de São João',                'commemorative');
+
+  // ── Julho ─────────────────────────────────────────────────────────────────
+  add(new Date(year,  6, 13), 'Dia do Rock',                    'commemorative');
+  add(new Date(year,  6, 20), 'Dia do Amigo',                   'commemorative');
+  add(new Date(year,  6, 26), 'Dia dos Avós',                   'commemorative');
+
+  // ── Agosto ────────────────────────────────────────────────────────────────
+  add(new Date(year,  7, 22), 'Dia do Folclore',                'commemorative');
+
+  // ── Setembro ──────────────────────────────────────────────────────────────
+  add(new Date(year,  8, 21), 'Início da Primavera',            'commemorative');
+
+  // ── Outubro ───────────────────────────────────────────────────────────────
+  add(new Date(year,  9,  1), 'Dia do Idoso',                   'commemorative');
+  add(new Date(year,  9, 12), 'Dia das Crianças',               'commemorative'); // coincide com Aparecida
+  add(new Date(year,  9, 15), 'Dia do Professor',               'commemorative');
+  add(new Date(year,  9, 31), 'Halloween',                      'commemorative');
+
+  // ── Novembro ──────────────────────────────────────────────────────────────
+  add(new Date(year, 10,  1), 'Dia de Todos os Santos',         'commemorative');
+
+  // ── Dezembro ──────────────────────────────────────────────────────────────
+  add(new Date(year, 11,  1), 'Dia Mundial de Combate à AIDS',  'commemorative');
+  add(new Date(year, 11,  8), 'N. Sra. da Conceição',           'commemorative');
+  add(new Date(year, 11, 24), 'Véspera de Natal',               'commemorative');
+  add(new Date(year, 11, 31), 'Réveillon',                      'commemorative');
 
   return map;
 }
