@@ -1,239 +1,222 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import CRMLayout from '../../components/crm/Layout';
 import {
-  Calendar, ChevronLeft, ChevronRight, X,
-  Clock, Film, User,
+  Calendar, ChevronLeft, ChevronRight, StickyNote, X, Loader2, Trash2,
 } from 'lucide-react';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Constantes ────────────────────────────────────────────────────────────────
 const MONTHS_PT = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
 ];
 const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const NOTES_KEY = 'crm-calendar-notes-v1';
 
-// Apple-inspired semantic palette mapped per client key.
-// Each entry maps to a small curated palette compatible with the design tokens.
-const CLIENT_COLORS = {
-  'fastimoveis': {
-    dot: '#ff3b30',            // red
-    chipBg: 'rgba(255,59,48,0.10)',
-    chipText: '#c0271f',
-    chipBorder: 'rgba(255,59,48,0.25)',
-    badgeClass: 'badge badge-red',
-  },
-  'mafro': {
-    dot: '#30b0c7',            // teal
-    chipBg: 'rgba(48,176,199,0.12)',
-    chipText: '#0b7f91',
-    chipBorder: 'rgba(48,176,199,0.28)',
-    badgeClass: 'badge badge-teal',
-  },
-};
+// ── Helpers de data ───────────────────────────────────────────────────────────
+function dateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+function addDays(date, n) {
+  const d = new Date(date); d.setDate(d.getDate() + n); return d;
+}
+function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+function getFirstDayOfMonth(y, m) { return new Date(y, m, 1).getDay(); }
 
-const DEFAULT_CLIENT_COLOR = {
-  dot: '#7d3fff',                // purple
-  chipBg: 'rgba(125,63,255,0.10)',
-  chipText: '#5a27c4',
-  chipBorder: 'rgba(125,63,255,0.25)',
-  badgeClass: 'badge badge-purple',
-};
-
-function getClientColor(nome) {
-  const key = (nome || '').toLowerCase().replace(/\s+/g,'');
-  return CLIENT_COLORS[key] || DEFAULT_CLIENT_COLOR;
+// ── Cálculo da Páscoa (algoritmo Meeus/Jones/Butcher) ─────────────────────────
+function getEaster(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
 }
 
-// Apple semantic status colors
-const STATUS_DOT = {
-  'aprovado':   '#34c759', // green
-  'aguardando': '#ff9500', // orange
-  'producao':   '#0071e3', // accent blue
-  'ajuste':     '#ff3b30', // red
-  'default':    '#8e8e93', // neutral gray
-};
+// ── Feriados Nacionais Brasileiros ────────────────────────────────────────────
+function getBrazilianHolidays(year) {
+  const easter = getEaster(year);
+  const map = {};
 
-function getStatusDot(estado) {
-  const s = (estado||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  if (s === 'aprovado')                     return STATUS_DOT.aprovado;
-  if (s.includes('aguardando'))             return STATUS_DOT.aguardando;
-  if (s.includes('producao') || s.includes('produção')) return STATUS_DOT.producao;
-  if (s.includes('ajuste'))                 return STATUS_DOT.ajuste;
-  return STATUS_DOT.default;
+  const add = (d, name, type = 'national') => { map[dateKey(d)] = { name, type }; };
+
+  // Fixos
+  add(new Date(year,  0,  1), 'Ano Novo');
+  add(new Date(year,  3, 21), 'Tiradentes');
+  add(new Date(year,  4,  1), 'Dia do Trabalho');
+  add(new Date(year,  4, 11), 'Dia das Mães', 'commemorative');   // 2o domingo de maio — aproximado
+  add(new Date(year,  5, 12), 'Dia dos Namorados', 'commemorative');
+  add(new Date(year,  7, 13), 'Dia dos Pais', 'commemorative');    // 2o domingo de agosto — aproximado
+  add(new Date(year,  8,  7), 'Independência do Brasil');
+  add(new Date(year,  9, 12), 'Nossa Sra. Aparecida');
+  add(new Date(year,  9, 31), 'Halloween', 'commemorative');
+  add(new Date(year, 10,  2), 'Finados');
+  add(new Date(year, 10, 15), 'Proclamação da República');
+  add(new Date(year, 10, 20), 'Consciência Negra');
+  add(new Date(year, 11, 24), 'Véspera de Natal', 'commemorative');
+  add(new Date(year, 11, 25), 'Natal');
+  add(new Date(year, 11, 31), 'Réveillon', 'commemorative');
+
+  // Móveis (baseados na Páscoa)
+  add(addDays(easter, -48), 'Segunda de Carnaval', 'carnival');
+  add(addDays(easter, -47), 'Terça de Carnaval',   'carnival');
+  add(addDays(easter, -46), 'Quarta de Cinzas',    'carnival');
+  add(addDays(easter,  -3), 'Quinta-feira Santa');
+  add(addDays(easter,  -2), 'Sexta-feira Santa');
+  add(easter,               'Páscoa');
+  add(addDays(easter,  60), 'Corpus Christi');
+
+  return map;
 }
 
-function getDaysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate();
-}
+// ── Modal de nota ─────────────────────────────────────────────────────────────
+function DayNoteModal({ date, note, holiday, onSave, onClose }) {
+  const [text, setText] = useState(note || '');
+  const ref = useRef(null);
 
-function getFirstDayOfMonth(year, month) {
-  return new Date(year, month, 1).getDay();
-}
+  useEffect(() => { setTimeout(() => ref.current?.focus(), 50); }, []);
 
-// ── Day Posts Modal ───────────────────────────────────────────────────────────
-function DayModal({ date, posts, onClose }) {
-  if (!posts || posts.length === 0) return null;
+  const handleSave = useCallback(() => {
+    onSave(dateKey(date), text.trim());
+    onClose();
+  }, [date, text, onSave, onClose]);
+
+  const handleKeyDown = e => {
+    if (e.key === 'Escape') onClose();
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSave();
+  };
+
+  const HOLIDAY_COLORS = {
+    national:      { bg: 'rgba(255,59,48,0.10)',  text: '#c0271f',  border: 'rgba(255,59,48,0.25)' },
+    carnival:      { bg: 'rgba(125,63,255,0.10)', text: '#5a27c4',  border: 'rgba(125,63,255,0.25)' },
+    commemorative: { bg: 'rgba(255,149,0,0.10)',  text: '#b35a00',  border: 'rgba(255,149,0,0.25)' },
+  };
+  const hc = holiday ? HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS.national : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm rounded-apple-xl overflow-hidden animate-slide-up bg-surface border border-hairline shadow-apple-md">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-hairline">
           <div>
-            <p className="t-eyebrow">Postagens</p>
-            <h2 className="t-title mt-1 text-ink tracking-apple-tight">
+            <p className="t-eyebrow flex items-center gap-1.5">
+              <StickyNote className="w-3 h-3" />
+              Nota do dia
+            </p>
+            <h2 className="t-title mt-1 text-ink tracking-apple-tight capitalize">
               {date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h2>
+            {holiday && (
+              <span className="inline-block mt-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full border"
+                style={{ background: hc.bg, color: hc.text, borderColor: hc.border }}>
+                🎉 {holiday.name}
+              </span>
+            )}
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all duration-150 cursor-pointer"
-            aria-label="Fechar">
+            className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer mt-0.5">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Posts list */}
-        <div className="p-4 space-y-2.5 max-h-80 overflow-y-auto">
-          {posts.map(post => {
-            const cl = getClientColor(post.cliente);
-            const sdot = getStatusDot(post.estado);
-            return (
-              <div key={post.id}
-                className="rounded-apple p-4 border border-hairline bg-elevated/60">
-                <p className="text-sm font-semibold text-ink leading-snug">{post.nome}</p>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {post.cliente && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                      style={{ color: cl.chipText, background: cl.chipBg, border: `1px solid ${cl.chipBorder}` }}>
-                      {post.cliente}
-                    </span>
-                  )}
-                  {post.formato && (
-                    <span className="text-[11px] text-ink-muted">{post.formato}</span>
-                  )}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: sdot }} />
-                    <span className="text-[11px] text-ink-muted">{post.estado || '—'}</span>
-                  </div>
-                </div>
-                {post.responsavel && (
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <User className="w-3 h-3 text-ink-faint" />
-                    <span className="text-[11px] text-ink-muted">{post.responsavel}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* Textarea */}
+        <div className="p-4">
+          <textarea
+            ref={ref}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={5}
+            placeholder="Escreva uma nota para este dia…"
+            className="w-full text-sm text-ink leading-relaxed resize-none rounded-apple px-3 py-2.5 bg-elevated border border-hairline focus:outline-none focus:border-accent/50 focus:bg-surface placeholder:text-ink-faint transition-all duration-150"
+          />
+          <p className="text-[11px] text-ink-faint mt-1.5">⌘/Ctrl+Enter para salvar · Esc para fechar</p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-4 pb-4">
+          {note && (
+            <button onClick={() => { onSave(dateKey(date), ''); onClose(); }}
+              className="btn btn-secondary btn-sm flex items-center gap-1.5 text-err hover:text-err">
+              <Trash2 className="w-3.5 h-3.5" />
+              Remover
+            </button>
+          )}
+          <div className="flex-1" />
+          <button onClick={onClose} className="btn btn-secondary btn-sm">Cancelar</button>
+          <button onClick={handleSave} className="btn btn-primary btn-sm">Salvar</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Calendario() {
-  const today = new Date();
-  const [year,            setYear]            = useState(today.getFullYear());
-  const [month,           setMonth]           = useState(today.getMonth());
-  const [content,         setContent]         = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [selected,        setSelected]        = useState(null);
-  const [filterCliente,   setFilterCliente]   = useState('');
-  const [filterPlataforma, setFilterPlataforma] = useState('');
+  const today  = new Date();
+  const [year,  setYear]  = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [notes, setNotes] = useState({});          // { 'YYYY-MM-DD': 'texto' }
+  const [modal, setModal] = useState(null);         // { date, key } | null
 
+  // Carrega notas do localStorage
   useEffect(() => {
-    setLoading(true);
-    fetch('/api/crm/content')
-      .then(r => r.json())
-      .then(d => { setContent(d.content || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    try {
+      const raw = localStorage.getItem(NOTES_KEY);
+      if (raw) setNotes(JSON.parse(raw));
+    } catch {}
   }, []);
 
-  // Dynamic filter options
-  const availableClients = useMemo(() => (
-    [...new Set(content.map(c => (c.cliente||'').toLowerCase().replace(/\s+/g,'')).filter(Boolean))]
-  ), [content]);
+  // Feriados do ano atual exibido
+  const holidays = getBrazilianHolidays(year);
 
-  const availablePlatforms = useMemo(() => {
-    const set = new Set();
-    content.forEach(c => {
-      if (c.plataforma) c.plataforma.split(',').forEach(p => { const t = p.trim(); if (t) set.add(t); });
+  // Salva nota
+  const saveNote = useCallback((key, text) => {
+    setNotes(prev => {
+      const next = { ...prev };
+      if (text) next[key] = text;
+      else delete next[key];
+      try { localStorage.setItem(NOTES_KEY, JSON.stringify(next)); } catch {}
+      return next;
     });
-    return [...set].sort();
-  }, [content]);
+  }, []);
 
-  // Filtered content
-  const filteredContent = useMemo(() => content.filter(item => {
-    if (filterCliente) {
-      const k = (item.cliente||'').toLowerCase().replace(/\s+/g,'');
-      if (k !== filterCliente) return false;
-    }
-    if (filterPlataforma) {
-      const platforms = (item.plataforma||'').split(',').map(p => p.trim().toLowerCase());
-      if (!platforms.includes(filterPlataforma.toLowerCase())) return false;
-    }
-    return true;
-  }), [content, filterCliente, filterPlataforma]);
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+  const goToToday = () => { setYear(today.getFullYear()); setMonth(today.getMonth()); };
 
-  const nrm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay    = getFirstDayOfMonth(year, month);
+  const todayStr    = dateKey(today);
 
-  // Map posts by date string "YYYY-MM-DD"
-  const postsByDate = useMemo(() => {
-    const map = {};
-    filteredContent.forEach(item => {
-      const d = item.postagem || item.dataGravacao;
-      if (!d) return;
-      const key = d.slice(0, 10);
-      if (!map[key]) map[key] = [];
-      map[key].push(item);
-    });
-    return map;
-  }, [filteredContent]);
-
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
-  };
-  const goToToday = () => {
-    setYear(today.getFullYear());
-    setMonth(today.getMonth());
-  };
-
-  const daysInMonth  = getDaysInMonth(year, month);
-  const firstDay     = getFirstDayOfMonth(year, month);
-  const todayStr     = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-  // Calendar grid: leading empty cells + days
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const handleDayClick = (day) => {
-    const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const posts = postsByDate[key] || [];
-    if (posts.length > 0) {
-      setSelected({ date: new Date(year, month, day), posts });
-    }
-  };
+  // Feriados do mês para o resumo lateral
+  const monthHolidays = Object.entries(holidays)
+    .filter(([k]) => k.startsWith(`${year}-${String(month+1).padStart(2,'0')}-`))
+    .sort(([a],[b]) => a.localeCompare(b));
 
-  // Month stats
-  const monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
-  const monthPosts = filteredContent.filter(c => (c.postagem || '').startsWith(monthPrefix));
-  const monthByClient = {};
-  monthPosts.forEach(p => {
-    const c = (p.cliente || 'Outros').toLowerCase().replace(/\s+/g,'');
-    monthByClient[c] = (monthByClient[c] || 0) + 1;
-  });
+  // Notas do mês
+  const monthNotes = Object.entries(notes)
+    .filter(([k]) => k.startsWith(`${year}-${String(month+1).padStart(2,'0')}-`))
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  const HOLIDAY_COLORS = {
+    national:      { dot: '#ff3b30', bg: 'rgba(255,59,48,0.08)',  text: '#c0271f',  border: 'rgba(255,59,48,0.20)' },
+    carnival:      { dot: '#7d3fff', bg: 'rgba(125,63,255,0.08)', text: '#5a27c4',  border: 'rgba(125,63,255,0.20)' },
+    commemorative: { dot: '#ff9500', bg: 'rgba(255,149,0,0.08)',  text: '#b35a00',  border: 'rgba(255,149,0,0.20)' },
+  };
 
   return (
     <CRMLayout title="Calendário — T3 Studio CRM">
-      <div className="px-5 lg:px-8 py-8 max-w-5xl mx-auto">
+      <div className="px-5 lg:px-8 py-8 max-w-6xl mx-auto">
 
         {/* Header */}
         <div className="flex items-start sm:items-center justify-between gap-4 mb-6 flex-col sm:flex-row">
@@ -244,294 +227,203 @@ export default function Calendario() {
             </p>
             <h1 className="t-hero text-ink tracking-apple-tight mt-1 flex items-center gap-2.5">
               <Calendar className="w-7 h-7 text-accent" />
-              {MONTHS_PT[month]} <span className="text-ink-muted font-normal">{year}</span>
+              {MONTHS_PT[month]}{' '}
+              <span className="text-ink-muted font-normal">{year}</span>
             </h1>
             <p className="t-small text-ink-muted mt-1">
-              {monthPosts.length} postagem{monthPosts.length !== 1 ? 's' : ''} em {MONTHS_PT[month]}
+              {monthHolidays.length} feriado{monthHolidays.length !== 1 ? 's' : ''}
+              {monthNotes.length > 0 && ` · ${monthNotes.length} nota${monthNotes.length !== 1 ? 's' : ''}`}
+              {' '}em {MONTHS_PT[month]}
             </p>
           </div>
 
-          {/* Month navigation */}
+          {/* Navegação */}
           <div className="flex items-center gap-2">
-            <button onClick={goToToday}
-              className="btn btn-secondary btn-sm">
-              Hoje
-            </button>
+            <button onClick={goToToday} className="btn btn-secondary btn-sm">Hoje</button>
             <div className="flex items-center gap-1 p-1 rounded-apple bg-elevated border border-hairline">
               <button onClick={prevMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-surface transition-all duration-150"
-                aria-label="Mês anterior">
+                className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-surface transition-all duration-150">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button onClick={nextMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-surface transition-all duration-150"
-                aria-label="Próximo mês">
+                className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-surface transition-all duration-150">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── Alternating filter list ── */}
-        <div className="rounded-apple-lg overflow-hidden mb-5 bg-surface border border-hairline shadow-apple-sm">
+        {/* Layout calendário + sidebar */}
+        <div className="flex gap-5 flex-col lg:flex-row">
 
-          {/* Row 1 — Cliente */}
-          <div className="flex items-center border-b border-hairline">
-            <div className="shrink-0 px-4 py-3 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth: 120 }}>
-              <span className="dot dot-blue" />
-              <span className="t-eyebrow">Cliente</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
-              {[{ key:'', label:'Todos' }, ...availableClients.map(c => ({ key:c, label:c }))].map(({ key, label }) => {
-                const active = filterCliente === key;
-                const cl = key ? getClientColor(key) : null;
-                return (
-                  <button key={key||'todos'}
-                    onClick={() => setFilterCliente(active && key ? '' : key)}
-                    className="shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold tracking-apple-snug cursor-pointer transition-all duration-150 active:scale-[0.97] border"
-                    style={
-                      active && key
-                        ? { background: cl.chipBg, color: cl.chipText, borderColor: cl.chipBorder }
-                        : active
-                          ? { background: 'rgba(0,113,227,0.10)', color: '#0071e3', borderColor: 'rgba(0,113,227,0.28)' }
-                          : { background: '#fff', color: '#6e6e73', borderColor: 'rgba(0,0,0,0.08)' }
-                    }>
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            {filterCliente && (
-              <button onClick={() => setFilterCliente('')}
-                className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-surface border border-hairline transition-colors">
-                <X className="w-3 h-3"/>
-              </button>
-            )}
-          </div>
+          {/* ── Calendário ─────────────────────────────────────────────────── */}
+          <div className="flex-1 rounded-apple-lg overflow-hidden bg-surface border border-hairline shadow-apple-sm">
 
-          {/* Row 2 — Plataforma */}
-          <div className="flex items-center">
-            <div className="shrink-0 px-4 py-3 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth: 120 }}>
-              <span className="dot dot-purple" />
-              <span className="t-eyebrow">Plataforma</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
-              {availablePlatforms.length === 0 ? (
-                <span className="text-[11px] text-ink-faint italic">Nenhuma plataforma cadastrada no Notion</span>
-              ) : (
-                [{ key:'', label:'Todas' }, ...availablePlatforms.map(p => ({ key:p, label:p }))].map(({ key, label }) => {
-                  const active = filterPlataforma.toLowerCase() === key.toLowerCase();
-                  return (
-                    <button key={key||'todas'}
-                      onClick={() => setFilterPlataforma(active && key ? '' : key)}
-                      className="shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold tracking-apple-snug cursor-pointer transition-all duration-150 active:scale-[0.97] border"
-                      style={
-                        active
-                          ? { background: 'rgba(125,63,255,0.10)', color: '#5a27c4', borderColor: 'rgba(125,63,255,0.28)' }
-                          : { background: '#fff', color: '#6e6e73', borderColor: 'rgba(0,0,0,0.08)' }
-                      }>
-                      {label}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-            {filterPlataforma && (
-              <button onClick={() => setFilterPlataforma('')}
-                className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-surface border border-hairline transition-colors">
-                <X className="w-3 h-3"/>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Client legend */}
-        {Object.keys(monthByClient).length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5">
-            {Object.entries(monthByClient).map(([client, count]) => {
-              const cl = getClientColor(client);
-              return (
-                <div key={client}
-                  className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border"
-                  style={{ background: cl.chipBg, borderColor: cl.chipBorder, color: cl.chipText }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: cl.dot }} />
-                  {client} · {count}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Calendar */}
-        <div className="rounded-apple-lg overflow-hidden bg-surface border border-hairline shadow-apple-sm">
-
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 border-b border-hairline bg-elevated/60">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="py-2.5 text-center text-[10px] font-semibold text-ink-muted uppercase tracking-apple-snug">
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Days grid */}
-          {loading ? (
-            <div className="grid grid-cols-7">
-              {[...Array(35)].map((_,i) => (
-                <div key={i} className="aspect-square p-2 border-r border-b border-hairline">
-                  <div className="w-full h-full rounded-md animate-pulse bg-elevated" />
+            {/* Cabeçalho dias da semana */}
+            <div className="grid grid-cols-7 border-b border-hairline bg-elevated/60">
+              {WEEKDAYS.map(d => (
+                <div key={d} className="py-2.5 text-center text-[10px] font-semibold text-ink-muted uppercase tracking-apple-snug">
+                  {d}
                 </div>
               ))}
             </div>
-          ) : (
+
+            {/* Grid de dias */}
             <div className="grid grid-cols-7">
               {cells.map((day, idx) => {
                 if (!day) return (
-                  <div key={`empty-${idx}`} className="aspect-square border-r border-b border-hairline bg-elevated/30" />
+                  <div key={`e${idx}`}
+                    className="border-r border-b border-hairline bg-elevated/20"
+                    style={{ aspectRatio: '1/1' }} />
                 );
 
-                const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                const posts = postsByDate[key] || [];
-                const isToday = key === todayStr;
-                const hasPosts = posts.length > 0;
-
-                // Find first post with an image for hover preview
-                const previewImg = posts.find(p => p.linkCapa)?.linkCapa ||
-                  posts.find(p => p.galeria)?.galeria?.split(',')[0]?.trim() || null;
+                const key      = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const isToday  = key === todayStr;
+                const holiday  = holidays[key];
+                const note     = notes[key];
+                const hc       = holiday ? HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS.national : null;
+                const isSun    = new Date(year, month, day).getDay() === 0;
+                const isSat    = new Date(year, month, day).getDay() === 6;
 
                 return (
                   <div key={day}
-                    onClick={() => hasPosts && handleDayClick(day)}
-                    className={`aspect-square border-r border-b border-hairline p-1.5 flex flex-col transition-all duration-150 relative group
-                      ${hasPosts ? 'cursor-pointer hover:bg-elevated/70' : ''}
-                      ${isToday ? 'bg-accent-soft/60' : ''}
-                    `}>
+                    onClick={() => setModal({ date: new Date(year, month, day), key })}
+                    className={`border-r border-b border-hairline p-1.5 flex flex-col cursor-pointer
+                      transition-all duration-150 hover:bg-elevated/60 group relative`}
+                    style={{
+                      aspectRatio: '1/1',
+                      background: holiday ? hc.bg : undefined,
+                    }}>
 
-                    {/* Day number */}
+                    {/* Número do dia */}
                     <div className="flex justify-center">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-semibold
-                        ${isToday ? 'bg-accent text-white' : hasPosts ? 'text-ink' : 'text-ink-muted'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-semibold transition-all
+                        ${isToday
+                          ? 'bg-accent text-white'
+                          : isSun || (holiday && holiday.type !== 'commemorative')
+                            ? 'text-err font-bold'
+                            : isSat
+                              ? 'text-ink-soft'
+                              : 'text-ink'
+                        }`}>
                         {day}
                       </div>
                     </div>
 
-                    {/* Post chips */}
-                    {hasPosts && (
-                      <div className="flex flex-col gap-0.5 mt-1 px-0.5">
-                        {posts.slice(0, 2).map((p) => {
-                          const cl = getClientColor(p.cliente);
-                          return (
-                            <div key={p.id}
-                              className="truncate text-[9px] leading-[1.2] font-semibold rounded-[4px] px-1 py-[2px] border"
-                              style={{ background: cl.chipBg, color: cl.chipText, borderColor: cl.chipBorder }}
-                              title={p.nome}>
-                              {p.nome}
-                            </div>
-                          );
-                        })}
-                        {posts.length > 2 && (
-                          <span className="text-[9px] text-ink-muted font-semibold px-1">
-                            +{posts.length - 2}
-                          </span>
-                        )}
+                    {/* Nome do feriado */}
+                    {holiday && (
+                      <div className="mt-0.5 px-0.5 hidden sm:block">
+                        <span className="text-[8px] leading-tight font-semibold block truncate"
+                          style={{ color: hc.text }}>
+                          {holiday.name}
+                        </span>
                       </div>
                     )}
 
-                    {/* Hover image preview — inline expand */}
-                    {hasPosts && previewImg && (
-                      <div className="max-h-0 group-hover:max-h-16 overflow-hidden transition-all duration-300 ease-out mt-1">
-                        <img src={previewImg} alt=""
-                          className="w-full aspect-video object-cover rounded-md block border border-hairline"/>
+                    {/* Indicador de nota */}
+                    {note && (
+                      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      </div>
+                    )}
+
+                    {/* Botão adicionar nota ao hover */}
+                    {!note && (
+                      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <StickyNote className="w-3 h-3 text-ink-faint" />
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
-
-        {/* Upcoming posts list */}
-        <div className="mt-6 card">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-4 h-4 text-accent" />
-            <h2 className="t-title text-ink tracking-apple-tight">
-              Próximas postagens
-            </h2>
-            <span className="t-small text-ink-muted">· {MONTHS_PT[month]}</span>
           </div>
 
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(4)].map((_,i) => <div key={i} className="h-14 bg-elevated rounded-apple animate-pulse" />)}
-            </div>
-          ) : monthPosts.length > 0 ? (
-            <div className="divide-y divide-hairline">
-              {monthPosts
-                .filter(p => p.postagem)
-                .sort((a,b) => new Date(a.postagem) - new Date(b.postagem))
-                .map(post => {
-                  const cl = getClientColor(post.cliente);
-                  const sdot = getStatusDot(post.estado);
-                  const [y,m,d] = (post.postagem||'').split('-');
-                  const dateLabel = d && m ? `${d}/${m}` : '—';
+          {/* ── Sidebar ────────────────────────────────────────────────────── */}
+          <div className="lg:w-64 flex flex-col gap-4">
 
-                  const rowPreview = post.linkCapa || post.galeria?.split(',')[0]?.trim() || null;
+            {/* Legenda */}
+            <div className="card">
+              <p className="t-eyebrow mb-3">Legenda</p>
+              <div className="space-y-2">
+                {[
+                  { type: 'national',      label: 'Feriado nacional' },
+                  { type: 'carnival',      label: 'Carnaval' },
+                  { type: 'commemorative', label: 'Data comemorativa' },
+                ].map(({ type, label }) => {
+                  const c = HOLIDAY_COLORS[type];
                   return (
-                    <div key={post.id}
-                      className="flex items-center gap-3 py-3 group cursor-default">
-                      {/* Date badge / thumbnail flip on hover */}
-                      {rowPreview ? (
-                        <div className="relative shrink-0 w-10 h-10">
-                          <div className="w-10 h-10 rounded-apple flex items-center justify-center text-[11px] font-semibold border
-                            group-hover:opacity-0 transition-opacity duration-200 absolute inset-0"
-                            style={{ background: cl.chipBg, color: cl.chipText, borderColor: cl.chipBorder }}>
-                            {dateLabel}
-                          </div>
-                          <div className="w-10 h-10 rounded-apple overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute inset-0 border border-hairline">
-                            <img src={rowPreview} alt="" className="w-full h-full object-cover"/>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="w-10 h-10 rounded-apple flex items-center justify-center shrink-0 text-[11px] font-semibold border"
-                          style={{ background: cl.chipBg, color: cl.chipText, borderColor: cl.chipBorder }}>
-                          {dateLabel}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">{post.nome}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {post.cliente && (
-                            <span className="text-[11px] text-ink-muted">{post.cliente}</span>
-                          )}
-                          {post.formato && <span className="text-[11px] text-ink-faint">· {post.formato}</span>}
-                          {post.categoria && <span className="text-[11px] text-ink-faint">· {post.categoria}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: sdot }} />
-                        <span className="text-[11px] text-ink-muted font-medium hidden sm:block">
-                          {post.estado || '—'}
-                        </span>
-                      </div>
+                    <div key={type} className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.dot }} />
+                      <span className="text-xs text-ink-soft">{label}</span>
                     </div>
                   );
                 })}
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-amber-400" />
+                  <span className="text-xs text-ink-soft">Nota adicionada</span>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10">
-              <Film className="w-8 h-8 text-ink-faint mb-2" />
-              <p className="text-sm text-ink-muted">Nenhuma postagem em {MONTHS_PT[month]}</p>
-            </div>
-          )}
+
+            {/* Feriados do mês */}
+            {monthHolidays.length > 0 && (
+              <div className="card">
+                <p className="t-eyebrow mb-3">Feriados de {MONTHS_PT[month]}</p>
+                <div className="space-y-1.5">
+                  {monthHolidays.map(([k, h]) => {
+                    const hc = HOLIDAY_COLORS[h.type] || HOLIDAY_COLORS.national;
+                    const day = parseInt(k.split('-')[2]);
+                    return (
+                      <div key={k} className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-apple flex items-center justify-center text-[11px] font-bold shrink-0 border"
+                          style={{ background: hc.bg, color: hc.text, borderColor: hc.border }}>
+                          {day}
+                        </div>
+                        <span className="text-xs text-ink-soft leading-snug">{h.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Notas do mês */}
+            {monthNotes.length > 0 && (
+              <div className="card">
+                <p className="t-eyebrow mb-3">Notas de {MONTHS_PT[month]}</p>
+                <div className="space-y-2">
+                  {monthNotes.map(([k, text]) => {
+                    const day = parseInt(k.split('-')[2]);
+                    return (
+                      <button key={k}
+                        onClick={() => setModal({ date: new Date(year, month, day), key: k })}
+                        className="w-full text-left rounded-apple px-2.5 py-2 bg-elevated hover:bg-surface border border-hairline transition-all duration-150 group">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                          <span className="text-[11px] font-semibold text-ink-soft">
+                            {new Date(year, month, day).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-soft leading-relaxed line-clamp-2">{text}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {selected && (
-        <DayModal
-          date={selected.date}
-          posts={selected.posts}
-          onClose={() => setSelected(null)}
+      {/* Modal de nota */}
+      {modal && (
+        <DayNoteModal
+          date={modal.date}
+          note={notes[modal.key] || ''}
+          holiday={holidays[modal.key] || null}
+          onSave={saveNote}
+          onClose={() => setModal(null)}
         />
       )}
     </CRMLayout>
