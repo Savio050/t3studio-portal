@@ -5,7 +5,7 @@ import CRMLayout from '../../components/crm/Layout';
 import {
   CheckSquare, Film, Users, TrendingUp, AlertCircle,
   ChevronRight, ArrowUpRight, CheckCircle2, Calendar, Activity,
-  Megaphone, Clock, Zap, BarChart3, Star, PartyPopper,
+  Megaphone, Zap, BarChart3,
 } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -332,9 +332,6 @@ export default function Dashboard() {
     return map;
   }, [content]);
 
-  // ── Next holiday ──────────────────────────────────────────────────────────
-  const nextHoliday = useMemo(() => getNextHoliday(), []);
-
   // ── Stat cards ────────────────────────────────────────────────────────────
   const total = pipeline.reduce((s,p) => s+p.count, 0) || 1;
   const statCards = [
@@ -368,20 +365,6 @@ export default function Dashboard() {
               {new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
             </p>
           </div>
-          {/* Next holiday pill */}
-          {nextHoliday && (
-            <Link href="/dashboard/calendario"
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-apple-lg bg-surface border border-hairline hover:shadow-apple-sm transition-all duration-150 shrink-0 self-start sm:self-auto">
-              <PartyPopper className="w-4 h-4 text-accent shrink-0" />
-              <div>
-                <p className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider">Próxima data</p>
-                <p className="text-[13px] font-semibold text-ink leading-snug">{nextHoliday.name}</p>
-                <p className="text-[11px] text-ink-muted">
-                  {nextHoliday.diff===0 ? 'Hoje!' : nextHoliday.diff===1 ? 'Amanhã' : `em ${nextHoliday.diff} dias`}
-                </p>
-              </div>
-            </Link>
-          )}
         </div>
 
         {/* ── STAT CARDS ─────────────────────────────────────────────────── */}
