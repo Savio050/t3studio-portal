@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Film, Users, Calendar,
   Menu, X, Bot, Search, LogOut, Megaphone,
-  ShieldCheck, Camera, Loader2, Users2, TrendingUp, AlignLeft,
+  ShieldCheck, Camera, Loader2, Users2, TrendingUp, AlignLeft, Lightbulb,
 } from 'lucide-react';
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'  },
   { href: '/dashboard/tarefas',     icon: CheckSquare,     label: 'Tarefas'    },
   { href: '/dashboard/conteudo',    icon: Film,            label: 'Conteúdo'   },
+  { href: '/dashboard/ideias',      icon: Lightbulb,       label: 'Ideias'     },
   { href: '/dashboard/campanhas',   icon: Megaphone,       label: 'Campanhas'  },
   { href: '/dashboard/clientes',    icon: Users,           label: 'Clientes'   },
   { href: '/dashboard/calendario',  icon: Calendar,        label: 'Calendário' },
@@ -178,12 +179,12 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
     return (
       <>
         <p className="px-3 pt-2 pb-1.5 t-eyebrow text-[10px]">Trabalho</p>
-        {NAV.slice(0, 7).map(item => (
+        {NAV.slice(0, 8).map(item => (
           <NavItem key={item.href} {...item} active={isActive(item.href)} onClick={onItemClick} />
         ))}
 
         <p className="px-3 pt-5 pb-1.5 t-eyebrow text-[10px]">Ferramentas</p>
-        {NAV.slice(7).map(item => (
+        {NAV.slice(8).map(item => (
           <NavItem key={item.href} {...item} active={isActive(item.href)} onClick={onItemClick} />
         ))}
 
