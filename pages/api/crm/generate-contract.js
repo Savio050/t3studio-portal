@@ -37,14 +37,19 @@ DADOS DO CONTRATO:
 - Forma de pagamento: ${pagamento?.trim() || 'Boleto ou transferência bancária, até o dia 10 de cada mês'}
 ${observacoes?.trim() ? `- Observações adicionais: ${observacoes.trim()}` : ''}
 
+LOCALIZAÇÃO:
+- Cidade e Estado: Rondonópolis, Mato Grosso
+
 INSTRUÇÕES DE REDAÇÃO:
 - Use linguagem jurídica formal brasileira (PT-BR)
 - Inclua as seguintes cláusulas: Objeto do Contrato, Obrigações da Contratada, Obrigações do Contratante, Vigência, Valor e Forma de Pagamento, Direitos de Propriedade Intelectual, Confidencialidade, Rescisão, Penalidades, Foro
-- Inclua campos de assinatura ao final: local, data, assinatura e nome por extenso de ambas as partes, com espaço para duas testemunhas
+- A cláusula de Foro deve indicar o Foro da Comarca de Rondonópolis, Estado de Mato Grosso
+- Inclua campos de assinatura ao final com: "Rondonópolis-MT, [DATA]", assinatura e nome por extenso de ambas as partes, com espaço para duas testemunhas
 - Use marcadores de campo no formato [CAMPO] para informações que precisam ser preenchidas (ex: CNPJ, endereço, telefone)
 - Seja específico sobre os serviços de marketing digital (redes sociais, criação de conteúdo, estratégia)
 - Inclua cláusula de aprovação prévia de conteúdo pelo contratante
 - Inclua cláusula de crédito da agência nas publicações (quando aplicável)
+- Não use negrito, não use asteriscos, não use markdown — apenas texto puro
 - Não inclua introdução nem comentários — entregue apenas o texto do contrato pronto, começando com o título "CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE MARKETING DIGITAL"`;
 
   try {
