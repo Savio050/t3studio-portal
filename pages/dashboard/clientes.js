@@ -5,6 +5,7 @@ import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
   Loader2, Plus, X, Trash2, Camera, Pencil, Check,
+  FileText, Key, Palette, AlignLeft,
 } from 'lucide-react';
 
 // ── Instagram SVG icon (inline — avoids lucide version issues) ────────────────
@@ -291,7 +292,7 @@ function InstagramPanel({ client, onClose }) {
 }
 
 // ── Client Card ───────────────────────────────────────────────────────────────
-function ClientCard({ client, onDelete, onLogoChange, onInstagram, onInstagramSave }) {
+function ClientCard({ client, onDelete, onLogoChange, onInstagram, onInstagramSave, onComercial }) {
   const total      = client.totalContent;
   const [confirm,  setConfirm]  = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -454,6 +455,16 @@ function ClientCard({ client, onDelete, onLogoChange, onInstagram, onInstagramSa
             <IgIcon size={15}/>
           </button>
         )}
+        <button
+          onClick={() => onComercial(client)}
+          title="Informações comerciais e contrato"
+          className="btn btn-ghost relative"
+        >
+          <FileText className="w-4 h-4" />
+          {(client.contratoLink || client.contratoInicio || client.logins || client.identidadeVisual) && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" />
+          )}
+        </button>
         {canDelete && (
           <button onClick={handleDelete} disabled={deleting}
             className={`btn ${confirm ? 'btn-danger' : 'btn-ghost'} disabled:opacity-40`}>
@@ -809,12 +820,271 @@ function NewClientModal({ onClose, onCreate }) {
   );
 }
 
+// ── Comercial Drawer ──────────────────────────────────────────────────────────
+const COMERCIAL_TABS = [
+  { id: 'contrato', label: 'Contrato',  icon: FileText  },
+  { id: 'acesso',   label: 'Acesso',    icon: Key       },
+  { id: 'visual',   label: 'Visual',    icon: Palette   },
+  { id: 'notas',    label: 'Notas',     icon: AlignLeft },
+];
+
+function ClientComercialDrawer({ client, onClose, onSave }) {
+  const [visible,          setVisible]          = useState(false);
+  const [tab,              setTab]              = useState('contrato');
+  const [contratoLink,     setContratoLink]     = useState(client.contratoLink     || '');
+  const [contratoInicio,   setContratoInicio]   = useState(client.contratoInicio   || '');
+  const [contratoFim,      setContratoFim]      = useState(client.contratoFim      || '');
+  const [logins,           setLogins]           = useState(client.logins           || '');
+  const [identidadeVisual, setIdentidadeVisual] = useState(client.identidadeVisual || '');
+  const [notas,            setNotas]            = useState(client.notas            || '');
+  const [saving,           setSaving]           = useState(false);
+  const [saved,            setSaved]            = useState(false);
+  const [saveErr,          setSaveErr]          = useState('');
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    const fn = e => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, []); // eslint-disable-line
+
+  const handleClose = () => { setVisible(false); setTimeout(onClose, 260); };
+
+  // Contract status derived from dates
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const fimDate  = contratoFim    ? new Date(contratoFim    + 'T00:00:00') : null;
+  const iniDate  = contratoInicio ? new Date(contratoInicio + 'T00:00:00') : null;
+  let contratoStatus = null;
+  if (fimDate) {
+    const days = Math.ceil((fimDate - today) / 864e5);
+    if (days < 0)      contratoStatus = { label: 'Expirado',          color: '#ff3b30' };
+    else if (days < 31) contratoStatus = { label: `Vence em ${days}d`, color: '#ff9500' };
+    else               contratoStatus = { label: 'Vigente',            color: '#30d158' };
+  }
+  const duracaoMeses = (iniDate && fimDate)
+    ? Math.round((fimDate - iniDate) / (864e5 * 30)) : null;
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true); setSaved(false); setSaveErr('');
+    try {
+      const res = await fetch('/api/crm/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: client.id,
+          contratoLink:     contratoLink.trim() || null,
+          contratoInicio:   contratoInicio || null,
+          contratoFim:      contratoFim    || null,
+          logins,
+          identidadeVisual,
+          notas,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+      setSaved(true);
+      onSave?.({ ...client, contratoLink: contratoLink.trim() || null, contratoInicio, contratoFim, logins, identidadeVisual, notas });
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setSaveErr(e.message || 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls = 'input';
+  const labelCls = 'block text-xs font-medium text-ink-soft mb-1.5';
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px] transition-opacity duration-200"
+        style={{ opacity: visible ? 1 : 0 }}
+        onClick={handleClose}
+      />
+      <div
+        className="fixed top-0 right-0 bottom-0 z-50 flex flex-col shadow-apple-xl bg-surface"
+        style={{
+          width: '100%', maxWidth: 480,
+          borderLeft: '1px solid rgba(0,0,0,0.08)',
+          transform: visible ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.26s cubic-bezier(0.32,0.72,0,1)',
+        }}
+      >
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-hairline flex items-center gap-3 shrink-0">
+          <div className="w-9 h-9 rounded-apple flex items-center justify-center bg-accent-soft shrink-0">
+            <FileText className="w-5 h-5 text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-bold text-ink truncate">{client.nome}</p>
+            <p className="text-[11px] text-ink-faint">Informações comerciais</p>
+          </div>
+          {contratoStatus && (
+            <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-pill"
+              style={{ background: contratoStatus.color + '22', color: contratoStatus.color }}>
+              {contratoStatus.label}
+            </span>
+          )}
+          <button onClick={handleClose}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-ink-muted
+              hover:text-ink hover:bg-elevated transition-all cursor-pointer">
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-hairline shrink-0 px-2">
+          {COMERCIAL_TABS.map(t => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-semibold transition-all cursor-pointer
+                  ${active
+                    ? 'text-accent border-b-2 border-accent -mb-px'
+                    : 'text-ink-soft hover:text-ink'}`}>
+                <Icon className="w-3.5 h-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+
+          {/* ── Contrato ── */}
+          {tab === 'contrato' && (
+            <>
+              <div>
+                <label className={labelCls}>Documento do contrato (link)</label>
+                <input type="url" value={contratoLink} onChange={e => setContratoLink(e.target.value)}
+                  placeholder="https://drive.google.com/…"
+                  className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Data de início</label>
+                  <input type="date" value={contratoInicio} onChange={e => setContratoInicio(e.target.value)}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Data de término</label>
+                  <input type="date" value={contratoFim} onChange={e => setContratoFim(e.target.value)}
+                    className={inputCls} />
+                </div>
+              </div>
+              {duracaoMeses !== null && (
+                <div className="rounded-apple px-4 py-3 bg-elevated text-[12px] text-ink-soft">
+                  Duração: <strong className="text-ink">{duracaoMeses} {duracaoMeses === 1 ? 'mês' : 'meses'}</strong>
+                  {contratoStatus && (
+                    <span className="ml-3 font-semibold" style={{ color: contratoStatus.color }}>
+                      · {contratoStatus.label}
+                    </span>
+                  )}
+                </div>
+              )}
+              {contratoLink && (
+                <a href={contratoLink} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[12px] text-accent hover:underline">
+                  <ExternalLink className="w-3 h-3" />
+                  Abrir documento
+                </a>
+              )}
+            </>
+          )}
+
+          {/* ── Acesso ── */}
+          {tab === 'acesso' && (
+            <>
+              <p className="text-[12px] text-ink-faint leading-relaxed">
+                Armazene logins e acessos do cliente. Visível apenas internamente.
+              </p>
+              <div>
+                <label className={labelCls}>Logins e acessos</label>
+                <textarea
+                  value={logins}
+                  onChange={e => setLogins(e.target.value)}
+                  rows={14}
+                  placeholder={'Meta Ads: user@email.com / senha\nGoogle Analytics: ...\nInstagram: ...\nSite (WordPress): admin / ...'}
+                  className={`${inputCls} resize-none font-mono text-[12px] leading-relaxed`}
+                />
+              </div>
+            </>
+          )}
+
+          {/* ── Visual ── */}
+          {tab === 'visual' && (
+            <>
+              <p className="text-[12px] text-ink-faint leading-relaxed">
+                Cores, fontes, guia de estilo e links para arquivos de identidade visual.
+              </p>
+              <div>
+                <label className={labelCls}>Identidade visual</label>
+                <textarea
+                  value={identidadeVisual}
+                  onChange={e => setIdentidadeVisual(e.target.value)}
+                  rows={14}
+                  placeholder={'Cores:\n  Primária: #1A1A1A\n  Secundária: #F0F0F0\n\nFontes:\n  Título: Inter Bold\n  Corpo: Inter Regular\n\nLinks:\n  Brand kit: https://drive.google.com/…'}
+                  className={`${inputCls} resize-none font-mono text-[12px] leading-relaxed`}
+                />
+              </div>
+            </>
+          )}
+
+          {/* ── Notas ── */}
+          {tab === 'notas' && (
+            <>
+              <p className="text-[12px] text-ink-faint leading-relaxed">
+                Observações gerais, histórico de negociações e informações adicionais.
+              </p>
+              <div>
+                <label className={labelCls}>Notas</label>
+                <textarea
+                  value={notas}
+                  onChange={e => setNotas(e.target.value)}
+                  rows={14}
+                  placeholder="Observações gerais sobre o cliente…"
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-hairline shrink-0">
+          {saveErr && (
+            <p className="text-xs text-err-ink mb-3 px-3 py-2 rounded-apple bg-err-soft">{saveErr}</p>
+          )}
+          <button onClick={save} disabled={saving}
+            className="btn btn-primary w-full disabled:opacity-40">
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin"/> Salvando…</>
+              : saved
+              ? <><Check className="w-4 h-4"/> Salvo!</>
+              : 'Salvar alterações'
+            }
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function Clientes() {
-  const [clients,   setClients]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [showNew,   setShowNew]   = useState(false);
-  const [igClient,  setIgClient]  = useState(null); // client whose Instagram panel is open
+  const [clients,         setClients]         = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [showNew,         setShowNew]         = useState(false);
+  const [igClient,        setIgClient]        = useState(null);
+  const [comercialClient, setComercialClient] = useState(null);
 
   const loadClients = () => {
     setLoading(true);
@@ -841,8 +1111,12 @@ export default function Clientes() {
 
   const handleInstagramSave = useCallback((clientId, handle) => {
     setClients(prev => prev.map(c => c.id === clientId ? { ...c, instagram: handle } : c));
-    // Keep panel in sync if it's open for this client
     setIgClient(prev => prev?.id === clientId ? { ...prev, instagram: handle } : prev);
+  }, []);
+
+  const handleComercialSave = useCallback((updated) => {
+    setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
+    setComercialClient(updated);
   }, []);
 
   const totalContent   = clients.reduce((s, c) => s + c.totalContent, 0);
@@ -896,6 +1170,7 @@ export default function Clientes() {
                 onLogoChange={handleLogoChange}
                 onInstagram={setIgClient}
                 onInstagramSave={handleInstagramSave}
+                onComercial={setComercialClient}
               />
             ))}
           </div>
@@ -950,6 +1225,15 @@ export default function Clientes() {
         <InstagramPanel
           client={igClient}
           onClose={() => setIgClient(null)}
+        />
+      )}
+
+      {/* Comercial drawer */}
+      {comercialClient && (
+        <ClientComercialDrawer
+          client={comercialClient}
+          onClose={() => setComercialClient(null)}
+          onSave={handleComercialSave}
         />
       )}
     </CRMLayout>

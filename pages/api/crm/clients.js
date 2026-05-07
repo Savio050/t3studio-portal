@@ -31,15 +31,24 @@ function resolveClientId(name) {
 function getProp(prop) {
   if (!prop) return null;
   switch (prop.type) {
-    case 'title':        return prop.title?.[0]?.plain_text     || '';
-    case 'rich_text':    return prop.rich_text?.[0]?.plain_text || '';
-    case 'select':       return prop.select?.name               || '';
-    case 'status':       return prop.status?.name               || '';
-    case 'date':         return prop.date?.start                || null;
-    case 'url':          return prop.url                        || null;
-    case 'created_time': return prop.created_time               || null;
+    case 'title':        return prop.title?.map(b => b.plain_text).join('')     || '';
+    case 'rich_text':    return prop.rich_text?.map(b => b.plain_text).join('') || '';
+    case 'select':       return prop.select?.name                                || '';
+    case 'status':       return prop.status?.name                                || '';
+    case 'date':         return prop.date?.start                                 || null;
+    case 'url':          return prop.url                                         || null;
+    case 'created_time': return prop.created_time                                || null;
     default:             return null;
   }
+}
+
+// Notion rich_text blocks are limited to 2000 chars each
+function toRichText(text) {
+  if (!text) return [];
+  const chunks = [];
+  for (let i = 0; i < text.length; i += 2000)
+    chunks.push({ text: { content: text.slice(i, i + 2000) } });
+  return chunks;
 }
 
 async function queryAll(dbId) {
@@ -55,6 +64,30 @@ async function queryAll(dbId) {
     cursor = res.has_more ? res.next_cursor : null;
   } while (cursor);
   return pages;
+}
+
+// ── Auto-create commercial fields in SECTORS_DB on first use ──────────────────
+let _comercialReady = false;
+async function ensureComercialFields() {
+  if (_comercialReady) return;
+  try {
+    const db = await notion.databases.retrieve({ database_id: SECTORS_DB });
+    const existing = Object.keys(db.properties);
+    const toCreate = {};
+    if (!existing.includes('Contrato'))          toCreate['Contrato']          = { url: {} };
+    if (!existing.includes('Contrato Início'))    toCreate['Contrato Início']   = { date: {} };
+    if (!existing.includes('Contrato Fim'))       toCreate['Contrato Fim']      = { date: {} };
+    if (!existing.includes('Logins'))             toCreate['Logins']            = { rich_text: {} };
+    if (!existing.includes('Identidade Visual'))  toCreate['Identidade Visual'] = { rich_text: {} };
+    if (!existing.includes('Notas'))              toCreate['Notas']             = { rich_text: {} };
+    if (Object.keys(toCreate).length > 0) {
+      await notion.databases.update({ database_id: SECTORS_DB, properties: toCreate });
+      console.log('✅ Campos comerciais criados no SECTORS_DB:', Object.keys(toCreate).join(', '));
+    }
+  } catch (e) {
+    console.error('ensureComercialFields error:', e?.message);
+  }
+  _comercialReady = true;
 }
 
 export default async function handler(req, res) {
@@ -78,18 +111,37 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── PATCH: update client fields (logo, instagram, etc.) ────────────────────────
+  // ── PATCH: update client fields ────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { id, logo, instagram } = req.body || {};
+    const {
+      id, logo, instagram,
+      contratoLink, contratoInicio, contratoFim,
+      logins, identidadeVisual, notas,
+    } = req.body || {};
     if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
+
+    // Auto-create commercial fields on first comercial save
+    const hasComercial = [contratoLink, contratoInicio, contratoFim, logins, identidadeVisual, notas]
+      .some(v => v !== undefined);
+    if (hasComercial) await ensureComercialFields();
+
     try {
       const properties = {};
-      if (logo !== undefined)      properties['logo']      = { url: logo || null };
-      if (instagram !== undefined) properties['Instagram'] = instagram
+      if (logo !== undefined)              properties['logo']             = { url: logo || null };
+      if (instagram !== undefined)         properties['Instagram']        = instagram
         ? { rich_text: [{ text: { content: instagram.trim().replace(/^@/, '') } }] }
         : { rich_text: [] };
+      if (contratoLink !== undefined)      properties['Contrato']         = { url: contratoLink || null };
+      if (contratoInicio !== undefined)    properties['Contrato Início']  = contratoInicio
+        ? { date: { start: contratoInicio } } : { date: null };
+      if (contratoFim !== undefined)       properties['Contrato Fim']     = contratoFim
+        ? { date: { start: contratoFim } } : { date: null };
+      if (logins !== undefined)            properties['Logins']           = { rich_text: toRichText(logins) };
+      if (identidadeVisual !== undefined)  properties['Identidade Visual']= { rich_text: toRichText(identidadeVisual) };
+      if (notas !== undefined)             properties['Notas']            = { rich_text: toRichText(notas) };
+
       await notion.pages.update({ page_id: id, properties });
-      return res.status(200).json({ ok: true, logo: logo ?? undefined, instagram: instagram ?? undefined });
+      return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('Client PATCH error:', err?.message || err);
       return res.status(500).json({ error: err?.message || 'Erro ao atualizar cliente' });
@@ -112,18 +164,15 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
   try {
-    // SECTORS_DB is optional — fall back gracefully if it's unavailable
     const [sectors, allContent] = await Promise.all([
       queryAll(SECTORS_DB).catch(() => []),
       queryAll(CONTENT_DB),
     ]);
 
-    // Normalize helper: lowercase + remove accents + remove spaces → used as dedup key
     const normalize = s => (s || '').toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '');
 
-    // Build content stats keyed by NORMALIZED client name
     const contentByKey = {};
     allContent.forEach(page => {
       const cliente   = getProp(page.properties['Cliente']) || '';
@@ -137,28 +186,23 @@ export default async function handler(req, res) {
       }
       contentByKey[key].total++;
       const s = estado.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (s.includes('aguardando'))                                    contentByKey[key].awaitingApproval++;
-      else if (s === 'aprovado')                                       contentByKey[key].approved++;
-      else if (s.includes('producao') || s.includes('producao'))       contentByKey[key].inProduction++;
-      else if (s === 'concluido' || s === 'concluido')                 contentByKey[key].done++;
+      if (s.includes('aguardando'))                              contentByKey[key].awaitingApproval++;
+      else if (s === 'aprovado')                                 contentByKey[key].approved++;
+      else if (s.includes('producao'))                          contentByKey[key].inProduction++;
+      else if (s === 'concluido')                               contentByKey[key].done++;
     });
 
-    // Build canonical client map keyed by normalized name.
-    // Sectors DB entries are authoritative — their name wins over content's client field.
-    const canonicalMap = {}; // key → { nome, sectorPage }
+    const canonicalMap = {};
 
     sectors.forEach(p => {
       const nome = getProp(p.properties['Nome']) || '';
       if (!nome) return;
       const key = normalize(nome);
-      // Sectors DB may itself have duplicates — keep only the first occurrence
       if (!canonicalMap[key]) canonicalMap[key] = { nome, sectorPage: p };
     });
 
-    // Add any client names from content that don't already have a sectors record
     Object.keys(contentByKey).forEach(key => {
       if (!canonicalMap[key]) {
-        // Recover original display name from content (use first occurrence)
         const original = allContent.find(page => {
           const c = getProp(page.properties['Cliente']) || '';
           return normalize(c) === key;
@@ -168,17 +212,22 @@ export default async function handler(req, res) {
       }
     });
 
-    const clients = Object.entries(canonicalMap).map(([key, { nome, sectorPage }]) => {
+    const clients = Object.entries(canonicalMap).map(([key, { nome, sectorPage: sp }]) => {
       const stats = contentByKey[key] || { total: 0, approved: 0, awaitingApproval: 0, inProduction: 0, done: 0, id: '' };
       return {
-        id:               sectorPage?.id || nome,
+        id:               sp?.id || nome,
         nome,
-        logo:             sectorPage ? (getProp(sectorPage.properties['logo']) || null) : null,
-        instagram:        sectorPage ? (getProp(sectorPage.properties['Instagram']) || '') : '',
-        categoria:        sectorPage ? (getProp(sectorPage.properties['categoria']) || '') : '',
-        descricao:        sectorPage ? (getProp(sectorPage.properties['Descrição']) || '') : '',
-        paginaCliente:    sectorPage ? (getProp(sectorPage.properties['Página do cliente']) || '') : '',
-        // Canonical map wins: if Notion content doesn't have the ID yet, resolve it
+        logo:             sp ? (getProp(sp.properties['logo'])               || null) : null,
+        instagram:        sp ? (getProp(sp.properties['Instagram'])           || '')   : '',
+        categoria:        sp ? (getProp(sp.properties['categoria'])           || '')   : '',
+        descricao:        sp ? (getProp(sp.properties['Descrição'])           || '')   : '',
+        paginaCliente:    sp ? (getProp(sp.properties['Página do cliente'])   || '')   : '',
+        contratoLink:     sp ? (getProp(sp.properties['Contrato'])            || '')   : '',
+        contratoInicio:   sp ? (getProp(sp.properties['Contrato Início'])     || '')   : '',
+        contratoFim:      sp ? (getProp(sp.properties['Contrato Fim'])        || '')   : '',
+        logins:           sp ? (getProp(sp.properties['Logins'])              || '')   : '',
+        identidadeVisual: sp ? (getProp(sp.properties['Identidade Visual'])   || '')   : '',
+        notas:            sp ? (getProp(sp.properties['Notas'])               || '')   : '',
         idCliente:        stats.id || resolveClientId(nome),
         totalContent:     stats.total,
         approved:         stats.approved,
@@ -192,6 +241,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ clients: clients.sort((a,b) => b.totalContent - a.totalContent) });
   } catch (err) {
     console.error('Clients error:', err);
-    return res.status(500).json({ error: 'Failed to fetch clients' });
+    return res.status(500).json({ error: err?.message || 'Failed to fetch clients' });
   }
 }
