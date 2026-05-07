@@ -1,0 +1,72 @@
+CLIENTE: Fort Fer
+FORMATO: Carrossel (5–8 slides)
+TEMA: Dicas técnicas sobre aço e materiais de construção
+
+---
+IDENTIDADE DA MARCA
+Carrosséis técnicos são o conteúdo de maior autoridade para a Fort Fer. Posicionam a empresa como referência técnica — não só vendedora de material. Cada slide deve entregar informação real e útil para quem trabalha na obra ou especifica o projeto.
+
+---
+ESTRUTURA DO CARROSSEL
+
+SLIDE 1 — CAPA (gancho):
+Título que promete um benefício técnico claro ou levanta um problema comum.
+Exemplos:
+- "5 erros na escolha do vergalhão que custam caro na obra"
+- "CA-50 ou CA-60: quando usar cada um?"
+- "Como calcular a quantidade de vergalhão antes de comprar"
+- "Tela soldada ou vergalhão? Entenda a diferença"
+
+SLIDES 2 a N — CONTEÚDO (1 dica por slide):
+Cada slide tem:
+- Título curto da dica (ex: "Erro #1: comprar pelo preço, não pela bitola")
+- Texto explicativo de 2–4 linhas (claro, técnico, acessível)
+- Se aplicável, mencione a Fort Fer como solução ou referência
+
+ÚLTIMO SLIDE — CTA:
+- Reforce o posicionamento da Fort Fer como parceira técnica
+- CTA direto: "Dúvida na especificação? Fale com a gente."
+- Handle ou link: "Fort Fer — link na bio"
+
+---
+REGRAS DE TOM
+- Linguagem técnica, mas sem jargões inacessíveis
+- Dê crédito ao conhecimento do leitor — não explique o óbvio
+- Seja específico: cite bitolas, normas (ABNT), aplicações reais
+- O tom é de especialista que ensina, não de vendedor que empurra
+
+---
+TEMAS SUGERIDOS PARA ESTE FORMATO
+- Como escolher o vergalhão certo para cada aplicação
+- Diferença entre CA-50 e CA-60 (características e usos)
+- Como calcular o consumo de aço por m² de laje
+- Cuidados no armazenamento de vergalhão em obra
+- O que é o aço galvanizado e quando usar
+- Diferença entre tela soldada e armadura convencional
+- Normas ABNT para estruturas de concreto armado (linguagem acessível)
+- Como identificar aço de procedência confiável
+
+---
+EXEMPLO DE ESTRUTURA
+
+[Slide 1 — Capa]
+"5 erros na hora de comprar vergalhão (e como evitar)"
+
+[Slide 2]
+Erro #1: Escolher só pelo preço
+Vergalhão mais barato pode ter bitola abaixo do especificado ou aço fora de norma. Isso compromete a resistência da estrutura.
+
+[Slide 3]
+Erro #2: Não conferir a bitola antes de usar
+A bitola nominal e a real podem variar em produtos de baixa qualidade. Sempre confira com paquímetro antes de lançar na armação.
+
+[Slide 4]
+Erro #3: Misturar CA-50 e CA-60 sem critério
+CA-60 tem maior resistência, mas menor ductilidade. Misturar sem projeto pode causar fissuras não previstas.
+
+[Slides 5–6 continuam com mais erros]
+
+[Último slide]
+Na Fort Fer, você encontra aço de primeira com procedência garantida.
+Dúvida na especificação? Nossa equipe técnica orienta você.
+Solicite orçamento — link na bio.

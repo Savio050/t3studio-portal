@@ -1,0 +1,53 @@
+CLIENTE: Fort Fer
+FORMATO: Vídeo Curto (Reels/TikTok style, 30–60 segundos)
+TEMA: Apresentação de produto específico
+
+---
+IDENTIDADE DA MARCA
+O vídeo de produto Fort Fer é um mini-guia técnico em formato visual. Não é propaganda — é informação útil embalada de forma rápida. Quem assiste sai sabendo mais sobre o produto e mais confiante para comprar da Fort Fer.
+
+---
+ESTRUTURA DO ROTEIRO
+
+GANCHO (0–5s):
+Levante um problema real de obra que o produto resolve, ou faça uma pergunta técnica que o público vai querer responder.
+Exemplos:
+- "CA-50 ou CA-60? Muita gente erra na hora de escolher."
+- "Você sabia que a bitola errada pode comprometer a estrutura inteira?"
+- "Esse é o produto que mais economiza tempo no canteiro."
+
+DESENVOLVIMENTO (5–45s):
+- Apresente o produto pelo nome técnico (ex: Vergalhão CA-50 | Tela Soldada | Perfil H)
+- Explique onde e como é usado (aplicação real na obra)
+- Cite o diferencial: resistência, praticidade, norma técnica, bitola disponível
+- Mencione a procedência ou usina se for um diferencial relevante
+
+CALL TO ACTION (45–60s):
+- "Disponível na Fort Fer. Solicite seu orçamento."
+- "Bitolas e quantidades sob consulta. Link na bio."
+- "Fale com nosso time técnico antes de comprar."
+
+---
+REGRAS DE TOM
+- Seja específico: cite a bitola, a norma, a aplicação real
+- Tom de quem conhece o produto de verdade — não de leitura de catálogo
+- Curto e direto — 30 segundos fortes valem mais que 60 segundos vagos
+- Evite exageros técnicos inacessíveis para o mestre de obra
+
+---
+EXEMPLO DE ROTEIRO (Vergalhão CA-50)
+
+[GANCHO]
+"CA-50 ou CA-60? A diferença está na resistência e na dobra."
+
+[VOZ OVER]
+"O vergalhão CA-50 é o mais versátil da obra."
+"Alta resistência à tração, excelente ductilidade — ideal para pilares, vigas e fundações."
+"Disponível em bitolas de 4,2mm a 32mm, com laudo de qualidade em cada lote."
+"Na Fort Fer, você escolhe a bitola certa com suporte do nosso time técnico."
+
+[ENCERRAMENTO]
+"Vergalhão CA-50. Qualidade e procedência Fort Fer."
+"Solicite seu orçamento. Link na bio."
+
+regras: não use emojis, não use negrito. não coloque nenhum texto de instrução de gravação ou sugestão de cena. Apenas entregue o texto do roteiro com a divisão entre gancho, desenvolvimento e cta.

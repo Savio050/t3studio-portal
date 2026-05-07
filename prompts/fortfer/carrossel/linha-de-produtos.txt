@@ -1,0 +1,74 @@
+CLIENTE: Fort Fer
+FORMATO: Carrossel (5–8 slides)
+TEMA: Apresentação de linha de produtos
+
+---
+IDENTIDADE DA MARCA
+O carrossel de produtos da Fort Fer não é um catálogo — é um guia de aplicação. Cada produto deve ser apresentado com seu uso real, suas vantagens e quando ele é a escolha certa. O objetivo é educar e gerar desejo por qualidade.
+
+---
+ESTRUTURA DO CARROSSEL
+
+SLIDE 1 — CAPA:
+Apresente a linha ou categoria de produto com um título que foque no benefício.
+Exemplos:
+- "A linha completa que sua obra precisa — tudo em um lugar"
+- "Vergalhões Fort Fer: da fundação ao telhado"
+- "Perfis metálicos: resistência onde a madeira não basta"
+
+SLIDES 2 a N — UM PRODUTO POR SLIDE:
+Cada slide apresenta:
+- Nome do produto (ex: Vergalhão CA-50 | Tela Soldada | Perfil U)
+- Bitolas ou especificações disponíveis (se aplicável)
+- Aplicação principal (onde é usado na obra)
+- Diferencial ou norma técnica de referência
+
+ÚLTIMO SLIDE — CTA:
+- "Linha completa disponível. Solicite seu orçamento."
+- "Entrega para obra. Fale com a equipe Fort Fer."
+
+---
+REGRAS DE TOM
+- Use a linguagem da obra — seja concreto (literalmente)
+- Mencione normas ABNT quando relevante (transmite confiança técnica)
+- Não liste preço — este carrossel é de valor, não de oferta
+- Finalize sempre com o posicionamento de "linha completa + suporte técnico"
+
+---
+PRODUTOS DA LINHA FORT FER (use conforme briefing do cliente)
+- Vergalhão CA-50: bitolas 4,2mm a 32mm — armações em geral
+- Vergalhão CA-60: bitolas 4,2mm a 10mm — lajes, estribos
+- Tela Soldada: pisos, lajes nervuradas, muros
+- Perfil I, H, U, C: estruturas metálicas, coberturas, mezaninos
+- Chapa Galvanizada / Chapa Preta: fechamentos, calhas, estruturas leves
+- Tubo Redondo e Quadrado: grades, portões, estruturas
+- Arame Recozido: amarra de armação
+- Barra Chata / Cantoneira: reforços, suportes, complementos
+
+---
+EXEMPLO DE ESTRUTURA
+
+[Slide 1 — Capa]
+"Da fundação ao acabamento — conheça a linha Fort Fer"
+
+[Slide 2]
+Vergalhão CA-50
+Bitolas de 4,2mm a 32mm.
+Ideal para pilares, vigas, fundações e armações em geral.
+Norma ABNT NBR 7480.
+
+[Slide 3]
+Tela Soldada
+Pisos, lajes nervuradas, muros de contenção.
+Praticidade no assentamento, uniformidade na malha.
+
+[Slide 4]
+Perfil Metálico (I, H, U)
+Estruturas de coberturas, mezaninos e galpões.
+Alta resistência com menor peso próprio que o concreto.
+
+[Slides 5–7 continuam com mais produtos]
+
+[Último slide]
+Linha completa, entrega rápida, qualidade comprovada.
+Fort Fer — Solicite seu orçamento pelo link na bio.
