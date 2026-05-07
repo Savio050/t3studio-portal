@@ -5,7 +5,7 @@ import {
   Users, ExternalLink, ArrowUpRight, Film,
   CheckCircle2, AlertCircle, Clock, TrendingUp,
   Loader2, Plus, X, Trash2, Camera, Pencil, Check,
-  FileText, Key, Palette, AlignLeft,
+  FileText, Key, Palette, AlignLeft, Bot,
 } from 'lucide-react';
 
 // ── Instagram SVG icon (inline — avoids lucide version issues) ────────────────
@@ -841,6 +841,60 @@ function ClientComercialDrawer({ client, onClose, onSave }) {
   const [saved,            setSaved]            = useState(false);
   const [saveErr,          setSaveErr]          = useState('');
 
+  // ── IA: gerar contrato ──
+  const [showAI,       setShowAI]       = useState(false);
+  const [aiServicos,   setAiServicos]   = useState('Gestão de redes sociais, criação de conteúdo e estratégia de marketing digital');
+  const [aiValor,      setAiValor]      = useState('');
+  const [aiPagamento,  setAiPagamento]  = useState('Boleto ou transferência bancária, até o dia 10 de cada mês');
+  const [aiObs,        setAiObs]        = useState('');
+  const [aiLoading,    setAiLoading]    = useState(false);
+  const [aiError,      setAiError]      = useState('');
+  const [aiContrato,   setAiContrato]   = useState('');
+  const [aiCopied,     setAiCopied]     = useState(false);
+
+  const generateContract = async () => {
+    if (aiLoading) return;
+    setAiLoading(true); setAiError(''); setAiContrato('');
+    try {
+      const res = await fetch('/api/crm/generate-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clienteNome:   client.nome,
+          contratoInicio,
+          contratoFim,
+          servicos:      aiServicos,
+          valorMensal:   aiValor,
+          pagamento:     aiPagamento,
+          observacoes:   aiObs,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao gerar contrato.');
+      setAiContrato(data.contrato);
+    } catch (e) {
+      setAiError(e.message || 'Erro ao gerar contrato.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const copyContract = () => {
+    navigator.clipboard.writeText(aiContrato).then(() => {
+      setAiCopied(true); setTimeout(() => setAiCopied(false), 2000);
+    });
+  };
+
+  const downloadContract = () => {
+    const blob = new Blob([aiContrato], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `contrato-${client.nome.toLowerCase().replace(/\s+/g, '-')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
@@ -997,6 +1051,122 @@ function ClientComercialDrawer({ client, onClose, onSave }) {
                   Abrir documento
                 </a>
               )}
+
+              {/* ── Gerador de contrato com IA ── */}
+              <div className="border-t border-hairline pt-4 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAI(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-apple
+                    bg-elevated hover:bg-[rgba(0,0,0,0.05)] transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-apple flex items-center justify-center bg-accent-soft">
+                      <Bot className="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <span className="text-[13px] font-semibold text-ink">Gerar contrato com IA</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent-soft text-accent tracking-wide uppercase">
+                      Gemini
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-ink-faint">
+                    {showAI ? 'Fechar ▲' : 'Abrir ▼'}
+                  </span>
+                </button>
+
+                {showAI && (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label className={labelCls}>Serviços contratados</label>
+                      <input
+                        type="text"
+                        value={aiServicos}
+                        onChange={e => setAiServicos(e.target.value)}
+                        placeholder="Gestão de redes sociais, criação de conteúdo…"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Valor mensal (R$)</label>
+                        <input
+                          type="text"
+                          value={aiValor}
+                          onChange={e => setAiValor(e.target.value)}
+                          placeholder="Ex: 2.500,00"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Forma de pagamento</label>
+                        <input
+                          type="text"
+                          value={aiPagamento}
+                          onChange={e => setAiPagamento(e.target.value)}
+                          placeholder="Boleto, dia 10…"
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Observações adicionais (opcional)</label>
+                      <textarea
+                        value={aiObs}
+                        onChange={e => setAiObs(e.target.value)}
+                        rows={2}
+                        placeholder="Cláusulas especiais, condições extras…"
+                        className={`${inputCls} resize-none`}
+                      />
+                    </div>
+
+                    {aiError && (
+                      <p className="text-xs text-err-ink px-3 py-2 rounded-apple bg-err-soft">{aiError}</p>
+                    )}
+
+                    <button
+                      onClick={generateContract}
+                      disabled={aiLoading || !aiServicos.trim()}
+                      className="btn btn-primary w-full disabled:opacity-40"
+                    >
+                      {aiLoading
+                        ? <><Loader2 className="w-4 h-4 animate-spin"/> Gerando contrato…</>
+                        : <><Bot className="w-4 h-4"/> Gerar contrato</>
+                      }
+                    </button>
+
+                    {aiContrato && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[12px] font-semibold text-ink">Contrato gerado</p>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={copyContract}
+                              className="text-[11px] font-medium px-2.5 py-1 rounded-apple bg-elevated hover:bg-[rgba(0,0,0,0.06)] text-ink-soft hover:text-ink transition-all cursor-pointer"
+                            >
+                              {aiCopied ? '✓ Copiado' : 'Copiar'}
+                            </button>
+                            <button
+                              onClick={downloadContract}
+                              className="text-[11px] font-medium px-2.5 py-1 rounded-apple bg-elevated hover:bg-[rgba(0,0,0,0.06)] text-ink-soft hover:text-ink transition-all cursor-pointer"
+                            >
+                              Baixar .txt
+                            </button>
+                          </div>
+                        </div>
+                        <textarea
+                          value={aiContrato}
+                          onChange={e => setAiContrato(e.target.value)}
+                          rows={18}
+                          className={`${inputCls} resize-y font-mono text-[11px] leading-relaxed`}
+                        />
+                        <p className="text-[10px] text-ink-faint leading-relaxed">
+                          Gerado por IA. Revise o conteúdo e consulte um advogado antes de usar.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
