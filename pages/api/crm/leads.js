@@ -8,6 +8,8 @@ import {
   queryLeads,
   getLeadEvents,
   updateLeadStatus,
+  updateLeadName,
+  deleteLead,
 } from '../../../lib/notion-leads';
 
 export default async function handler(req, res) {
@@ -47,20 +49,38 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── PATCH: Atualiza status no Kanban ─────────────────────────────────────
+  // ── PATCH: Atualiza status ou nome ───────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { id, status } = req.body || {};
-    if (!id || !status) return res.status(400).json({ error: 'id e status são obrigatórios.' });
-
-    const allowed = ['Novo', 'Em Atendimento', 'Negociação Avançada', 'Fechado', 'Perdido'];
-    if (!allowed.includes(status)) return res.status(400).json({ error: 'Status inválido.' });
+    const { id, status, nome } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
 
     try {
-      await updateLeadStatus(id, status);
+      if (nome !== undefined) {
+        await updateLeadName(id, nome.trim() || 'Lead Anônimo');
+      }
+      if (status) {
+        const allowed = ['Novo', 'Em Atendimento', 'Negociação Avançada', 'Fechado', 'Perdido'];
+        if (!allowed.includes(status)) return res.status(400).json({ error: 'Status inválido.' });
+        await updateLeadStatus(id, status);
+      }
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('leads PATCH error:', err?.message);
       return res.status(500).json({ error: err?.message || 'Erro ao atualizar lead.' });
+    }
+  }
+
+  // ── DELETE: Arquiva (exclui) um lead ─────────────────────────────────────
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
+
+    try {
+      await deleteLead(id);
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('leads DELETE error:', err?.message);
+      return res.status(500).json({ error: err?.message || 'Erro ao excluir lead.' });
     }
   }
 

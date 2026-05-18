@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import CRMLayout from '../../components/crm/Layout';
 import {
@@ -6,6 +6,7 @@ import {
   X, Loader2, Search, ChevronRight, AlertCircle, CheckCircle2,
   ArrowUpRight, Settings, Copy, Check, ChevronDown,
   DollarSign, MessageCircle, BarChart3, Building2,
+  Pencil, Trash2,
 } from 'lucide-react';
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
@@ -534,10 +535,16 @@ function PixelSetupModal({ onClose }) {
 }
 
 // ── Lead Detail Modal ─────────────────────────────────────────────────────────
-function LeadModal({ lead, onClose, onMove }) {
-  const [events,  setEvents]  = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [moving,  setMoving]  = useState('');
+function LeadModal({ lead, onClose, onMove, onDelete, onRename }) {
+  const [events,      setEvents]      = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [moving,      setMoving]      = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue,   setNameValue]   = useState(lead.nome || '');
+  const [savingName,  setSavingName]  = useState(false);
+  const [confirmDel,  setConfirmDel]  = useState(false);
+  const [deleting,    setDeleting]    = useState(false);
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetch(`/api/crm/leads?id=${lead.id}`)
@@ -547,10 +554,20 @@ function LeadModal({ lead, onClose, onMove }) {
   }, [lead.id]);
 
   useEffect(() => {
-    const fn = e => { if (e.key === 'Escape') onClose(); };
+    const fn = e => {
+      if (e.key === 'Escape') {
+        if (editingName) { setEditingName(false); setNameValue(lead.nome || ''); }
+        else if (confirmDel) setConfirmDel(false);
+        else onClose();
+      }
+    };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-  }, [onClose]);
+  }, [onClose, editingName, confirmDel, lead.nome]);
+
+  useEffect(() => {
+    if (editingName) nameInputRef.current?.focus();
+  }, [editingName]);
 
   const handleMove = async (status) => {
     setMoving(status);
@@ -558,10 +575,36 @@ function LeadModal({ lead, onClose, onMove }) {
     setMoving('');
   };
 
-  const initial  = (lead.nome || '??').slice(0, 2).toUpperCase();
-  const colIdx   = KANBAN_COLS.findIndex(c => c.id === lead.status);
-  const col      = KANBAN_COLS[colIdx] || KANBAN_COLS[0];
-  const tempCfg  = getTempConfig(lead.temperatura);
+  const saveName = async () => {
+    const trimmed = nameValue.trim();
+    if (!trimmed || trimmed === lead.nome) { setEditingName(false); return; }
+    setSavingName(true);
+    const res = await fetch('/api/crm/leads', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: lead.id, nome: trimmed }),
+    });
+    if (res.ok) onRename(lead.id, trimmed);
+    setSavingName(false);
+    setEditingName(false);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const res = await fetch('/api/crm/leads', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: lead.id }),
+    });
+    if (res.ok) { onDelete(lead.id); onClose(); }
+    else setDeleting(false);
+  };
+
+  const displayName = lead.nome || 'Lead Anônimo';
+  const initial     = displayName.slice(0, 2).toUpperCase();
+  const colIdx      = KANBAN_COLS.findIndex(c => c.id === lead.status);
+  const col         = KANBAN_COLS[colIdx] || KANBAN_COLS[0];
+  const tempCfg     = getTempConfig(lead.temperatura);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -580,7 +623,41 @@ function LeadModal({ lead, onClose, onMove }) {
             {initial}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-bold text-ink">{lead.nome}</p>
+            {/* Nome editável */}
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={nameInputRef}
+                  value={nameValue}
+                  onChange={e => setNameValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveName(); }}
+                  className="flex-1 text-[15px] font-bold text-ink bg-elevated border border-[rgba(0,113,227,0.4)]
+                    rounded-[8px] px-2 py-1 outline-none focus:border-accent"
+                  placeholder="Nome do lead"
+                />
+                <button onClick={saveName} disabled={savingName}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px] bg-accent text-white
+                    cursor-pointer disabled:opacity-50 shrink-0">
+                  {savingName ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar'}
+                </button>
+                <button onClick={() => { setEditingName(false); setNameValue(lead.nome || ''); }}
+                  className="text-[11px] font-medium text-ink-muted hover:text-ink cursor-pointer shrink-0">
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 group">
+                <p className="text-[16px] font-bold text-ink truncate">{displayName}</p>
+                <button
+                  onClick={() => { setNameValue(lead.nome || ''); setEditingName(true); }}
+                  title="Renomear lead"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-ink-faint
+                    opacity-0 group-hover:opacity-100 hover:text-accent hover:bg-accent-soft
+                    transition-all cursor-pointer shrink-0">
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="text-[10px] font-semibold rounded-full px-2 py-0.5"
                 style={{
@@ -725,6 +802,36 @@ function LeadModal({ lead, onClose, onMove }) {
             )}
           </div>
         </div>
+
+        {/* Footer — excluir lead */}
+        <div className="px-6 py-4 border-t border-[rgba(0,0,0,0.06)] shrink-0">
+          {confirmDel ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12px] text-ink-muted">Tem certeza? O lead será excluído.</p>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setConfirmDel(false)}
+                  className="text-[12px] font-medium text-ink-muted hover:text-ink
+                    px-3 py-1.5 rounded-[8px] hover:bg-elevated transition-all cursor-pointer">
+                  Cancelar
+                </button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold text-white
+                    px-3 py-1.5 rounded-[8px] bg-[#ff3b30] hover:bg-[#ff2d20]
+                    transition-all cursor-pointer disabled:opacity-50">
+                  {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  Excluir
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDel(true)}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-ink-faint
+                hover:text-[#ff3b30] transition-colors cursor-pointer">
+              <Trash2 className="w-3.5 h-3.5" />
+              Excluir lead
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -769,6 +876,16 @@ export default function Leads() {
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
       setOpenLead(prev => prev?.id === leadId ? { ...prev, status: newStatus } : prev);
     }
+  }, []);
+
+  const renameLead = useCallback((leadId, nome) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, nome } : l));
+    setOpenLead(prev => prev?.id === leadId ? { ...prev, nome } : prev);
+  }, []);
+
+  const removeLead = useCallback((leadId) => {
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+    setStats(prev => prev ? { ...prev, total: Math.max(0, (prev.total ?? 1) - 1) } : prev);
   }, []);
 
   // Clientes únicos presentes nos leads
@@ -948,6 +1065,8 @@ export default function Leads() {
           lead={openLead}
           onClose={() => setOpenLead(null)}
           onMove={moveLeadStatus}
+          onRename={renameLead}
+          onDelete={removeLead}
         />
       )}
 
