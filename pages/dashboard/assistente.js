@@ -334,7 +334,7 @@ function EmptyState({ onSelect }) {
         </div>
       </div>
 
-      <h2 className="t-title text-ink mb-1.5">Assistente T3 Studio</h2>
+      <h2 className="t-title mb-1.5">Assistente T3 Studio</h2>
       <p className="t-body text-ink-soft text-center max-w-md mb-8 leading-relaxed">
         Gerencio sua esteira de conteúdo e tarefas com linguagem natural. Pergunte qualquer coisa ou use uma sugestão abaixo.
       </p>

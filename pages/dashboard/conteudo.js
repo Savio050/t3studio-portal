@@ -409,7 +409,7 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
       {/* Nav */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
-        <span className="t-title text-ink min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <span className="t-title min-w-[160px]">{MONTHS_PT[month]} {year}</span>
         <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
         <span className="t-small text-ink-muted ml-1">
           {items.filter(i => i.postagem || i.dataGravacao).length} postagens
@@ -488,7 +488,7 @@ function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
-        <span className="t-title text-ink min-w-[160px]">{MONTHS_PT[month]} {year}</span>
+        <span className="t-title min-w-[160px]">{MONTHS_PT[month]} {year}</span>
         <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
         <span className="t-small text-ink-muted">{items.length} conteúdos</span>
       </div>
@@ -614,7 +614,7 @@ function NewContentModal({ onClose, onCreate, clientsList = [] }) {
       <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}/>
       <div className="relative w-full max-w-lg rounded-apple-2xl flex flex-col overflow-hidden bg-surface border border-hairline shadow-apple-xl" style={{ maxHeight:'90vh' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
-          <p className="t-title text-ink">Novo conteúdo</p>
+          <p className="t-title">Novo conteúdo</p>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-apple text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer"><X className="w-4 h-4"/></button>
         </div>
         <div className="overflow-y-auto px-6 py-5 space-y-5">
@@ -1345,7 +1345,7 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
             )}
           </div>
           {/* Title */}
-          <h3 className="t-title text-ink leading-snug mb-1.5 pr-8">{item.nome}</h3>
+          <h3 className="t-title leading-snug mb-1.5 pr-8">{item.nome}</h3>
           {/* Date */}
           {(item.postagem || item.dataGravacao) && (
             <div className="flex items-center gap-3">
@@ -1757,7 +1757,7 @@ export default function Conteudo() {
         <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
-              <h1 className="t-title-lg text-ink flex items-center gap-2">
+              <h1 className="t-title-lg flex items-center gap-2">
                 <Film className="w-5 h-5 text-accent"/> Esteira de Conteúdo
               </h1>
               <p className="t-small text-ink-muted mt-0.5">

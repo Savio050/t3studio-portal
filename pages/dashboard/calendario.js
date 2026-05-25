@@ -380,7 +380,7 @@ export default function Calendario() {
               <span className="dot dot-blue" />
               Calendário
             </p>
-            <h1 className="t-hero text-ink tracking-apple-tight mt-1 flex items-center gap-2.5">
+            <h1 className="t-hero tracking-apple-tight mt-1 flex items-center gap-2.5">
               <Calendar className="w-7 h-7 text-accent" />
               {MONTHS_PT[month]}{' '}
               <span className="text-ink-muted font-normal">{year}</span>

@@ -268,7 +268,7 @@ function NewTaskModal({ onClose, onCreate, clientsList = [], membersList = [] })
       <div className="relative w-full max-w-md rounded-apple-xl bg-surface p-6 animate-slide-up shadow-apple-lg border border-hairline">
 
         <div className="flex items-center justify-between mb-6">
-          <h2 className="t-title tracking-apple-tight text-ink">Nova Tarefa</h2>
+          <h2 className="t-title tracking-apple-tight">Nova Tarefa</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-apple
@@ -453,7 +453,7 @@ export default function Tarefas() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="t-hero tracking-apple-tight text-ink flex items-center gap-2.5">
+            <h1 className="t-hero tracking-apple-tight flex items-center gap-2.5">
               <CheckSquare className="w-7 h-7 text-accent" strokeWidth={2} />
               Tarefas
             </h1>

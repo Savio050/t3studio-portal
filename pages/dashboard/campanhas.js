@@ -238,7 +238,7 @@ function NewCampaignModal({ onClose, onCreate }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-hairline shrink-0">
           <div className="flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-accent" />
-            <p className="t-title text-ink">Nova Campanha</p>
+            <p className="t-title">Nova Campanha</p>
           </div>
           <button
             onClick={onClose}
@@ -528,7 +528,7 @@ function CampaignPanel({ item, onSave, onDelete, onClose }) {
                   {cliente || item.cliente}
                 </span>
               )}
-              <h3 className="t-title text-ink leading-snug">{item.nome}</h3>
+              <h3 className="t-title leading-snug">{item.nome}</h3>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <EstadoBadge value={estado} />
                 {responsavel && (
@@ -1080,7 +1080,7 @@ function MetaMissingConfig({ hint }) {
       <div className="w-16 h-16 rounded-apple-2xl bg-elevated flex items-center justify-center mb-5">
         <BarChart2 className="w-8 h-8 text-ink-faint"/>
       </div>
-      <h3 className="t-title text-ink mb-2">Conta de anúncios não configurada</h3>
+      <h3 className="t-title mb-2">Conta de anúncios não configurada</h3>
       <p className="t-small text-ink-muted max-w-sm mb-4 leading-relaxed">
         Configure a variável <code className="bg-elevated px-1.5 py-0.5 rounded text-[11px] font-mono text-ink">META_AD_ACCOUNT_ID</code> no painel do Vercel com o ID da sua conta de anúncios.
       </p>
@@ -1473,7 +1473,7 @@ export default function Campanhas() {
         <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
-              <h1 className="t-title-lg text-ink flex items-center gap-2">
+              <h1 className="t-title-lg flex items-center gap-2">
                 <Megaphone className="w-5 h-5 text-accent" />
                 Campanhas
               </h1>
@@ -1708,7 +1708,7 @@ export default function Campanhas() {
               >
                 <Megaphone className="w-8 h-8 text-accent opacity-50" />
               </div>
-              <p className="t-title text-ink-muted mb-1">
+              <p className="t-title-muted mb-1">
                 {filterEstado || filterCliente
                   ? 'Nenhuma campanha corresponde ao filtro'
                   : 'Nenhuma campanha cadastrada'}
@@ -1748,7 +1748,7 @@ export default function Campanhas() {
                 <AlertTriangle className="w-7 h-7 text-err-ink"/>
               </div>
               <div>
-                <p className="t-title text-ink mb-1">Erro ao carregar campanhas</p>
+                <p className="t-title mb-1">Erro ao carregar campanhas</p>
                 <p className="t-small text-err-ink max-w-md">{metaError}</p>
               </div>
               <button onClick={loadMetaCampaigns} className="btn btn-primary">
@@ -1770,7 +1770,7 @@ export default function Campanhas() {
               <div className="w-16 h-16 rounded-apple-2xl bg-elevated flex items-center justify-center mb-4">
                 <BarChart2 className="w-8 h-8 text-ink-faint"/>
               </div>
-              <p className="t-title text-ink-muted mb-1">Nenhuma campanha encontrada</p>
+              <p className="t-title-muted mb-1">Nenhuma campanha encontrada</p>
               <p className="t-small text-ink-faint mb-4">
                 {metaStatus !== 'ALL' ? `Sem campanhas com status "${metaStatus}" neste período.` : 'A conta não possui campanhas.'}
               </p>
