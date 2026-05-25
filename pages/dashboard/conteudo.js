@@ -7,7 +7,7 @@ import {
   Save, CheckCircle2, Check, Plus, Trash2, Camera,
   Image, FileText, Palette, ExternalLink, Link2,
   ChevronDown, Upload, Video, Play, MessageSquare,
-  Share2, Download,
+  Share2, Download, Search,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1614,6 +1614,10 @@ export default function Conteudo() {
   const [memberView,    setMemberView]    = useState('geral');
   const [filterCliente,   setFilterCliente]   = useState('');
   const [filterPlataforma, setFilterPlataforma] = useState('');
+  const [filterSearch,    setFilterSearch]    = useState('');
+  const [searchQuery,     setSearchQuery]     = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
   const [selectedItem,    setSelectedItem]    = useState(null);
   const [showNew,       setShowNew]       = useState(false);
   const [showExport,    setShowExport]    = useState(false);
@@ -1663,6 +1667,13 @@ export default function Conteudo() {
     }
   }, []);
 
+  // Fecha sugestões ao clicar fora
+  useEffect(() => {
+    const handler = e => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   // Dynamic filter options — API list first, fall back to names found in content
   const availableClients = useMemo(() => {
     if (clientsList.length > 0) return clientsList.map(c => c.nome).filter(Boolean);
@@ -1677,6 +1688,30 @@ export default function Conteudo() {
     return [...set].sort();
   }, [content]);
 
+  // Sugestões de busca: nomes que contêm o texto digitado (máx 8)
+  const searchSuggestions = useMemo(() => {
+    const q = nrm(searchQuery);
+    if (!q || q.length < 2) return [];
+    return content
+      .map(c => c.nome).filter(Boolean)
+      .filter((n, i, arr) => arr.indexOf(n) === i) // unique
+      .filter(n => nrm(n).includes(q))
+      .slice(0, 8);
+  }, [content, searchQuery]);
+
+  // Aplica a busca ao confirmar (Enter ou clique na sugestão)
+  const applySearch = val => {
+    setFilterSearch(val);
+    setSearchQuery(val);
+    setShowSuggestions(false);
+  };
+
+  const clearSearch = () => {
+    setFilterSearch('');
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
+
   // Filter pipeline
   const filtered = content.filter(item => {
     if (memberView === 'minhas' && !nrm(item.responsavel).includes('savio')) return false;
@@ -1685,6 +1720,7 @@ export default function Conteudo() {
       const platforms = (item.plataforma||'').split(',').map(p => nrm(p).trim());
       if (!platforms.includes(nrm(filterPlataforma))) return false;
     }
+    if (filterSearch && !nrm(item.nome).includes(nrm(filterSearch))) return false;
     return true;
   });
 
@@ -1782,7 +1818,7 @@ export default function Conteudo() {
           <div className="rounded-apple-xl border border-hairline bg-surface">
 
             {/* Row 1 — Cliente (expandable dropdown) */}
-            <div className="flex items-center" style={{ borderBottom: availablePlatforms.length > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+            <div className="flex items-center" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
                 <div className="w-1.5 h-1.5 rounded-full bg-accent"/>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Cliente</span>
@@ -1808,7 +1844,7 @@ export default function Conteudo() {
             </div>
 
             {/* Row 2 — Plataforma */}
-            <div className="flex items-center">
+            <div className="flex items-center" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
                 <div className="w-1.5 h-1.5 rounded-full" style={{ background:'#8b5cf6' }}/>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Plataforma</span>
@@ -1836,6 +1872,66 @@ export default function Conteudo() {
               </div>
               {filterPlataforma && (
                 <button onClick={() => setFilterPlataforma('')}
+                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
+                  <X className="w-3 h-3"/>
+                </button>
+              )}
+            </div>
+
+            {/* Row 3 — Busca por nome */}
+            <div className="flex items-center">
+              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'#10b981' }}/>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Busca</span>
+              </div>
+              <div className="flex-1 px-3 py-2 relative" ref={searchRef}>
+                <div className="relative flex items-center">
+                  <Search className="absolute left-2.5 w-3.5 h-3.5 text-ink-faint pointer-events-none"/>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); if (!e.target.value) setFilterSearch(''); }}
+                    onKeyDown={e => { if (e.key === 'Enter') applySearch(searchQuery); if (e.key === 'Escape') { setShowSuggestions(false); } }}
+                    onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
+                    placeholder="Buscar conteúdo pelo nome…"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-[8px] border border-transparent bg-elevated text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/40 focus:bg-white transition-all"
+                  />
+                  {filterSearch && (
+                    <span className="absolute right-2.5 flex items-center gap-1 text-[10px] font-semibold text-accent bg-accent/10 px-1.5 py-0.5 rounded-md pointer-events-none">
+                      ativo
+                    </span>
+                  )}
+                </div>
+
+                {/* Dropdown de sugestões */}
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-[12px] bg-white border border-[rgba(0,0,0,0.1)] shadow-apple-xl overflow-hidden">
+                    {searchSuggestions.map((sug, i) => {
+                      const q = nrm(searchQuery);
+                      const idx = nrm(sug).indexOf(q);
+                      const before = sug.slice(0, idx);
+                      const match  = sug.slice(idx, idx + searchQuery.length);
+                      const after  = sug.slice(idx + searchQuery.length);
+                      return (
+                        <button
+                          key={i}
+                          onMouseDown={e => { e.preventDefault(); applySearch(sug); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-elevated transition-colors cursor-pointer group"
+                          style={{ borderBottom: i < searchSuggestions.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
+                          <Search className="w-3 h-3 text-ink-faint shrink-0 group-hover:text-accent transition-colors"/>
+                          <span className="text-[13px] text-ink truncate">
+                            {before}
+                            <span className="font-semibold text-accent">{match}</span>
+                            {after}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {filterSearch && (
+                <button onClick={clearSearch}
                   className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
                   <X className="w-3 h-3"/>
                 </button>
