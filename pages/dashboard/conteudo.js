@@ -169,17 +169,25 @@ function SectionBadge({ status }) {
 }
 
 // ── Mini card (Monthly & Weekly) ──────────────────────────────────────────────
-function MiniCard({ item, onClick }) {
-  const fmtColor  = FORMAT_COLORS[item.formato] || '#8b5cf6';
-  const st        = sectionStatus(item, 'tema');
-  const stMeta    = SECTION_STATUS[st];
+function MiniCard({ item, onClick, onDragStart, onDragEnd }) {
+  const fmtColor   = FORMAT_COLORS[item.formato] || '#8b5cf6';
+  const st         = sectionStatus(item, 'tema');
+  const stMeta     = SECTION_STATUS[st];
   const previewImg = item.linkCapa || (item.galeria ? item.galeria.split(',')[0]?.trim() : null);
+  const [dragging, setDragging] = useState(false);
 
   return (
-    <button onClick={() => onClick(item)}
-      className="w-full text-left rounded-apple-lg p-1.5 transition-all duration-200 cursor-pointer group overflow-hidden bg-white hover:shadow-apple-sm hover:-translate-y-[1px]"
-      style={{ border: `1px solid ${fmtColor}22` }}>
-      {/* Hover image preview — expands inline */}
+    <button
+      draggable
+      onDragStart={e => { setDragging(true); onDragStart?.(e, item); }}
+      onDragEnd={e => { setDragging(false); onDragEnd?.(); }}
+      onClick={() => !dragging && onClick(item)}
+      className="w-full text-left rounded-apple-lg p-1.5 transition-all duration-200 group overflow-hidden bg-white hover:shadow-apple-sm hover:-translate-y-[1px]"
+      style={{
+        border: `1px solid ${fmtColor}22`,
+        opacity: dragging ? 0.45 : 1,
+        cursor: dragging ? 'grabbing' : 'grab',
+      }}>
       {previewImg && (
         <div className="max-h-0 group-hover:max-h-20 overflow-hidden transition-all duration-300 ease-out">
           <img src={previewImg} alt="" className="w-full aspect-video object-cover rounded-md mb-1 block"
@@ -394,15 +402,47 @@ function DayItemsModal({ date, items, onSelect, onClose }) {
 }
 
 // ── Monthly view ──────────────────────────────────────────────────────────────
-function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
+function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext, onDateChange }) {
   const days     = buildCalendar(year, month);
   const byDate   = {};
   items.forEach(item => {
     const d = item.postagem || item.dataGravacao;
     if (d) { if (!byDate[d]) byDate[d] = []; byDate[d].push(item); }
   });
-  const todayStr = isoDate(new Date());
-  const [dayModal, setDayModal] = useState(null); // { date, items }
+  const todayStr    = isoDate(new Date());
+  const [dayModal,  setDayModal]  = useState(null);
+  const [dragOver,  setDragOver]  = useState(null); // date string being hovered
+  const draggingRef = useRef(null);                  // { id, field }
+
+  const handleDragStart = (e, item) => {
+    draggingRef.current = { id: item.id };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.id);
+  };
+
+  const handleDragEnd = () => {
+    setDragOver(null);
+    draggingRef.current = null;
+  };
+
+  const handleDragOver = (e, ds) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOver !== ds) setDragOver(ds);
+  };
+
+  const handleDragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null);
+  };
+
+  const handleDrop = (e, ds) => {
+    e.preventDefault();
+    setDragOver(null);
+    const id = draggingRef.current?.id || e.dataTransfer.getData('text/plain');
+    draggingRef.current = null;
+    if (!id || !onDateChange) return;
+    onDateChange(id, ds);
+  };
 
   return (
     <div>
@@ -429,24 +469,44 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           const ds       = isoDate(date);
           const dayItems = byDate[ds] || [];
           const isToday  = ds === todayStr;
-          const PREVIEW  = 2; // cards shown before "ver todos"
+          const isDrop   = dragOver === ds;
+          const PREVIEW  = 2;
           return (
-            <div key={i} className="min-h-[96px] p-1.5 rounded-apple-lg transition-all duration-150"
+            <div key={i}
+              className="min-h-[96px] p-1.5 rounded-apple-lg transition-all duration-150"
+              onDragOver={e => handleDragOver(e, ds)}
+              onDragLeave={handleDragLeave}
+              onDrop={e => handleDrop(e, ds)}
               style={{
-                background: isToday ? 'rgba(56,139,253,0.12)' : current ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                border: isToday ? '1px solid rgba(56,139,253,0.35)' : current ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.05)',
+                background: isDrop    ? 'rgba(56,139,253,0.22)'
+                  : isToday           ? 'rgba(56,139,253,0.12)'
+                  : current           ? 'rgba(255,255,255,0.05)'
+                  :                     'rgba(255,255,255,0.02)',
+                border: isDrop        ? '2px dashed rgba(56,139,253,0.7)'
+                  : isToday           ? '1px solid rgba(56,139,253,0.35)'
+                  : current           ? '1px solid rgba(255,255,255,0.10)'
+                  :                     '1px solid rgba(255,255,255,0.05)',
                 opacity: current ? 1 : 0.5,
+                transform: isDrop ? 'scale(1.01)' : 'none',
               }}>
               <div className={`text-[11px] font-semibold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
                 ${isToday ? 'bg-[#3b82f6] text-white text-[10px]' : current ? 'text-[#94afc8]' : 'text-[#2d4459]'}`}>
                 {date.getDate()}
               </div>
+              {/* Drop hint */}
+              {isDrop && (
+                <div className="text-[9px] text-[#60a5fa] font-semibold text-center py-1 rounded-md mb-1"
+                  style={{ background: 'rgba(56,139,253,0.12)', border: '1px dashed rgba(56,139,253,0.3)' }}>
+                  Soltar aqui
+                </div>
+              )}
               {loading
                 ? i < 7 && <div className="h-8 rounded-md animate-pulse bg-[rgba(255,255,255,0.08)]"/>
                 : (
                   <div className="space-y-1">
                     {dayItems.slice(0, PREVIEW).map(item => (
-                      <MiniCard key={item.id} item={item} onClick={onSelect}/>
+                      <MiniCard key={item.id} item={item} onClick={onSelect}
+                        onDragStart={handleDragStart} onDragEnd={handleDragEnd}/>
                     ))}
                     {dayItems.length > PREVIEW && (
                       <button
@@ -1715,6 +1775,23 @@ export default function Conteudo() {
     setContent(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // Drag-and-drop: muda a data de postagem de um conteúdo
+  const changeItemDate = useCallback(async (id, newDate) => {
+    // Optimistic update local
+    setContent(prev => prev.map(c =>
+      c.id === id ? { ...c, postagem: newDate } : c
+    ));
+    try {
+      await fetch('/api/crm/content', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, postagem: newDate }),
+      });
+    } catch (e) {
+      console.error('changeItemDate error:', e);
+    }
+  }, []);
+
   const updateItem = useCallback(async (id, fields) => {
     const res = await fetch('/api/crm/content', {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
@@ -1945,7 +2022,8 @@ export default function Conteudo() {
         <div className="flex-1 overflow-x-auto px-5 lg:px-8 py-6">
           {view === 'mensal' && (
             <MonthlyView items={monthItems} onSelect={setSelectedItem} loading={loading}
-              year={calYear} month={calMonth} onPrev={prevMonth} onNext={nextMonth}/>
+              year={calYear} month={calMonth} onPrev={prevMonth} onNext={nextMonth}
+              onDateChange={changeItemDate}/>
           )}
           {view === 'semanal' && (
             <WeeklyView items={weeklyItems} onSelect={setSelectedItem} loading={loading}
