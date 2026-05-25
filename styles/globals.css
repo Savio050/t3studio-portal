@@ -15,7 +15,7 @@
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
-  background: #fbfbfd;
+  background: #080f1e;
   color: #1d1d1f;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
                'Helvetica Neue', Helvetica, 'Inter', Arial, sans-serif;
@@ -36,16 +36,16 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* Scrollbar — subtle, Apple-like */
+/* Scrollbar — subtle, dark-mode */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.12);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); background-clip: padding-box; border: 2px solid transparent; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); background-clip: padding-box; border: 2px solid transparent; }
 
 /* Selection */
 ::selection { background: rgba(0,113,227,0.18); color: #0050a1; }
@@ -74,18 +74,16 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid rgba(0,0,0,0.04);
   }
 
-  /* Sticky glass navbar — Apple's classic frosted blur */
+  /* Sidebar & navbar — dark navy, matching T3 Studio brand */
   .glass-nav {
-    background: rgba(251,251,253,0.72);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: rgba(6,12,25,0.90);
+    backdrop-filter: saturate(120%) blur(20px);
+    -webkit-backdrop-filter: saturate(120%) blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
   }
   .glass-sidebar {
-    background: rgba(255,255,255,0.82);
-    backdrop-filter: saturate(180%) blur(24px);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-    border-right: 1px solid rgba(0,0,0,0.06);
+    background: #060c19;
+    border-right: 1px solid rgba(255,255,255,0.07);
   }
 
   /* ── Text tokens ──────────────────────────────────────────── */
@@ -195,25 +193,25 @@ h1, h2, h3, h4, h5, h6 {
   }
   .card-interactive:active { transform: translateY(0); }
 
-  /* ── Nav items ────────────────────────────────────────────── */
+  /* ── Nav items (dark sidebar) ─────────────────────────────── */
   .nav-item {
     display: flex; align-items: center; gap: 12px;
     padding: 9px 12px;
     border-radius: 10px;
     font-size: 14px;
     font-weight: 500;
-    color: #424245;
+    color: #7b9bb8;
     transition: all 0.15s ease;
     cursor: pointer;
     border: 1px solid transparent;
   }
-  .nav-item:hover { background: rgba(0,0,0,0.04); color: #1d1d1f; }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #e2eaf4; }
   .nav-item-active {
-    background: rgba(0,113,227,0.08);
-    color: #0071e3;
+    background: rgba(56,139,253,0.16);
+    color: #60a5fa;
     font-weight: 600;
   }
-  .nav-item-active:hover { background: rgba(0,113,227,0.12); }
+  .nav-item-active:hover { background: rgba(56,139,253,0.22); }
 
   /* ── Badges (soft, flat color) ────────────────────────────── */
   .badge {

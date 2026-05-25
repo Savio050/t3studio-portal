@@ -19,11 +19,21 @@ module.exports = {
         ],
       },
       colors: {
-        // Apple-inspired neutral palette
-        canvas: '#fbfbfd',       // page background (warm off-white)
-        surface: '#ffffff',      // cards
-        elevated: '#f5f5f7',     // sections / subtle contrast
-        hairline: '#d2d2d7',     // default border
+        // T3 Studio dark navy palette
+        canvas: '#080f1e',       // page background (dark navy)
+        surface: '#ffffff',      // cards (white — high contrast)
+        elevated: '#f5f5f7',     // inside cards / subtle sections
+        hairline: '#d2d2d7',     // border inside white surfaces
+        // Sidebar-specific tokens
+        sidebar: {
+          bg:      '#060c19',    // sidebar background
+          hover:   'rgba(255,255,255,0.06)',
+          active:  'rgba(56,139,253,0.18)',
+          border:  'rgba(255,255,255,0.07)',
+          text:    '#94afc8',    // secondary nav text
+          textHi:  '#e2eaf4',    // primary nav text
+          muted:   '#3d5468',    // eyebrow labels
+        },
         muted: {
           50:  '#fbfbfd',
           100: '#f5f5f7',

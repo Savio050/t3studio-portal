@@ -45,14 +45,14 @@ function NavItem({ href, icon: Icon, label, active, onClick, highlight }) {
       className={`group flex items-center gap-3 px-3 py-2 rounded-[10px] text-[14px]
         transition-all duration-200 ease-apple select-none
         ${active
-          ? 'bg-[rgba(0,113,227,0.08)] text-accent font-semibold'
-          : 'text-ink-soft hover:text-ink hover:bg-[rgba(0,0,0,0.04)] font-medium'}`}>
+          ? 'bg-[rgba(56,139,253,0.16)] text-[#60a5fa] font-semibold'
+          : 'text-[#7b9bb8] hover:text-[#e2eaf4] hover:bg-[rgba(255,255,255,0.06)] font-medium'}`}>
       <Icon className={`w-[18px] h-[18px] shrink-0 transition-colors
-        ${active ? 'text-accent' : 'text-ink-faint group-hover:text-ink-soft'}`} />
+        ${active ? 'text-[#60a5fa]' : 'text-[#3d5468] group-hover:text-[#94afc8]'}`} />
       <span className="flex-1">{label}</span>
       {highlight && (
         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full tracking-wide
-          ${active ? 'bg-accent text-white' : 'bg-accent-soft text-accent-ink'}`}>
+          ${active ? 'bg-[#60a5fa] text-[#060c19]' : 'bg-[rgba(56,139,253,0.18)] text-[#60a5fa]'}`}>
           IA
         </span>
       )}
@@ -65,8 +65,8 @@ function MobileNavItem({ href, icon: Icon, label, active }) {
     <Link href={href} aria-current={active ? 'page' : undefined}
       className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-medium
         transition-all duration-150 cursor-pointer select-none min-w-[44px]">
-      <Icon className={`w-[22px] h-[22px] transition-colors ${active ? 'text-accent' : 'text-ink-faint'}`} />
-      <span className={active ? 'text-accent font-semibold' : 'text-ink-muted'}>{label}</span>
+      <Icon className={`w-[22px] h-[22px] transition-colors ${active ? 'text-[#60a5fa]' : 'text-[#3d5468]'}`} />
+      <span className={active ? 'text-[#60a5fa] font-semibold' : 'text-[#7b9bb8]'}>{label}</span>
     </Link>
   );
 }
@@ -179,19 +179,19 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
   function renderNav(onItemClick) {
     return (
       <>
-        <p className="px-3 pt-2 pb-1.5 t-eyebrow text-[10px]">Trabalho</p>
+        <p className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#2d4459]">Trabalho</p>
         {NAV.slice(0, 9).map(item => (
           <NavItem key={item.href} {...item} active={isActive(item.href)} onClick={onItemClick} />
         ))}
 
-        <p className="px-3 pt-5 pb-1.5 t-eyebrow text-[10px]">Ferramentas</p>
+        <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#2d4459]">Ferramentas</p>
         {NAV.slice(9).map(item => (
           <NavItem key={item.href} {...item} active={isActive(item.href)} onClick={onItemClick} />
         ))}
 
         {isAdmin && (
           <>
-            <p className="px-3 pt-5 pb-1.5 t-eyebrow text-[10px]">Administração</p>
+            <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#2d4459]">Administração</p>
             {ADMIN_NAV.map(item => (
               <NavItem key={item.href} {...item} active={isActive(item.href)} onClick={onItemClick} />
             ))}
@@ -204,7 +204,7 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
   // Shared user card render
   function renderUserCard() {
     return (
-      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-elevated border border-[rgba(0,0,0,0.05)]">
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.07)]">
         {/* Clickable avatar */}
         <UserAvatar
           name={userName}
@@ -215,22 +215,22 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <p className="text-[13px] font-semibold text-ink truncate">{userName}</p>
+            <p className="text-[13px] font-semibold text-[#e2eaf4] truncate">{userName}</p>
             {isAdmin && (
               <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full
-                bg-[rgba(0,113,227,0.10)] text-[#0071e3] uppercase tracking-wide">
+                bg-[rgba(56,139,253,0.18)] text-[#60a5fa] uppercase tracking-wide">
                 Admin
               </span>
             )}
           </div>
-          <p className="text-[11px] text-ink-faint truncate">{userEmail}</p>
+          <p className="text-[11px] text-[#3d5468] truncate">{userEmail}</p>
         </div>
 
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           title="Sair"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-faint
-            hover:text-[#ff3b30] hover:bg-[rgba(255,59,48,0.08)]
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-[#3d5468]
+            hover:text-[#ff453a] hover:bg-[rgba(255,69,58,0.12)]
             transition-all duration-150 cursor-pointer shrink-0">
           <LogOut className="w-[15px] h-[15px]" />
         </button>
@@ -243,7 +243,7 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
       <Head>
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#fbfbfd" />
+        <meta name="theme-color" content="#060c19" />
       </Head>
 
       {/* Hidden file input for avatar upload */}
@@ -274,8 +274,8 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           <div className="px-5 pt-6 pb-5">
             <Link href="/dashboard" className="flex items-center gap-2.5 group">
               <div>
-                <p className="text-[15px] font-semibold text-ink tracking-apple-snug">T3 Studio</p>
-                <p className="text-[11px] text-ink-faint font-medium tracking-wide">CRM Interno</p>
+                <p className="text-[15px] font-semibold text-white tracking-apple-snug">T3 Studio</p>
+                <p className="text-[11px] text-[#3d5468] font-medium tracking-wide">CRM Interno</p>
               </div>
             </Link>
           </div>
@@ -295,16 +295,16 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
         <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-[52px] flex items-center px-3 gap-2 glass-nav">
           <button onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"
             className="w-9 h-9 flex items-center justify-center rounded-[10px]
-              text-ink-muted hover:text-ink hover:bg-[rgba(0,0,0,0.05)]
+              text-[#7b9bb8] hover:text-white hover:bg-[rgba(255,255,255,0.06)]
               transition-all duration-150 cursor-pointer">
             <Menu className="w-[20px] h-[20px]" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <span className="text-[15px] font-semibold text-ink tracking-apple-snug">{pageTitle}</span>
+            <span className="text-[15px] font-semibold text-white tracking-apple-snug">{pageTitle}</span>
           </div>
           <button aria-label="Buscar"
             className="w-9 h-9 flex items-center justify-center rounded-[10px]
-              text-ink-muted hover:text-ink hover:bg-[rgba(0,0,0,0.05)]
+              text-[#7b9bb8] hover:text-white hover:bg-[rgba(255,255,255,0.06)]
               transition-all duration-150 cursor-pointer">
             <Search className="w-[18px] h-[18px]" />
           </button>
@@ -315,29 +315,29 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
           <div className="lg:hidden fixed inset-0 z-50 animate-fade-in">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-[276px] flex flex-col bg-white animate-slide-up">
+            <aside className="absolute left-0 top-0 bottom-0 w-[276px] flex flex-col bg-[#060c19] animate-slide-up" style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="px-5 pt-6 pb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div>
-                    <p className="text-[15px] font-semibold text-ink">T3 Studio</p>
-                    <p className="text-[11px] text-ink-faint">CRM</p>
+                    <p className="text-[15px] font-semibold text-white">T3 Studio</p>
+                    <p className="text-[11px] text-[#3d5468]">CRM</p>
                   </div>
                 </div>
                 <button onClick={() => setSidebarOpen(false)}
                   className="w-9 h-9 flex items-center justify-center rounded-[10px]
-                    text-ink-muted hover:text-ink hover:bg-[rgba(0,0,0,0.05)]
+                    text-[#7b9bb8] hover:text-white hover:bg-[rgba(255,255,255,0.06)]
                     transition-all duration-150 cursor-pointer">
                   <X className="w-[18px] h-[18px]" />
                 </button>
               </div>
-              <div className="mx-4 mb-3 hairline" />
+              <div className="mx-4 mb-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} />
 
               <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
                 {renderNav(() => setSidebarOpen(false))}
               </nav>
 
               {/* Mobile user card */}
-              <div className="px-3 pt-3 pb-2 border-t border-[rgba(0,0,0,0.06)]">
+              <div className="px-3 pt-3 pb-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                 {renderUserCard()}
               </div>
 
@@ -355,7 +355,7 @@ export default function CRMLayout({ children, title = 'T3 Studio' }) {
         {/* ── Mobile Bottom Nav ─────────────────────────────────────── */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around
           px-1 pb-safe pt-2 glass-nav"
-          style={{ borderTop: '1px solid rgba(0,0,0,0.06)', borderBottom: 'none' }}>
+          style={{ borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: 'none' }}>
           {NAV.slice(0, 6).map(item => (
             <MobileNavItem key={item.href} {...item} active={isActive(item.href)} />
           ))}

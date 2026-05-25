@@ -691,7 +691,7 @@ function NewClientModal({ onClose, onCreate }) {
                 </button>
 
                 {temFinanceiro && (
-                  <div className="px-4 pb-4 pt-3 space-y-3 bg-canvas">
+                  <div className="px-4 pb-4 pt-3 space-y-3 bg-elevated">
                     {/* Tipo */}
                     <div>
                       <label className={labelCls}>Tipo</label>
@@ -757,7 +757,7 @@ function NewClientModal({ onClose, onCreate }) {
                       </button>
 
                       {finRecorrente && (
-                        <div className="px-3 pb-3 pt-2 space-y-2 bg-canvas">
+                        <div className="px-3 pb-3 pt-2 space-y-2 bg-elevated">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className={labelCls}>Frequência</label>
@@ -799,7 +799,7 @@ function NewClientModal({ onClose, onCreate }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-hairline flex gap-3 bg-canvas shrink-0">
+        <div className="px-6 py-4 border-t border-hairline flex gap-3 bg-elevated shrink-0">
           <button onClick={onClose} className="btn btn-secondary flex-1">Cancelar</button>
           {tab === 'dados' ? (
             <button onClick={() => nome.trim() && setTab('financeiro')}

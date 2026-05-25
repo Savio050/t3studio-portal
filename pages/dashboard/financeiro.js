@@ -441,7 +441,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
     }
   };
 
-  const inputCls = `w-full px-3 py-2 text-[13px] bg-canvas border border-[rgba(0,0,0,0.12)]
+  const inputCls = `w-full px-3 py-2 text-[13px] bg-elevated border border-[rgba(0,0,0,0.12)]
     rounded-xl text-ink placeholder-ink-faint focus:outline-none focus:border-accent
     focus:ring-2 focus:ring-accent/20 transition-all duration-150`;
   const labelCls = 'block text-[11px] font-semibold text-ink-soft mb-1';
@@ -569,7 +569,7 @@ function TxModal({ tx, clients, team, onSave, onClose }) {
 
               {/* Recurrence options */}
               {recorrente && (
-                <div className="px-4 pb-4 pt-3 space-y-3 bg-canvas">
+                <div className="px-4 pb-4 pt-3 space-y-3 bg-elevated">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Frequência</label>
@@ -932,7 +932,7 @@ export default function FinanceiroPage() {
 
                   {/* Search */}
                   <input
-                    className="px-3 py-1.5 text-[12px] bg-canvas border border-[rgba(0,0,0,0.1)]
+                    className="px-3 py-1.5 text-[12px] bg-elevated border border-[rgba(0,0,0,0.1)]
                       rounded-xl text-ink placeholder-ink-faint focus:outline-none focus:border-accent
                       focus:ring-2 focus:ring-accent/20 transition-all w-full sm:w-[180px]"
                     placeholder="Buscar..."
@@ -955,7 +955,7 @@ export default function FinanceiroPage() {
 
                   {/* Period filter */}
                   <select
-                    className="px-3 py-1.5 text-[12px] bg-canvas border border-[rgba(0,0,0,0.1)]
+                    className="px-3 py-1.5 text-[12px] bg-elevated border border-[rgba(0,0,0,0.1)]
                       rounded-xl text-ink focus:outline-none focus:border-accent transition-all cursor-pointer"
                     value={filter.periodo}
                     onChange={e => setFilter(f => ({ ...f, periodo: e.target.value }))}>
