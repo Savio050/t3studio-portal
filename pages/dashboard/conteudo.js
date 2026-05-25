@@ -408,10 +408,10 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
     <div>
       {/* Nav */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-[#94afc8] hover:text-white hover:bg-[rgba(255,255,255,0.08)] transition-all"><ChevronLeft className="w-4 h-4"/></button>
         <span className="t-title min-w-[160px]">{MONTHS_PT[month]} {year}</span>
-        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
-        <span className="t-small text-ink-muted ml-1">
+        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-[#94afc8] hover:text-white hover:bg-[rgba(255,255,255,0.08)] transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="text-[13px] text-[#3d5468] ml-1">
           {items.filter(i => i.postagem || i.dataGravacao).length} postagens
         </span>
       </div>
@@ -419,7 +419,7 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {WEEKDAYS_PT.map(d => (
-          <div key={d} className="text-center text-[10px] font-semibold text-ink-faint uppercase tracking-wider py-1.5">{d}</div>
+          <div key={d} className="text-center text-[10px] font-semibold text-[#3d5468] uppercase tracking-wider py-1.5">{d}</div>
         ))}
       </div>
 
@@ -433,12 +433,12 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           return (
             <div key={i} className="min-h-[96px] p-1.5 rounded-apple-lg transition-all duration-150"
               style={{
-                background: isToday ? 'rgba(0,113,227,0.06)' : current ? '#ffffff' : 'transparent',
-                border: isToday ? '1px solid rgba(0,113,227,0.28)' : `1px solid ${current ? 'rgba(0,0,0,0.05)' : 'transparent'}`,
-                opacity: current ? 1 : 0.5,
+                background: isToday ? 'rgba(0,113,227,0.06)' : current ? '#ffffff' : 'rgba(255,255,255,0.03)',
+                border: isToday ? '1px solid rgba(0,113,227,0.28)' : current ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.07)',
+                opacity: current ? 1 : 0.55,
               }}>
               <div className={`text-[11px] font-semibold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
-                ${isToday ? 'bg-accent text-white text-[10px]' : 'text-ink-muted'}`}>
+                ${isToday ? 'bg-accent text-white text-[10px]' : current ? 'text-ink-muted' : 'text-[#3d5468]'}`}>
                 {date.getDate()}
               </div>
               {loading
@@ -487,10 +487,10 @@ function WeeklyView({ items, onSelect, loading, year, month, onPrev, onNext }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronLeft className="w-4 h-4"/></button>
+        <button onClick={onPrev} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-[#94afc8] hover:text-white hover:bg-[rgba(255,255,255,0.08)] transition-all"><ChevronLeft className="w-4 h-4"/></button>
         <span className="t-title min-w-[160px]">{MONTHS_PT[month]} {year}</span>
-        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-ink-muted hover:text-ink hover:bg-elevated transition-all"><ChevronRight className="w-4 h-4"/></button>
-        <span className="t-small text-ink-muted">{items.length} conteúdos</span>
+        <button onClick={onNext} className="w-9 h-9 flex items-center justify-center rounded-apple cursor-pointer text-[#94afc8] hover:text-white hover:bg-[rgba(255,255,255,0.08)] transition-all"><ChevronRight className="w-4 h-4"/></button>
+        <span className="text-[13px] text-[#3d5468]">{items.length} conteúdos</span>
       </div>
 
       {loading ? (
@@ -1452,6 +1452,52 @@ function normalizeFormato(f) {
   return f || '—';
 }
 
+// ── Filter Dropdown (dark-themed) ────────────────────────────────────────────
+function FilterDropdown({ label, value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, []);
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button onClick={() => setOpen(v => !v)}
+        className={`flex items-center gap-1.5 pl-3 pr-2.5 py-2 rounded-[10px] border text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap
+          ${value
+            ? 'bg-[rgba(56,139,253,0.15)] border-[rgba(56,139,253,0.3)] text-[#93bbff]'
+            : 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.08)] text-[#94afc8] hover:text-white hover:border-[rgba(255,255,255,0.15)]'
+          }`}>
+        <span className="truncate max-w-[120px]">{value || label}</span>
+        {value
+          ? <span onMouseDown={e => { e.stopPropagation(); onChange(''); setOpen(false); }}
+              className="ml-0.5 text-[#93bbff] hover:text-white transition-colors cursor-pointer">
+              <X className="w-3 h-3"/>
+            </span>
+          : <ChevronDown className="w-3 h-3 opacity-50 shrink-0"/>
+        }
+      </button>
+      {open && options.length > 0 && (
+        <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[170px] rounded-[12px]
+          bg-[#0c1525] border border-[rgba(255,255,255,0.1)] shadow-apple-xl overflow-hidden py-1">
+          {options.map(opt => (
+            <button key={opt.value}
+              onMouseDown={e => { e.preventDefault(); onChange(opt.value === value ? '' : opt.value); setOpen(false); }}
+              className={`w-full text-left px-3 py-2.5 text-[13px] transition-colors cursor-pointer
+                ${value === opt.value
+                  ? 'bg-[rgba(56,139,253,0.15)] text-[#93bbff] font-semibold'
+                  : 'text-[#94afc8] hover:bg-[rgba(255,255,255,0.05)] hover:text-white'
+                }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function csvCell(val) {
   return '"' + String(val ?? '').replace(/"/g, '""') + '"';
 }
@@ -1614,6 +1660,8 @@ export default function Conteudo() {
   const [memberView,    setMemberView]    = useState('geral');
   const [filterCliente,   setFilterCliente]   = useState('');
   const [filterPlataforma, setFilterPlataforma] = useState('');
+  const [filterFormato,   setFilterFormato]   = useState('');
+  const [filterStatus,    setFilterStatus]    = useState('');
   const [filterSearch,    setFilterSearch]    = useState('');
   const [searchQuery,     setSearchQuery]     = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -1688,6 +1736,14 @@ export default function Conteudo() {
     return [...set].sort();
   }, [content]);
 
+  const availableFormatos = useMemo(() =>
+    [...new Set(content.map(c => c.formato).filter(Boolean))].sort()
+  , [content]);
+
+  const availableStatus = useMemo(() =>
+    [...new Set(content.map(c => c.estado).filter(Boolean))].sort()
+  , [content]);
+
   // Sugestões de busca: nomes que contêm o texto digitado (máx 8)
   const searchSuggestions = useMemo(() => {
     const q = nrm(searchQuery);
@@ -1720,7 +1776,9 @@ export default function Conteudo() {
       const platforms = (item.plataforma||'').split(',').map(p => nrm(p).trim());
       if (!platforms.includes(nrm(filterPlataforma))) return false;
     }
-    if (filterSearch && !nrm(item.nome).includes(nrm(filterSearch))) return false;
+    if (filterSearch  && !nrm(item.nome).includes(nrm(filterSearch))) return false;
+    if (filterFormato && nrm(item.formato) !== nrm(filterFormato)) return false;
+    if (filterStatus  && nrm(item.estado)  !== nrm(filterStatus))  return false;
     return true;
   });
 
@@ -1754,24 +1812,24 @@ export default function Conteudo() {
       <div className="flex flex-col min-h-screen bg-canvas">
 
         {/* Top bar */}
-        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
-          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+        <div className="px-5 lg:px-8 pt-5 pb-4 shrink-0 sticky top-0 z-20 border-b border-[rgba(255,255,255,0.07)] bg-[rgba(8,15,30,0.94)] backdrop-blur-md">
+
+          {/* Row 1 — Title + controls */}
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
             <div>
               <h1 className="t-title-lg flex items-center gap-2">
                 <Film className="w-5 h-5 text-accent"/> Esteira de Conteúdo
               </h1>
-              <p className="t-small text-ink-muted mt-0.5">
+              <p className="text-[12px] text-[#3d5468] mt-0.5">
                 {loading ? '…' : `${content.length} conteúdos`}
               </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {/* Export */}
-              <button
-                onClick={() => setShowExport(true)}
-                title="Exportar planejamento"
-                className="w-9 h-9 flex items-center justify-center rounded-[10px] border border-[rgba(0,0,0,0.1)]
-                  bg-surface text-ink-muted hover:text-ink hover:border-[rgba(0,0,0,0.2)]
+              <button onClick={() => setShowExport(true)} title="Exportar planejamento"
+                className="w-9 h-9 flex items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.1)]
+                  bg-[rgba(255,255,255,0.05)] text-[#94afc8] hover:text-white hover:border-[rgba(255,255,255,0.2)]
                   transition-all cursor-pointer">
                 <Share2 className="w-4 h-4" />
               </button>
@@ -1782,14 +1840,14 @@ export default function Conteudo() {
                 <span className="hidden sm:inline">Novo</span>
               </button>
 
-              {/* Member toggle — segmented control */}
-              <div className="flex items-center bg-elevated rounded-pill p-1">
+              {/* Member toggle */}
+              <div className="flex items-center bg-[rgba(255,255,255,0.08)] rounded-pill p-1">
                 {[{key:'geral',label:'Geral',icon:LayoutGrid},{key:'minhas',label:'Minhas',icon:User2}].map(({key,label,icon:Icon}) => {
                   const active = memberView===key;
                   return (
                     <button key={key} onClick={() => setMemberView(key)}
                       className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-medium transition-all cursor-pointer
-                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-ink-muted hover:text-ink'}`}>
+                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-[#94afc8] hover:text-white'}`}>
                       <Icon className="w-3 h-3"/>
                       <span className="hidden sm:inline">{label}</span>
                     </button>
@@ -1797,14 +1855,14 @@ export default function Conteudo() {
                 })}
               </div>
 
-              {/* View toggle — segmented control */}
-              <div className="flex items-center bg-elevated rounded-pill p-1">
+              {/* View toggle */}
+              <div className="flex items-center bg-[rgba(255,255,255,0.08)] rounded-pill p-1">
                 {VIEWS.map(({key,label,icon:Icon}) => {
                   const active = view===key;
                   return (
                     <button key={key} onClick={() => setView(key)}
                       className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-medium transition-all cursor-pointer
-                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-ink-muted hover:text-ink'}`}>
+                        ${active ? 'bg-white shadow-apple-sm text-ink' : 'text-[#94afc8] hover:text-white'}`}>
                       <Icon className="w-3 h-3"/>
                       <span className="hidden sm:inline">{label}</span>
                     </button>
@@ -1814,129 +1872,57 @@ export default function Conteudo() {
             </div>
           </div>
 
-          {/* ── Alternating filter list ── */}
-          <div className="rounded-apple-xl border border-hairline bg-surface">
+          {/* Row 2 — Search + filter dropdowns */}
+          <div className="flex items-center gap-2 flex-wrap">
 
-            {/* Row 1 — Cliente (expandable dropdown) */}
-            <div className="flex items-center" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
-                <div className="w-1.5 h-1.5 rounded-full bg-accent"/>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Cliente</span>
-              </div>
-              <div className="flex-1 px-3 py-2">
-                <SelectField
-                  value={filterCliente}
-                  onChange={setFilterCliente}
-                  placeholder="Todos os clientes"
-                  options={availableClients.map(c => {
-                    const cc = clientColor(c);
-                    return { value: c, label: c, color: cc.text };
-                  })}
-                  colorDot={true}
-                />
-              </div>
-              {filterCliente && (
-                <button onClick={() => setFilterCliente('')}
-                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
-                  <X className="w-3 h-3"/>
-                </button>
-              )}
-            </div>
-
-            {/* Row 2 — Plataforma */}
-            <div className="flex items-center" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'#8b5cf6' }}/>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Plataforma</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto flex-1" style={{ scrollbarWidth:'none' }}>
-                {availablePlatforms.length === 0 ? (
-                  <span className="text-[11px] text-ink-faint italic">Nenhuma plataforma cadastrada no Notion</span>
-                ) : (
-                  [{ key:'', label:'Todas' }, ...availablePlatforms.map(p => ({ key:p, label:p }))].map(({ key, label }) => {
-                    const active = nrm(filterPlataforma) === nrm(key);
-                    const pc = PLAT_COLORS[label] || '#8b5cf6';
+            {/* Search com sugestões */}
+            <div className="relative flex-1 min-w-[180px]" ref={searchRef}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#3d5468] pointer-events-none"/>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); if (!e.target.value) setFilterSearch(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') applySearch(searchQuery); if (e.key === 'Escape') setShowSuggestions(false); }}
+                onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
+                placeholder="Pesquisar conteúdo…"
+                className="w-full pl-9 pr-3 py-2 rounded-[10px] border border-[rgba(255,255,255,0.08)]
+                  bg-[rgba(255,255,255,0.06)] text-white text-[13px] placeholder:text-[#3d5468]
+                  focus:outline-none focus:border-[rgba(56,139,253,0.4)] focus:bg-[rgba(255,255,255,0.09)] transition-all"
+              />
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-[12px]
+                  bg-[#0c1525] border border-[rgba(255,255,255,0.1)] shadow-apple-xl overflow-hidden">
+                  {searchSuggestions.map((sug, i) => {
+                    const q = nrm(searchQuery);
+                    const idx = nrm(sug).indexOf(q);
+                    const before = sug.slice(0, idx);
+                    const match  = sug.slice(idx, idx + searchQuery.length);
+                    const after  = sug.slice(idx + searchQuery.length);
                     return (
-                      <button key={key||'todas'} onClick={() => setFilterPlataforma(active && key ? '' : key)}
-                        className="shrink-0 px-3 py-1 rounded-pill text-[11px] font-semibold cursor-pointer transition-all duration-150 active:scale-95"
-                        style={{
-                          background: active ? (key ? `${pc}14` : '#1d1d1f') : '#f5f5f7',
-                          border: `1px solid ${active ? (key ? `${pc}40` : '#1d1d1f') : 'rgba(0,0,0,0.06)'}`,
-                          color: active ? (key ? pc : 'white') : '#6b7280',
-                        }}>
-                        {label}
+                      <button key={i}
+                        onMouseDown={e => { e.preventDefault(); applySearch(sug); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[rgba(255,255,255,0.06)] transition-colors cursor-pointer group"
+                        style={{ borderBottom: i < searchSuggestions.length-1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                        <Search className="w-3 h-3 text-[#3d5468] shrink-0 group-hover:text-[#60a5fa] transition-colors"/>
+                        <span className="text-[13px] text-[#94afc8] truncate">
+                          {before}<span className="font-semibold text-[#60a5fa]">{match}</span>{after}
+                        </span>
                       </button>
                     );
-                  })
-                )}
-              </div>
-              {filterPlataforma && (
-                <button onClick={() => setFilterPlataforma('')}
-                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
-                  <X className="w-3 h-3"/>
-                </button>
-              )}
-            </div>
-
-            {/* Row 3 — Busca por nome */}
-            <div className="flex items-center">
-              <div className="shrink-0 px-4 py-2.5 flex items-center gap-1.5 select-none border-r border-hairline" style={{ minWidth:110 }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background:'#10b981' }}/>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Busca</span>
-              </div>
-              <div className="flex-1 px-3 py-2 relative" ref={searchRef}>
-                <div className="relative flex items-center">
-                  <Search className="absolute left-2.5 w-3.5 h-3.5 text-ink-faint pointer-events-none"/>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); if (!e.target.value) setFilterSearch(''); }}
-                    onKeyDown={e => { if (e.key === 'Enter') applySearch(searchQuery); if (e.key === 'Escape') { setShowSuggestions(false); } }}
-                    onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
-                    placeholder="Buscar conteúdo pelo nome…"
-                    className="w-full pl-8 pr-3 py-1.5 rounded-[8px] border border-transparent bg-elevated text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/40 focus:bg-white transition-all"
-                  />
-                  {filterSearch && (
-                    <span className="absolute right-2.5 flex items-center gap-1 text-[10px] font-semibold text-accent bg-accent/10 px-1.5 py-0.5 rounded-md pointer-events-none">
-                      ativo
-                    </span>
-                  )}
+                  })}
                 </div>
-
-                {/* Dropdown de sugestões */}
-                {showSuggestions && searchSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-[12px] bg-white border border-[rgba(0,0,0,0.1)] shadow-apple-xl overflow-hidden">
-                    {searchSuggestions.map((sug, i) => {
-                      const q = nrm(searchQuery);
-                      const idx = nrm(sug).indexOf(q);
-                      const before = sug.slice(0, idx);
-                      const match  = sug.slice(idx, idx + searchQuery.length);
-                      const after  = sug.slice(idx + searchQuery.length);
-                      return (
-                        <button
-                          key={i}
-                          onMouseDown={e => { e.preventDefault(); applySearch(sug); }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-elevated transition-colors cursor-pointer group"
-                          style={{ borderBottom: i < searchSuggestions.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
-                          <Search className="w-3 h-3 text-ink-faint shrink-0 group-hover:text-accent transition-colors"/>
-                          <span className="text-[13px] text-ink truncate">
-                            {before}
-                            <span className="font-semibold text-accent">{match}</span>
-                            {after}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {filterSearch && (
-                <button onClick={clearSearch}
-                  className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer text-ink-muted hover:text-ink bg-elevated hover:bg-muted-200 transition-colors">
-                  <X className="w-3 h-3"/>
-                </button>
               )}
             </div>
+
+            {/* Dropdown filters */}
+            <FilterDropdown label="Plataforma" value={filterPlataforma} onChange={setFilterPlataforma}
+              options={availablePlatforms.map(p => ({ value: p, label: p }))}/>
+            <FilterDropdown label="Cliente" value={filterCliente} onChange={setFilterCliente}
+              options={availableClients.map(c => ({ value: c, label: c }))}/>
+            <FilterDropdown label="Formato" value={filterFormato} onChange={setFilterFormato}
+              options={availableFormatos.map(f => ({ value: f, label: f }))}/>
+            <FilterDropdown label="Status" value={filterStatus} onChange={setFilterStatus}
+              options={availableStatus.map(s => ({ value: s, label: s }))}/>
           </div>
         </div>
 

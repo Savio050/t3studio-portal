@@ -552,7 +552,7 @@ export default function IdeiaBoard() {
         {/* Header */}
         <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-[28px] font-bold text-ink tracking-tight leading-tight">
+            <h1 className="t-hero tracking-tight leading-tight">
               Quadro de ideias
             </h1>
             <p className="text-[13px] text-ink-muted mt-0.5">

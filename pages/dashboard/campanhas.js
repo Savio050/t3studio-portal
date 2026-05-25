@@ -1470,7 +1470,7 @@ export default function Campanhas() {
       <div className="flex flex-col min-h-screen bg-canvas">
 
         {/* ── Top bar ── */}
-        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 border-b border-hairline bg-surface/80 backdrop-blur-md">
+        <div className="px-5 lg:px-8 pt-6 pb-4 shrink-0 sticky top-0 z-20 border-b border-[rgba(255,255,255,0.07)] bg-[rgba(8,15,30,0.92)] backdrop-blur-md">
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
               <h1 className="t-title-lg flex items-center gap-2">
