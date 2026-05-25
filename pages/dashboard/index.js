@@ -359,7 +359,7 @@ export default function Dashboard() {
             <p className="t-eyebrow text-accent mb-1">CRM Interno</p>
             <h1 className="t-hero leading-none">
               {greeting()},{' '}
-              <span className="text-ink">{firstName}</span>
+              {firstName}
             </h1>
             <p className="text-[13px] text-ink-muted mt-1.5 capitalize">
               {new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
