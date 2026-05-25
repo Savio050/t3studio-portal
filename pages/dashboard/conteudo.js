@@ -7,6 +7,7 @@ import {
   Save, CheckCircle2, Check, Plus, Trash2, Camera,
   Image, FileText, Palette, ExternalLink, Link2,
   ChevronDown, Upload, Video, Play, MessageSquare,
+  Share2, Download,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1439,6 +1440,171 @@ function DetailPanel({ item, onSave, onDelete, onClose, clientsList = [] }) {
   );
 }
 
+// ── Export helpers ────────────────────────────────────────────────────────────
+function normalizeFormato(f) {
+  const fn = fmtNorm(f);
+  if (fn.includes('carrossel'))                                  return 'Carrossel';
+  if (fn.includes('video') || fn.includes('reels') || fn.includes('tiktok') || fn.includes('youtube')) return 'Vídeo Curto';
+  if (fn.includes('stories') || fn.includes('story'))           return 'Stories';
+  if (fn.includes('post') || fn.includes('estatico') || fn.includes('estático')) return 'Post Estático';
+  return f || '—';
+}
+
+function csvCell(val) {
+  return '"' + String(val ?? '').replace(/"/g, '""') + '"';
+}
+
+function downloadCSV(rows, filename) {
+  const bom  = '﻿'; // UTF-8 BOM for Excel to read accents correctly
+  const body = rows.map(r => r.map(csvCell).join(';')).join('\r\n');
+  const blob = new Blob([bom + body], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Export Modal ──────────────────────────────────────────────────────────────
+function ExportModal({ onClose, content, availableClients, availablePlatforms }) {
+  const [cliente,   setCliente]   = useState('');
+  const [plat,      setPlat]      = useState('');
+  const [dateFrom,  setDateFrom]  = useState('');
+  const [dateTo,    setDateTo]    = useState('');
+
+  useEffect(() => {
+    const fn = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, [onClose]);
+
+  const preview = useMemo(() => {
+    return content.filter(item => {
+      if (cliente && nrm(item.cliente).replace(/\s/g,'') !== nrm(cliente).replace(/\s/g,'')) return false;
+      if (plat) {
+        const plats = (item.plataforma || '').split(',').map(p => nrm(p.trim()));
+        if (!plats.includes(nrm(plat))) return false;
+      }
+      const ds = item.postagem || item.dataGravacao;
+      if (dateFrom && ds && ds < dateFrom) return false;
+      if (dateTo   && ds && ds > dateTo)   return false;
+      return true;
+    });
+  }, [content, cliente, plat, dateFrom, dateTo]);
+
+  const handleExport = () => {
+    const header = ['Data de Postagem', 'Nome do Conteúdo', 'Formato', 'Comentários / Sugestões'];
+    const rows   = preview.map(item => [
+      item.postagem ? fmtFull(item.postagem) : (item.dataGravacao ? `Grav. ${fmtFull(item.dataGravacao)}` : ''),
+      item.nome || '',
+      normalizeFormato(item.formato),
+      [
+        item.conteudo   ? item.conteudo.slice(0, 500) : '',
+        item.feedbackCliente ? `[Feedback cliente] ${item.feedbackCliente}` : '',
+      ].filter(Boolean).join(' | '),
+    ]);
+
+    const clientePart = cliente ? nrm(cliente).replace(/\s/g,'-') : 'todos';
+    const datePart    = dateFrom ? `${dateFrom}_${dateTo || 'atual'}` : 'completo';
+    downloadCSV([header, ...rows], `planejamento-${clientePart}-${datePart}.csv`);
+    onClose();
+  };
+
+  const inputCls = 'w-full px-3 py-2 rounded-[10px] border border-[rgba(0,0,0,0.1)] bg-surface text-[13px] text-ink focus:outline-none focus:border-accent transition-colors';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-[20px] bg-surface border border-[rgba(0,0,0,0.08)] shadow-apple-xl overflow-hidden">
+
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+          <div>
+            <p className="text-[15px] font-semibold text-ink">Exportar planejamento</p>
+            <p className="text-[12px] text-ink-muted mt-0.5">Gera uma planilha .csv pronta para Excel</p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-elevated transition-all cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-5 space-y-4">
+
+          {/* Cliente */}
+          <div>
+            <label className="block text-[10px] font-semibold text-ink-faint uppercase tracking-widest mb-1.5">
+              Cliente
+            </label>
+            <SelectField
+              value={cliente}
+              onChange={setCliente}
+              placeholder="Todos os clientes"
+              options={availableClients.map(c => ({ value: c, label: c }))}
+            />
+          </div>
+
+          {/* Período */}
+          <div>
+            <label className="block text-[10px] font-semibold text-ink-faint uppercase tracking-widest mb-1.5">
+              Período (data de postagem)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] text-ink-faint mb-1">De</p>
+                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <p className="text-[10px] text-ink-faint mb-1">Até</p>
+                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+          </div>
+
+          {/* Plataforma */}
+          <div>
+            <label className="block text-[10px] font-semibold text-ink-faint uppercase tracking-widest mb-1.5">
+              Plataforma
+            </label>
+            <SelectField
+              value={plat}
+              onChange={setPlat}
+              placeholder="Todas as plataformas"
+              options={availablePlatforms.map(p => ({ value: p, label: p }))}
+            />
+          </div>
+
+          {/* Preview count */}
+          <div className="rounded-[12px] bg-[rgba(0,113,227,0.05)] border border-[rgba(0,113,227,0.12)] px-4 py-3">
+            <p className="text-[13px] text-ink">
+              <span className="font-bold text-accent">{preview.length}</span>
+              {' '}conteúdo{preview.length !== 1 ? 's' : ''} serão exportados
+            </p>
+            <p className="text-[11px] text-ink-muted mt-0.5">
+              Colunas: Data · Nome · Formato · Comentários/Sugestões
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-5 flex gap-2.5">
+          <button onClick={onClose}
+            className="btn btn-secondary flex-1">
+            Cancelar
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={preview.length === 0}
+            className="btn btn-primary flex-1 disabled:opacity-40">
+            <Download className="w-4 h-4" />
+            Baixar planilha
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Conteudo() {
   const router = useRouter();
@@ -1451,6 +1617,7 @@ export default function Conteudo() {
   const [filterPlataforma, setFilterPlataforma] = useState('');
   const [selectedItem,    setSelectedItem]    = useState(null);
   const [showNew,       setShowNew]       = useState(false);
+  const [showExport,    setShowExport]    = useState(false);
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
   // Full client list from API [{nome, idCliente, ...}]
@@ -1564,6 +1731,16 @@ export default function Conteudo() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Export */}
+              <button
+                onClick={() => setShowExport(true)}
+                title="Exportar planejamento"
+                className="w-9 h-9 flex items-center justify-center rounded-[10px] border border-[rgba(0,0,0,0.1)]
+                  bg-surface text-ink-muted hover:text-ink hover:border-[rgba(0,0,0,0.2)]
+                  transition-all cursor-pointer">
+                <Share2 className="w-4 h-4" />
+              </button>
+
               {/* New */}
               <button onClick={() => setShowNew(true)} className="btn btn-primary btn-sm">
                 <Plus className="w-3.5 h-3.5"/>
@@ -1694,6 +1871,15 @@ export default function Conteudo() {
 
       {showNew && (
         <NewContentModal onClose={() => setShowNew(false)} onCreate={createItem} clientsList={clientsList}/>
+      )}
+
+      {showExport && (
+        <ExportModal
+          onClose={() => setShowExport(false)}
+          content={content}
+          availableClients={availableClients}
+          availablePlatforms={availablePlatforms}
+        />
       )}
     </CRMLayout>
   );
