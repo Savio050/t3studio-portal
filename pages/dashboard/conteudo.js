@@ -433,16 +433,16 @@ function MonthlyView({ items, onSelect, loading, year, month, onPrev, onNext }) 
           return (
             <div key={i} className="min-h-[96px] p-1.5 rounded-apple-lg transition-all duration-150"
               style={{
-                background: isToday ? 'rgba(0,113,227,0.06)' : current ? '#ffffff' : 'rgba(255,255,255,0.03)',
-                border: isToday ? '1px solid rgba(0,113,227,0.28)' : current ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.07)',
-                opacity: current ? 1 : 0.55,
+                background: isToday ? 'rgba(56,139,253,0.12)' : current ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                border: isToday ? '1px solid rgba(56,139,253,0.35)' : current ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.05)',
+                opacity: current ? 1 : 0.5,
               }}>
               <div className={`text-[11px] font-semibold mb-1.5 w-5 h-5 flex items-center justify-center rounded-full
-                ${isToday ? 'bg-accent text-white text-[10px]' : current ? 'text-ink-muted' : 'text-[#3d5468]'}`}>
+                ${isToday ? 'bg-[#3b82f6] text-white text-[10px]' : current ? 'text-[#94afc8]' : 'text-[#2d4459]'}`}>
                 {date.getDate()}
               </div>
               {loading
-                ? i < 7 && <div className="h-8 rounded-md animate-pulse bg-elevated"/>
+                ? i < 7 && <div className="h-8 rounded-md animate-pulse bg-[rgba(255,255,255,0.08)]"/>
                 : (
                   <div className="space-y-1">
                     {dayItems.slice(0, PREVIEW).map(item => (
@@ -576,6 +576,7 @@ function NewContentModal({ onClose, onCreate, clientsList = [] }) {
   const [nome,         setNome]         = useState('');
   const [cliente,      setCliente]      = useState('');
   const [formato,      setFormato]      = useState('');
+  const [plataforma,   setPlataforma]   = useState('');
   const [responsavel,  setResponsavel]  = useState('');
   const [postagem,     setPostagem]     = useState('');
   const [dataGravacao, setDataGravacao] = useState('');
@@ -597,7 +598,7 @@ function NewContentModal({ onClose, onCreate, clientsList = [] }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome, cliente, formato, responsavel,
+          nome, cliente, formato, plataforma: plataforma||undefined, responsavel,
           postagem: postagem||undefined,
           dataGravacao: dataGravacao||undefined,
           idCliente: idCliente||undefined,
@@ -640,6 +641,20 @@ function NewContentModal({ onClose, onCreate, clientsList = [] }) {
                   className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
                   style={{ background: active ? `${fc}18` : '#f5f5f7', border: `1px solid ${active ? `${fc}40` : 'rgba(0,0,0,0.06)'}`, color: active ? fc : '#6b7280' }}>
                   {f}
+                </button>;
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="block t-eyebrow text-ink-muted mb-2">Plataforma</label>
+            <div className="flex flex-wrap gap-2">
+              {['Instagram','TikTok','YouTube','WhatsApp','Facebook','LinkedIn','Pinterest'].map(p => {
+                const active = plataforma === p;
+                const pc = PLAT_COLORS[p] || '#8b5cf6';
+                return <button key={p} type="button" onClick={() => setPlataforma(active ? '' : p)}
+                  className="px-3 py-1.5 rounded-apple text-xs font-semibold cursor-pointer transition-all"
+                  style={{ background: active ? `${pc}18` : '#f5f5f7', border: `1px solid ${active ? `${pc}40` : 'rgba(0,0,0,0.06)'}`, color: active ? pc : '#6b7280' }}>
+                  {p}
                 </button>;
               })}
             </div>
