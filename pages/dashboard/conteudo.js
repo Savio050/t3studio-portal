@@ -1499,10 +1499,7 @@ function ExportModal({ onClose, content, availableClients, availablePlatforms })
       item.postagem ? fmtFull(item.postagem) : (item.dataGravacao ? `Grav. ${fmtFull(item.dataGravacao)}` : ''),
       item.nome || '',
       normalizeFormato(item.formato),
-      [
-        item.conteudo   ? item.conteudo.slice(0, 500) : '',
-        item.feedbackCliente ? `[Feedback cliente] ${item.feedbackCliente}` : '',
-      ].filter(Boolean).join(' | '),
+      item.feedbackCliente || '',
     ]);
 
     const clientePart = cliente ? nrm(cliente).replace(/\s/g,'-') : 'todos';
