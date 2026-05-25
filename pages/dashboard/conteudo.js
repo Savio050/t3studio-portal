@@ -82,6 +82,8 @@ function clientColor(name) {
 const fmtShort  = d => { if (!d) return null; const [,m,day] = d.split('-'); return `${day}/${m}`; };
 const fmtFull   = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
 const isoDate   = d => d.toISOString().slice(0, 10);
+// Parseia 'YYYY-MM-DD' como data LOCAL (evita bug de UTC que muda o dia em UTC-3)
+const parseLocalDate = ds => { if (!ds) return null; const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); };
 
 const isSlaBreached = (item) => {
   if (!item.lastEditedTime) return false;
@@ -139,7 +141,7 @@ function groupByWeek(items) {
   items.forEach(item => {
     const ds = item.postagem || item.dataGravacao;
     if (!ds) { noDate.push(item); return; }
-    const mon = weekMonday(new Date(ds));
+    const mon = weekMonday(parseLocalDate(ds));
     const key = isoDate(mon);
     if (!map[key]) map[key] = { monday: mon, items: [] };
     map[key].items.push(item);
@@ -1693,7 +1695,7 @@ export default function Conteudo() {
   const monthItems = filtered.filter(item => {
     const d = item.postagem || item.dataGravacao;
     if (!d) return false;
-    const dt = new Date(d);
+    const dt = parseLocalDate(d);
     return dt.getFullYear() === calYear && dt.getMonth() === calMonth;
   });
 
@@ -1701,7 +1703,7 @@ export default function Conteudo() {
   const weeklyItems = filtered.filter(item => {
     const d = item.postagem || item.dataGravacao;
     if (!d) return true;
-    const dt = new Date(d);
+    const dt = parseLocalDate(d);
     return Math.abs((dt.getFullYear() - calYear)*12 + (dt.getMonth() - calMonth)) <= 1;
   });
 
