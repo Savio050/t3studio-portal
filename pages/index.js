@@ -1069,9 +1069,11 @@ export default function Home() {
       return mOk && yOk;
     })
     .sort((a, b) => {
-      const da = a.dataGravacao || a.postagem || '';
-      const db = b.dataGravacao || b.postagem || '';
-      return db.localeCompare(da); // descending: mais recente no topo
+      const getMs = item => {
+        const d = item.dataGravacao || item.criadoEm || '';
+        return d ? new Date(d).getTime() : 0;
+      };
+      return getMs(b) - getMs(a); // descending: mais recente no topo
     });
 
   // Badges urgência

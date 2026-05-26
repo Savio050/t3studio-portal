@@ -70,13 +70,18 @@ export default async function handler(req, res) {
         linkCapa3: getPropertyValue(props['linkcapa3']) || null,
         galeria: getPropertyValue(props['Galeria']) || '',
         feedbackCliente: getPropertyValue(props['Feedback do Cliente']) || '',
+        criadoEm: page.created_time || null,
       };
     });
 
+    // Ordena: mais recente primeiro (dataGravacao; fallback: criadoEm)
     const sorted = contents.sort((a, b) => {
-      if (!a.dataGravacao) return 1;
-      if (!b.dataGravacao) return -1;
-      return new Date(a.dataGravacao) - new Date(b.dataGravacao);
+      const da = a.dataGravacao || a.criadoEm || '';
+      const db = b.dataGravacao || b.criadoEm || '';
+      if (!da && !db) return 0;
+      if (!da) return -1; // sem data vai para o topo (recém adicionado)
+      if (!db) return  1;
+      return new Date(db) - new Date(da); // decrescente
     });
 
     return res.status(200).json({ contents: sorted });
